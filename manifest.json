@@ -1,13 +1,12 @@
 {
   "name": "Tokvista",
-  "id": "tokvista-plugin-dev",
+  "id": "tokvista-plugin",
   "api": "1.0.0",
   "main": "dist/code.js",
   "ui": "dist/ui.html",
   "editorType": ["figma"],
   "networkAccess": {
     "allowedDomains": ["https://tokvista-plugin.vercel.app"],
-    "devAllowedDomains": ["http://localhost:8787"],
     "reasoning": "Tokvista plugin publishes token exports to a project relay API."
   }
 }
