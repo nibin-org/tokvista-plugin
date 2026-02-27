@@ -11,6 +11,7 @@ const REM_BASE_PX = 16;
 const RAW_TYPE_PLUGIN_KEY = "tokvista_raw_type";
 const COMPLEX_JSON_PLUGIN_KEY = "tokvista_complex_json";
 const RELAY_SETTINGS_KEY = "tokvista_relay_settings";
+const LAST_PUBLISHED_PAYLOAD_KEY = "tokvista_last_published_payload";
 const DEFAULT_RELAY_URL = "http://localhost:8787";
 const DEFAULT_RELAY_ENVIRONMENT = "dev";
 
@@ -18,6 +19,7 @@ type UiMessage =
   | { type: "import-tokens"; payload: unknown }
   | { type: "export-tokens" }
   | { type: "load-relay-settings" }
+  | { type: "preview-publish-changes" }
   | { type: "save-relay-settings"; payload: unknown }
   | { type: "publish-tokvista"; payload: unknown };
 
@@ -58,7 +60,18 @@ type RelayPublishResult = {
   versionId: string;
   message: string;
   referenceUrl?: string;
+  changed?: boolean;
 };
+
+type PublishChangeLog = {
+  summary: string;
+  lines: string[];
+  added: number;
+  changed: number;
+  removed: number;
+};
+
+const MAX_CHANGE_LOG_LINES = 40;
 
 function isObjectLike(value: unknown): value is ObjectLike {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -181,6 +194,170 @@ function stripVolatilePublishFields(payload: ObjectLike): ObjectLike {
   return nextPayload;
 }
 
+function normalizeForStableJson(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeForStableJson(item));
+  }
+  if (isObjectLike(value)) {
+    const sortedKeys = Object.keys(value).sort();
+    const out: ObjectLike = {};
+    for (const key of sortedKeys) {
+      out[key] = normalizeForStableJson(value[key]);
+    }
+    return out;
+  }
+  return value;
+}
+
+function stableSerialize(value: unknown): string {
+  try {
+    return JSON.stringify(normalizeForStableJson(value));
+  } catch {
+    return String(value);
+  }
+}
+
+function getSnapshotType(rawType: string | undefined): string {
+  if (typeof rawType === "string" && rawType.trim()) {
+    return rawType.trim();
+  }
+  return "unknown";
+}
+
+function createTokenSnapshotMap(payload: ObjectLike | null): Map<string, { type: string; valueSerialized: string }> {
+  const map = new Map<string, { type: string; valueSerialized: string }>();
+  if (!payload) {
+    return map;
+  }
+
+  let tokens: ParsedToken[];
+  try {
+    tokens = parseTokens(payload);
+  } catch {
+    return map;
+  }
+
+  for (const token of tokens) {
+    const path = token.path.join("/");
+    map.set(path, {
+      type: getSnapshotType(token.rawType),
+      valueSerialized: stableSerialize(token.value)
+    });
+  }
+  return map;
+}
+
+function buildPublishChangeLog(previousPayload: ObjectLike | null, currentPayload: ObjectLike): PublishChangeLog {
+  const previousMap = createTokenSnapshotMap(previousPayload);
+  const currentMap = createTokenSnapshotMap(currentPayload);
+
+  if (!previousPayload) {
+    const currentPaths = [...currentMap.keys()].sort();
+    const lines = currentPaths.slice(0, MAX_CHANGE_LOG_LINES).map((path) => `+ ${path}`);
+    if (currentPaths.length > MAX_CHANGE_LOG_LINES) {
+      lines.push(`...and ${currentPaths.length - MAX_CHANGE_LOG_LINES} more`);
+    }
+    return {
+      summary: `Initial publish baseline created (${currentMap.size} tokens).`,
+      lines,
+      added: currentPaths.length,
+      changed: 0,
+      removed: 0
+    };
+  }
+
+  const added: string[] = [];
+  const removed: string[] = [];
+  const changed: string[] = [];
+  const allPaths = new Set<string>([...previousMap.keys(), ...currentMap.keys()]);
+
+  for (const path of [...allPaths].sort()) {
+    const previous = previousMap.get(path);
+    const current = currentMap.get(path);
+    if (!previous && current) {
+      added.push(path);
+      continue;
+    }
+    if (previous && !current) {
+      removed.push(path);
+      continue;
+    }
+    if (!previous || !current) {
+      continue;
+    }
+    if (previous.type !== current.type) {
+      changed.push(`${path} (type: ${previous.type} -> ${current.type})`);
+      continue;
+    }
+    if (previous.valueSerialized !== current.valueSerialized) {
+      changed.push(`${path} (value changed)`);
+    }
+  }
+
+  const totalChanges = added.length + removed.length + changed.length;
+  if (totalChanges === 0) {
+    return {
+      summary: "No token changes detected.",
+      lines: [],
+      added: 0,
+      changed: 0,
+      removed: 0
+    };
+  }
+
+  const lines = [
+    ...added.map((path) => `+ ${path}`),
+    ...changed.map((path) => `~ ${path}`),
+    ...removed.map((path) => `- ${path}`)
+  ];
+  const cappedLines = lines.slice(0, MAX_CHANGE_LOG_LINES);
+  if (lines.length > MAX_CHANGE_LOG_LINES) {
+    cappedLines.push(`...and ${lines.length - MAX_CHANGE_LOG_LINES} more`);
+  }
+
+  return {
+    summary: `Changes: +${added.length} / ~${changed.length} / -${removed.length}`,
+    lines: cappedLines,
+    added: added.length,
+    changed: changed.length,
+    removed: removed.length
+  };
+}
+
+async function getLastPublishedPayload(): Promise<ObjectLike | null> {
+  const raw = await figma.clientStorage.getAsync(LAST_PUBLISHED_PAYLOAD_KEY);
+  if (!isObjectLike(raw)) {
+    return null;
+  }
+  return raw;
+}
+
+async function setLastPublishedPayload(payload: ObjectLike): Promise<void> {
+  await figma.clientStorage.setAsync(LAST_PUBLISHED_PAYLOAD_KEY, payload);
+}
+
+async function postPublishChangePreview(): Promise<void> {
+  try {
+    const previousPayload = await getLastPublishedPayload();
+    const exported = exportTokens();
+    const publishPayload = stripVolatilePublishFields(exported);
+    const changeLog = buildPublishChangeLog(previousPayload, publishPayload);
+    figma.ui.postMessage({
+      type: "publish-change-preview",
+      payload: {
+        changeLog
+      }
+    });
+  } catch (error) {
+    figma.ui.postMessage({
+      type: "publish-change-preview",
+      payload: {
+        error: toErrorMessage(error)
+      }
+    });
+  }
+}
+
 async function getStoredRelaySettings(): Promise<RelaySettings | null> {
   const raw = await figma.clientStorage.getAsync(RELAY_SETTINGS_KEY);
   if (!isObjectLike(raw)) {
@@ -273,10 +450,12 @@ async function publishToRelay(
   const versionId = typeof data.versionId === "string" ? data.versionId : "";
   const message = typeof data.message === "string" ? data.message : "Published successfully.";
   const referenceUrl = typeof data.referenceUrl === "string" ? data.referenceUrl : undefined;
+  const changed = typeof data.changed === "boolean" ? data.changed : undefined;
   return {
     versionId,
     message,
-    referenceUrl
+    referenceUrl,
+    changed
   };
 }
 
@@ -1092,12 +1271,18 @@ async function loadAndPostRelaySettings(): Promise<void> {
   postRelaySettingsToUi(settings);
 }
 
-void loadAndPostRelaySettings();
+async function initializeUiState(): Promise<void> {
+  await loadAndPostRelaySettings();
+  await postPublishChangePreview();
+}
+
+void initializeUiState();
 
 figma.ui.onmessage = async (msg: UiMessage) => {
   if (msg.type === "import-tokens") {
     try {
       const result = importTokens(msg.payload);
+      await postPublishChangePreview();
       figma.ui.postMessage({
         type: "import-result",
         payload: result
@@ -1139,6 +1324,11 @@ figma.ui.onmessage = async (msg: UiMessage) => {
     return;
   }
 
+  if (msg.type === "preview-publish-changes") {
+    await postPublishChangePreview();
+    return;
+  }
+
   if (msg.type === "save-relay-settings") {
     try {
       const saved = await saveRelaySettings(msg.payload);
@@ -1165,13 +1355,28 @@ figma.ui.onmessage = async (msg: UiMessage) => {
     try {
       const saved = await saveRelaySettings(msg.payload);
       const exported = exportTokens();
+      const publishPayload = stripVolatilePublishFields(exported);
+      const previousPayload = await getLastPublishedPayload();
+      let changeLog = buildPublishChangeLog(previousPayload, publishPayload);
       const publishResult = await publishToRelay(saved, exported);
+      if (publishResult.changed === false && changeLog.summary !== "No token changes detected.") {
+        changeLog = {
+          summary: "No token changes detected.",
+          lines: [],
+          added: 0,
+          changed: 0,
+          removed: 0
+        };
+      }
+      await setLastPublishedPayload(publishPayload);
       figma.ui.postMessage({
         type: "publish-result",
         payload: {
           versionId: publishResult.versionId,
           message: publishResult.message,
-          referenceUrl: publishResult.referenceUrl
+          referenceUrl: publishResult.referenceUrl,
+          changed: publishResult.changed,
+          changeLog
         }
       });
       figma.ui.postMessage({

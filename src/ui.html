@@ -9,6 +9,7 @@
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         margin: 16px;
         color: #1f2937;
+        background: linear-gradient(180deg, #fbfcfe 0%, #f4f6f9 100%);
       }
       h1 {
         margin: 0 0 12px;
@@ -44,6 +45,62 @@
         color: #6b7280;
         margin-top: 6px;
       }
+      .publish-panel {
+        border: 1px solid #d8dde6;
+        border-radius: 10px;
+        padding: 10px;
+        background: #ffffff;
+        box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+      }
+      .preview-head {
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .preview-hint {
+        margin-top: 4px;
+      }
+      .stats {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin: 6px 0;
+      }
+      .pill {
+        font-size: 11px;
+        border-radius: 999px;
+        padding: 3px 8px;
+        border: 1px solid transparent;
+      }
+      .pill.added {
+        background: #ecfdf3;
+        border-color: #a7f3d0;
+        color: #065f46;
+      }
+      .pill.changed {
+        background: #fffbeb;
+        border-color: #fde68a;
+        color: #92400e;
+      }
+      .pill.removed {
+        background: #fef2f2;
+        border-color: #fecaca;
+        color: #991b1b;
+      }
+      .summary {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 12px;
+        color: #374151;
+      }
+      .changelog {
+        margin-top: 8px;
+        max-height: 140px;
+      }
       button {
         border: 1px solid #d1d5db;
         background: #ffffff;
@@ -78,24 +135,39 @@
     </div>
 
     <div class="row">
-      <div class="section-title">Tokvista Publish</div>
-      <label class="field">
-        <input id="relayUrlInput" type="text" placeholder="Relay URL (e.g. https://your-app.vercel.app/api)" />
-      </label>
-      <label class="field">
-        <input id="projectIdInput" type="text" placeholder="Project ID" />
-      </label>
-      <label class="field">
-        <input id="environmentInput" type="text" placeholder="Environment (default: dev)" />
-      </label>
-      <label class="field">
-        <input id="publishKeyInput" type="password" placeholder="Publish key (leave blank to keep saved)" />
-      </label>
-      <div class="actions">
-        <button id="saveRelayBtn">Save Publish Settings</button>
-        <button id="publishBtn">Publish to Tokvista</button>
+      <div class="publish-panel">
+        <div class="section-title">Tokvista Publish</div>
+        <label class="field">
+          <input id="relayUrlInput" type="text" placeholder="Relay URL (e.g. https://your-app.vercel.app/api)" />
+        </label>
+        <label class="field">
+          <input id="projectIdInput" type="text" placeholder="Project ID" />
+        </label>
+        <label class="field">
+          <input id="environmentInput" type="text" placeholder="Environment (default: dev)" />
+        </label>
+        <label class="field">
+          <input id="publishKeyInput" type="password" placeholder="Publish key (leave blank to keep saved)" />
+        </label>
+        <div class="actions">
+          <button id="saveRelayBtn">Save Publish Settings</button>
+          <button id="publishBtn">Publish to Tokvista</button>
+        </div>
+        <div id="publishStatus" class="hint">Publish settings not configured.</div>
+
+        <div class="preview-head">
+          <div class="section-title" style="margin: 0">Change Preview</div>
+          <button id="refreshChangesBtn" type="button">Refresh Changes</button>
+        </div>
+        <div id="changeSource" class="hint preview-hint">Preview compares current file with last published baseline.</div>
+        <div class="stats">
+          <span id="addedCount" class="pill added">+0 Added</span>
+          <span id="changedCount" class="pill changed">~0 Changed</span>
+          <span id="removedCount" class="pill removed">-0 Removed</span>
+        </div>
+        <div id="changeSummary" class="summary">Loading change preview...</div>
+        <pre id="changeLog" class="changelog">No publish changelog yet.</pre>
       </div>
-      <div id="publishStatus" class="hint">Publish settings not configured.</div>
     </div>
 
     <pre id="output">No export yet.</pre>
@@ -111,7 +183,14 @@
       const publishKeyInput = document.getElementById("publishKeyInput");
       const saveRelayBtn = document.getElementById("saveRelayBtn");
       const publishBtn = document.getElementById("publishBtn");
+      const refreshChangesBtn = document.getElementById("refreshChangesBtn");
       const publishStatus = document.getElementById("publishStatus");
+      const changeSource = document.getElementById("changeSource");
+      const changeSummary = document.getElementById("changeSummary");
+      const addedCount = document.getElementById("addedCount");
+      const changedCount = document.getElementById("changedCount");
+      const removedCount = document.getElementById("removedCount");
+      const changeLog = document.getElementById("changeLog");
       const output = document.getElementById("output");
       let latestExportText = "";
 
@@ -182,6 +261,11 @@
         );
       });
 
+      refreshChangesBtn.addEventListener("click", () => {
+        changeSummary.textContent = "Refreshing change preview...";
+        parent.postMessage({ pluginMessage: { type: "preview-publish-changes" } }, "*");
+      });
+
       downloadBtn.addEventListener("click", () => {
         if (!latestExportText) {
           output.textContent = "No exported JSON available yet.";
@@ -211,6 +295,37 @@
         output.textContent = lines.join("\n");
       }
 
+      function setChangeCounters(added, changed, removed) {
+        addedCount.textContent = `+${added} Added`;
+        changedCount.textContent = `~${changed} Changed`;
+        removedCount.textContent = `-${removed} Removed`;
+      }
+
+      function renderPublishChangeLog(payload, sourceText) {
+        if (!payload || typeof payload !== "object") {
+          setChangeCounters(0, 0, 0);
+          changeSummary.textContent = "No publish changelog available.";
+          changeLog.textContent = "No publish changelog available.";
+          return;
+        }
+        const added = Number.isFinite(payload.added) ? Number(payload.added) : 0;
+        const changed = Number.isFinite(payload.changed) ? Number(payload.changed) : 0;
+        const removed = Number.isFinite(payload.removed) ? Number(payload.removed) : 0;
+        setChangeCounters(added, changed, removed);
+        const summary =
+          typeof payload.summary === "string" && payload.summary.trim()
+            ? payload.summary.trim()
+            : "No publish changelog available.";
+        changeSummary.textContent = summary;
+        if (typeof sourceText === "string" && sourceText.trim()) {
+          changeSource.textContent = sourceText;
+        }
+        const lines = Array.isArray(payload.lines)
+          ? payload.lines.filter((line) => typeof line === "string")
+          : [];
+        changeLog.textContent = lines.length > 0 ? lines.join("\n") : "No detailed token entries.";
+      }
+
       window.onmessage = (event) => {
         const msg = event.data.pluginMessage;
         if (!msg) return;
@@ -237,6 +352,22 @@
             payload.versionId
               ? `Published version ${payload.versionId}`
               : (payload.message || "Published successfully.");
+          renderPublishChangeLog(payload.changeLog, "Published diff against last baseline.");
+        }
+
+        if (msg.type === "publish-change-preview") {
+          const payload = msg.payload || {};
+          if (typeof payload.error === "string" && payload.error.trim()) {
+            setChangeCounters(0, 0, 0);
+            changeSource.textContent = "Preview unavailable.";
+            changeSummary.textContent = payload.error;
+            changeLog.textContent = payload.error;
+            return;
+          }
+          renderPublishChangeLog(
+            payload.changeLog,
+            "Preview compares current tokens with last published baseline."
+          );
         }
 
         if (msg.type === "export-result") {
@@ -256,6 +387,7 @@
       };
 
       parent.postMessage({ pluginMessage: { type: "load-relay-settings" } }, "*");
+      parent.postMessage({ pluginMessage: { type: "preview-publish-changes" } }, "*");
     </script>
   </body>
 </html>
