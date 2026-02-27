@@ -12,7 +12,7 @@ const RAW_TYPE_PLUGIN_KEY = "tokvista_raw_type";
 const COMPLEX_JSON_PLUGIN_KEY = "tokvista_complex_json";
 const RELAY_SETTINGS_KEY = "tokvista_relay_settings";
 const LAST_PUBLISHED_PAYLOAD_KEY = "tokvista_last_published_payload";
-const DEFAULT_RELAY_URL = "http://localhost:8787";
+const DEFAULT_RELAY_URL = "https://tokvista-plugin.vercel.app/api";
 const DEFAULT_RELAY_ENVIRONMENT = "dev";
 
 type UiMessage =

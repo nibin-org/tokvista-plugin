@@ -332,7 +332,7 @@
 
         if (msg.type === "relay-settings") {
           const payload = msg.payload || {};
-          relayUrlInput.value = payload.relayUrl || "http://localhost:8787";
+          relayUrlInput.value = payload.relayUrl || "https://tokvista-plugin.vercel.app/api";
           projectIdInput.value = payload.projectId || "";
           environmentInput.value = payload.environment || "dev";
           publishKeyInput.value = "";
