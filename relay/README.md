@@ -7,6 +7,7 @@ Secure publish relay for Tokvista plugin.
 - Relay validates project/publish key.
 - Relay writes to GitHub with server-side credentials.
 - Plugin never stores GitHub PAT.
+- Can run locally (`relay/server.mjs`) or as Vercel API routes (`/api/*`).
 
 ## Run
 ```bash
@@ -17,6 +18,15 @@ Default port: `8787`
 
 Health:
 `GET http://localhost:8787/health`
+
+## Vercel mode
+This repo includes Vercel functions:
+- `api/health`
+- `api/publish-tokens`
+- `api/index`
+
+In plugin settings use:
+- Relay URL: `https://<your-app>.vercel.app/api`
 
 ## Environment
 Relay loads environment from `.env` automatically.
@@ -62,6 +72,7 @@ Required fields in `.env`:
 ```
 
 If `localPath` is set, relay writes exported payload directly to that file.
+Note: `localPath` is for local relay only, not Vercel serverless.
 
 ## Publish API
 `POST /publish-tokens`

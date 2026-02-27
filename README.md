@@ -71,6 +71,35 @@ Notes:
 - Backend relay validates payload and writes to package/repository.
 - Relay can run in local file mode (`localPath`) with no GitHub integration.
 
+## Cloud Setup (Vercel)
+Use this for multi-user team workflow.
+
+1. Push this plugin repo to GitHub.
+2. Import this repo in Vercel and deploy.
+3. In Vercel Project Settings -> Environment Variables, set:
+   - `TOKVISTA_GITHUB_TOKEN` = GitHub token with repo write access
+   - `TOKVISTA_PROJECTS` = JSON string:
+```json
+{"project-alpha":{"publishKey":"replace-with-strong-secret","owner":"nibin-org","repo":"tokvista","branch":"main","path":"tokens.json"}}
+```
+4. Redeploy after saving env vars.
+5. Check:
+   - `https://<your-app>.vercel.app/api/health`
+   - `https://<your-app>.vercel.app/api`
+6. In Figma plugin publish settings:
+   - Relay URL: `https://<your-app>.vercel.app/api`
+   - Project ID: `project-alpha`
+   - Environment: `dev`
+   - Publish key: value from `TOKVISTA_PROJECTS`
+7. Update `manifest.json`:
+   - Add your Vercel domain in `networkAccess.allowedDomains`
+   - Rebuild plugin: `npm run build`
+   - Re-import plugin in Figma development plugins
+
+Notes:
+- Vercel relay uses GitHub write mode.
+- `localPath` mode is not supported in Vercel serverless runtime.
+
 ## Run Relay + Tokvista Demo (One Command)
 From `tokvista-plugin` folder:
 
