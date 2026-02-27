@@ -81,7 +81,7 @@ module.exports = async function handler(req, res) {
   const commitMessage = `chore(tokens): ${projectId} ${environment} ${versionId}`;
 
   try {
-    const githubPayload = await putContent({
+    const githubResult = await putContent({
       owner,
       repo,
       branch,
@@ -90,6 +90,14 @@ module.exports = async function handler(req, res) {
       message: commitMessage,
       content
     });
+    if (!githubResult.changed) {
+      sendJson(res, 200, {
+        message: "No changes to publish.",
+        changed: false
+      });
+      return;
+    }
+    const githubPayload = githubResult.payload;
 
     const referenceUrl =
       githubPayload && githubPayload.commit && typeof githubPayload.commit.html_url === "string"
@@ -99,11 +107,11 @@ module.exports = async function handler(req, res) {
     sendJson(res, 200, {
       versionId,
       message: "Published successfully.",
-      referenceUrl
+      referenceUrl,
+      changed: true
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     sendJson(res, 502, { error: message });
   }
 };
-

@@ -140,7 +140,7 @@ function normalizeRelaySettings(input: unknown, existingPublishKey: string): Rel
     throw new Error("Publish key is required.");
   }
 
-  const relayUrl = relayUrlInput.replace(/\/+$/, "");
+  const relayUrl = normalizeRelayUrl(relayUrlInput);
   return {
     relayUrl,
     projectId: projectIdInput,
@@ -149,15 +149,36 @@ function normalizeRelaySettings(input: unknown, existingPublishKey: string): Rel
   };
 }
 
-function sanitizeRelayErrorMessage(message: string): string {
-  const lowered = message.toLowerCase();
-  if (lowered.includes("unauthorized") || lowered.includes("forbidden")) {
+function normalizeRelayUrl(relayUrlInput: string): string {
+  const relayUrl = relayUrlInput.replace(/\/+$/, "");
+  if (/^https:\/\/[^/]+\.vercel\.app$/i.test(relayUrl)) {
+    return `${relayUrl}/api`;
+  }
+  return relayUrl;
+}
+
+function truncateRelayMessage(message: string): string {
+  return message.length > 240 ? `${message.slice(0, 240)}...` : message;
+}
+
+function buildRelayHttpErrorMessage(statusCode: number, backendMessage: string, endpoint: string): string {
+  const lowered = backendMessage.toLowerCase();
+  if (statusCode === 401 || statusCode === 403 || lowered.includes("unauthorized")) {
     return "Publish failed: unauthorized. Check project ID and publish key.";
   }
-  if (lowered.includes("network") || lowered.includes("fetch")) {
-    return "Publish failed: relay is unreachable.";
+  if (statusCode === 404) {
+    return `Publish failed: relay endpoint not found (404) at ${endpoint}. For Vercel, use Relay URL ending with /api.`;
   }
-  return message.length > 240 ? `${message.slice(0, 240)}...` : message;
+  if (statusCode >= 500) {
+    return `Publish failed: relay server error (${statusCode}). ${truncateRelayMessage(backendMessage)}`;
+  }
+  return `Publish failed (${statusCode}): ${truncateRelayMessage(backendMessage)}`;
+}
+
+function stripVolatilePublishFields(payload: ObjectLike): ObjectLike {
+  const nextPayload: ObjectLike = { ...payload };
+  delete nextPayload.$exportedAt;
+  return nextPayload;
 }
 
 async function getStoredRelaySettings(): Promise<RelaySettings | null> {
@@ -205,20 +226,31 @@ async function publishToRelay(
   exportPayload: ObjectLike
 ): Promise<RelayPublishResult> {
   const endpoint = `${settings.relayUrl}/publish-tokens`;
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      projectId: settings.projectId,
-      publishKey: settings.publishKey,
-      environment: settings.environment,
-      source: "figma",
-      fileKey: figma.fileKey || null,
-      payload: exportPayload
-    })
-  });
+  const publishPayload = stripVolatilePublishFields(exportPayload);
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        projectId: settings.projectId,
+        publishKey: settings.publishKey,
+        environment: settings.environment,
+        source: "figma",
+        fileKey: figma.fileKey || null,
+        payload: publishPayload
+      })
+    });
+  } catch (error) {
+    const reason = toErrorMessage(error);
+    throw new Error(
+      `Publish failed: could not reach relay at ${endpoint}. Check Relay URL and network access. (${truncateRelayMessage(
+        reason
+      )})`
+    );
+  }
 
   const rawText = await response.text();
   let data: ObjectLike = {};
@@ -234,8 +266,8 @@ async function publishToRelay(
     const backendMessage =
       typeof data.error === "string"
         ? data.error
-        : `Relay request failed (${response.status}).`;
-    throw new Error(sanitizeRelayErrorMessage(backendMessage));
+        : rawText || `Relay request failed (${response.status}).`;
+    throw new Error(buildRelayHttpErrorMessage(response.status, backendMessage, endpoint));
   }
 
   const versionId = typeof data.versionId === "string" ? data.versionId : "";

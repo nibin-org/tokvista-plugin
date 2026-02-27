@@ -87,7 +87,41 @@ function utf8ToBase64(input) {
   return Buffer.from(input, "utf8").toString("base64");
 }
 
-async function getContentSha({ owner, repo, branch, path, token }) {
+function base64ToUtf8(input) {
+  return Buffer.from(input, "base64").toString("utf8");
+}
+
+function normalizeValueForComparison(value, isRoot = false) {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeValueForComparison(item, false));
+  }
+  if (value && typeof value === "object") {
+    const out = {};
+    const keys = Object.keys(value).sort();
+    for (const key of keys) {
+      if (isRoot && key === "$exportedAt") {
+        continue;
+      }
+      out[key] = normalizeValueForComparison(value[key], false);
+    }
+    return out;
+  }
+  return value;
+}
+
+function normalizeContentForComparison(content) {
+  if (typeof content !== "string") {
+    return "";
+  }
+  try {
+    const parsed = JSON.parse(content);
+    return JSON.stringify(normalizeValueForComparison(parsed, true));
+  } catch {
+    return content;
+  }
+}
+
+async function getContentMeta({ owner, repo, branch, path, token }) {
   const encodedPath = path
     .split("/")
     .map((segment) => encodeURIComponent(segment))
@@ -104,7 +138,15 @@ async function getContentSha({ owner, repo, branch, path, token }) {
     throw new Error(`GitHub read failed (${response.status}): ${text}`);
   }
   const payload = await response.json();
-  return typeof payload.sha === "string" ? payload.sha : null;
+  const sha = typeof payload.sha === "string" ? payload.sha : null;
+  const content =
+    typeof payload.content === "string" && payload.encoding === "base64"
+      ? base64ToUtf8(payload.content.replace(/\n/g, ""))
+      : null;
+  return {
+    sha,
+    content
+  };
 }
 
 async function putContent({ owner, repo, branch, path, token, message, content }) {
@@ -115,14 +157,23 @@ async function putContent({ owner, repo, branch, path, token, message, content }
   const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(
     repo
   )}/contents/${encodedPath}`;
-  const existingSha = await getContentSha({ owner, repo, branch, path, token });
+  const existing = await getContentMeta({ owner, repo, branch, path, token });
+  const nextComparable = normalizeContentForComparison(content);
+  if (existing && typeof existing.content === "string") {
+    const existingComparable = normalizeContentForComparison(existing.content);
+    if (existingComparable === nextComparable) {
+      return {
+        changed: false
+      };
+    }
+  }
   const body = {
     message,
     content: utf8ToBase64(content),
     branch
   };
-  if (existingSha) {
-    body.sha = existingSha;
+  if (existing && existing.sha) {
+    body.sha = existing.sha;
   }
 
   const response = await githubRequest(url, token, {
@@ -133,7 +184,10 @@ async function putContent({ owner, repo, branch, path, token, message, content }
     const text = await response.text();
     throw new Error(`GitHub write failed (${response.status}): ${text}`);
   }
-  return response.json();
+  return {
+    changed: true,
+    payload: await response.json()
+  };
 }
 
 module.exports = {
@@ -145,4 +199,3 @@ module.exports = {
   readJsonBody,
   sendJson
 };
-
