@@ -6,7 +6,7 @@
   "ui": "dist/ui.html",
   "editorType": ["figma"],
   "networkAccess": {
-    "allowedDomains": ["https://api.tokvista.com"],
+    "allowedDomains": ["https://tokvista-plugin.vercel.app"],
     "devAllowedDomains": ["http://localhost:8787"],
     "reasoning": "Tokvista plugin publishes token exports to a project relay API."
   }
