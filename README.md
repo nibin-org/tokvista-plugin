@@ -71,4 +71,17 @@ Notes:
 - Backend relay validates payload and writes to package/repository.
 - Relay can run in local file mode (`localPath`) with no GitHub integration.
 
+## Run Relay + Tokvista Demo (One Command)
+From `tokvista-plugin` folder:
+
+```bash
+npm run dev:stack
+```
+
+This starts:
+- Tokvista relay at `http://localhost:8787`
+- Tokvista demo app from `../tokvista/demo` (default Next.js dev port: `3000`)
+
+Stop both with `Ctrl + C`.
+
 Test file: [examples/tokens.sample.json](examples/tokens.sample.json)
