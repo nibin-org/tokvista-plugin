@@ -1,0 +1,13 @@
+{
+  "name": "Tokvista",
+  "id": "tokvista-plugin-dev",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "dist/ui.html",
+  "editorType": ["figma"],
+  "networkAccess": {
+    "allowedDomains": ["https://api.tokvista.com"],
+    "devAllowedDomains": ["http://localhost:8787"],
+    "reasoning": "Tokvista plugin publishes token exports to a project relay API."
+  }
+}

@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tokvista</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        margin: 16px;
+        color: #1f2937;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 16px;
+      }
+      .row {
+        margin: 12px 0;
+      }
+      .section-title {
+        margin: 8px 0 6px;
+        font-size: 12px;
+        color: #374151;
+        font-weight: 600;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .field {
+        display: block;
+        margin: 6px 0;
+      }
+      .field input {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 8px;
+      }
+      .hint {
+        font-size: 11px;
+        color: #6b7280;
+        margin-top: 6px;
+      }
+      button {
+        border: 1px solid #d1d5db;
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 8px 12px;
+        cursor: pointer;
+      }
+      pre {
+        background: #f3f4f6;
+        border-radius: 8px;
+        padding: 10px;
+        font-size: 11px;
+        max-height: 220px;
+        overflow: auto;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Tokvista Plugin</h1>
+
+    <div class="row">
+      <input id="tokensFile" type="file" accept="application/json" />
+      <button id="importBtn">Import Tokens</button>
+    </div>
+
+    <div class="row">
+      <div class="actions">
+        <button id="exportBtn">Export Tokens</button>
+        <button id="downloadBtn" disabled>Download JSON</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="section-title">Tokvista Publish</div>
+      <label class="field">
+        <input id="relayUrlInput" type="text" placeholder="Relay URL (e.g. http://localhost:8787)" />
+      </label>
+      <label class="field">
+        <input id="projectIdInput" type="text" placeholder="Project ID" />
+      </label>
+      <label class="field">
+        <input id="environmentInput" type="text" placeholder="Environment (default: dev)" />
+      </label>
+      <label class="field">
+        <input id="publishKeyInput" type="password" placeholder="Publish key (leave blank to keep saved)" />
+      </label>
+      <div class="actions">
+        <button id="saveRelayBtn">Save Publish Settings</button>
+        <button id="publishBtn">Publish to Tokvista</button>
+      </div>
+      <div id="publishStatus" class="hint">Publish settings not configured.</div>
+    </div>
+
+    <pre id="output">No export yet.</pre>
+
+    <script>
+      const tokensFile = document.getElementById("tokensFile");
+      const importBtn = document.getElementById("importBtn");
+      const exportBtn = document.getElementById("exportBtn");
+      const downloadBtn = document.getElementById("downloadBtn");
+      const relayUrlInput = document.getElementById("relayUrlInput");
+      const projectIdInput = document.getElementById("projectIdInput");
+      const environmentInput = document.getElementById("environmentInput");
+      const publishKeyInput = document.getElementById("publishKeyInput");
+      const saveRelayBtn = document.getElementById("saveRelayBtn");
+      const publishBtn = document.getElementById("publishBtn");
+      const publishStatus = document.getElementById("publishStatus");
+      const output = document.getElementById("output");
+      let latestExportText = "";
+
+      function downloadTextFile(filename, text) {
+        const blob = new Blob([text], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
+      }
+
+      importBtn.addEventListener("click", async () => {
+        const fileList = tokensFile.files;
+        const file = fileList && fileList.length > 0 ? fileList[0] : null;
+        if (!file) {
+          output.textContent = "Select a tokens.json file first.";
+          return;
+        }
+
+        try {
+          const text = await file.text();
+          const json = JSON.parse(text);
+          parent.postMessage(
+            {
+              pluginMessage: { type: "import-tokens", payload: json }
+            },
+            "*"
+          );
+          output.textContent = "Import sent to plugin runtime.";
+        } catch (error) {
+          output.textContent = `Invalid JSON: ${error}`;
+        }
+      });
+
+      exportBtn.addEventListener("click", () => {
+        parent.postMessage({ pluginMessage: { type: "export-tokens" } }, "*");
+      });
+
+      function readRelayPayload() {
+        return {
+          relayUrl: relayUrlInput.value.trim(),
+          projectId: projectIdInput.value.trim(),
+          environment: environmentInput.value.trim(),
+          publishKey: publishKeyInput.value.trim()
+        };
+      }
+
+      saveRelayBtn.addEventListener("click", () => {
+        parent.postMessage(
+          {
+            pluginMessage: { type: "save-relay-settings", payload: readRelayPayload() }
+          },
+          "*"
+        );
+      });
+
+      publishBtn.addEventListener("click", () => {
+        publishStatus.textContent = "Publishing to Tokvista...";
+        parent.postMessage(
+          {
+            pluginMessage: { type: "publish-tokvista", payload: readRelayPayload() }
+          },
+          "*"
+        );
+      });
+
+      downloadBtn.addEventListener("click", () => {
+        if (!latestExportText) {
+          output.textContent = "No exported JSON available yet.";
+          return;
+        }
+        downloadTextFile("tokvista.tokens.json", latestExportText);
+      });
+
+      function renderImportResult(result) {
+        const lines = [
+          `Collection: ${result.collection}`,
+          `Imported: ${result.imported}`,
+          `Created: ${result.created}`,
+          `Updated: ${result.updated}`,
+          `Replaced: ${result.replaced || 0}`,
+          `Skipped: ${result.skipped}`
+        ];
+        if (Array.isArray(result.warnings) && result.warnings.length > 0) {
+          lines.push("", "Warnings:");
+          for (const warning of result.warnings.slice(0, 20)) {
+            lines.push(`- ${warning}`);
+          }
+          if (result.warnings.length > 20) {
+            lines.push(`- ...and ${result.warnings.length - 20} more`);
+          }
+        }
+        output.textContent = lines.join("\n");
+      }
+
+      window.onmessage = (event) => {
+        const msg = event.data.pluginMessage;
+        if (!msg) return;
+
+        if (msg.type === "relay-settings") {
+          const payload = msg.payload || {};
+          relayUrlInput.value = payload.relayUrl || "http://localhost:8787";
+          projectIdInput.value = payload.projectId || "";
+          environmentInput.value = payload.environment || "dev";
+          publishKeyInput.value = "";
+          publishStatus.textContent = payload.publishKeySaved
+            ? "Publish settings loaded. Key already saved."
+            : "Publish settings loaded. Add publish key and save.";
+        }
+
+        if (msg.type === "relay-settings-saved") {
+          publishStatus.textContent = "Publish settings saved.";
+          publishKeyInput.value = "";
+        }
+
+        if (msg.type === "publish-result") {
+          const payload = msg.payload || {};
+          publishStatus.textContent =
+            payload.versionId
+              ? `Published version ${payload.versionId}`
+              : (payload.message || "Published successfully.");
+        }
+
+        if (msg.type === "export-result") {
+          latestExportText = JSON.stringify(msg.payload, null, 2);
+          output.textContent = latestExportText;
+          downloadBtn.disabled = false;
+        }
+
+        if (msg.type === "import-result") {
+          renderImportResult(msg.payload);
+        }
+
+        if (msg.type === "error") {
+          output.textContent = `Error: ${msg.payload}`;
+          publishStatus.textContent = `Error: ${msg.payload}`;
+        }
+      };
+
+      parent.postMessage({ pluginMessage: { type: "load-relay-settings" } }, "*");
+    </script>
+  </body>
+</html>

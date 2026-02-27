@@ -1,0 +1,75 @@
+{
+  "versionId": "v20260227131208654",
+  "projectId": "project-alpha",
+  "environment": "dev",
+  "source": "figma",
+  "fileKey": null,
+  "createdAt": "2026-02-27T13:12:08.659Z",
+  "payload": {
+    "$schemaVersion": "1.0.0",
+    "$format": "tokvista-plugin-v1",
+    "$source": "figma",
+    "$exportedAt": "2026-02-27T13:12:08.618Z",
+    "meta": {
+      "exportScope": "all-local-collections",
+      "collections": [
+        "Tokvista"
+      ]
+    },
+    "summary": {
+      "exportedCount": 9,
+      "exportedAliasCount": 2,
+      "skippedCount": 0
+    },
+    "tokens": {
+      "Tokvista": {
+        "color": {
+          "brand": {
+            "primary": {
+              "type": "color",
+              "value": "#2563eb"
+            },
+            "primaryAlias": {
+              "type": "color",
+              "value": "{Tokvista.color.brand.primary}"
+            },
+            "secondary": {
+              "type": "color",
+              "value": "#0f172ab8"
+            }
+          },
+          "surface": {
+            "base": {
+              "type": "color",
+              "value": "#ffffff"
+            }
+          }
+        },
+        "radius": {
+          "button": {
+            "type": "number",
+            "value": 10
+          }
+        },
+        "spacing": {
+          "md": {
+            "type": "number",
+            "value": 16
+          },
+          "mdAlias": {
+            "type": "number",
+            "value": "{Tokvista.spacing.md}"
+          },
+          "sm": {
+            "type": "number",
+            "value": 8
+          },
+          "xs": {
+            "type": "number",
+            "value": 4
+          }
+        }
+      }
+    }
+  }
+}

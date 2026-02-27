@@ -1,0 +1,52 @@
+{
+  "$schemaVersion": "0.2.0",
+  "collection": "Tokvista",
+  "tokens": {
+    "color": {
+      "brand": {
+        "primary": {
+          "$type": "color",
+          "$value": "#2563eb"
+        },
+        "primaryAlias": {
+          "$type": "color",
+          "$value": "{color.brand.primary}"
+        },
+        "secondary": {
+          "$type": "color",
+          "$value": "rgba(15, 23, 42, 0.72)"
+        }
+      },
+      "surface": {
+        "base": {
+          "$type": "color",
+          "$value": "#ffffff"
+        }
+      }
+    },
+    "spacing": {
+      "xs": {
+        "$type": "number",
+        "$value": 4
+      },
+      "sm": {
+        "$type": "number",
+        "$value": 8
+      },
+      "md": {
+        "$type": "number",
+        "$value": 16
+      },
+      "mdAlias": {
+        "$type": "number",
+        "$value": "{spacing.md}"
+      }
+    },
+    "radius": {
+      "button": {
+        "$type": "number",
+        "$value": 10
+      }
+    }
+  }
+}
