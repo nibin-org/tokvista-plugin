@@ -374,7 +374,7 @@ async function setLastPublishedPayload(payload: ObjectLike): Promise<void> {
 async function postPublishChangePreview(): Promise<void> {
   try {
     const previousPayload = await getLastPublishedPayload();
-    const exported = exportTokens();
+    const exported = await exportTokens();
     const publishPayload = stripVolatilePublishFields(exported);
     const changeLog = buildPublishChangeLog(previousPayload, publishPayload);
     figma.ui.postMessage({
@@ -666,21 +666,21 @@ function replaceVariableWithType(
   return figma.variables.createVariable(name, collection, resolvedType);
 }
 
-function getOrCreateCollection(name: string): VariableCollection {
-  const existing = figma.variables
-    .getLocalVariableCollections()
-    .find((collection) => collection.name === name);
+async function getOrCreateCollection(name: string): Promise<VariableCollection> {
+  const existing = (await figma.variables.getLocalVariableCollectionsAsync()).find(
+    (collection) => collection.name === name
+  );
   if (existing) {
     return existing;
   }
   return figma.variables.createVariableCollection(name);
 }
 
-function ensureCollectionForPayload(payload: unknown): VariableCollection {
+async function ensureCollectionForPayload(payload: unknown): Promise<VariableCollection> {
   if (isObjectLike(payload) && typeof payload.collection === "string" && payload.collection.trim()) {
-    return getOrCreateCollection(payload.collection.trim());
+    return await getOrCreateCollection(payload.collection.trim());
   }
-  return getOrCreateCollection(DEFAULT_COLLECTION_NAME);
+  return await getOrCreateCollection(DEFAULT_COLLECTION_NAME);
 }
 
 function parseAliasReference(
@@ -834,15 +834,15 @@ function variableTypeToTokenValueType(resolvedType: VariableResolvedDataType): T
   return null;
 }
 
-function importTokens(payload: unknown): ImportResult {
-  const collection = ensureCollectionForPayload(payload);
+async function importTokens(payload: unknown): Promise<ImportResult> {
+  const collection = await ensureCollectionForPayload(payload);
   const modeId = collection.defaultModeId;
   const tokens = parseTokens(payload);
 
-  const localCollections = figma.variables.getLocalVariableCollections();
+  const localCollections = await figma.variables.getLocalVariableCollectionsAsync();
   const collectionById = new Map(localCollections.map((item) => [item.id, item]));
   const collectionByName = new Map(localCollections.map((item) => [item.name, item]));
-  const allLocalVariables = figma.variables.getLocalVariables();
+  const allLocalVariables = await figma.variables.getLocalVariablesAsync();
 
   const variableByNameInTarget = new Map<string, Variable>();
   const variableByScopedName = new Map<string, Variable>();
@@ -1173,14 +1173,14 @@ function toTokenValueForExport(variable: Variable, value: string): unknown {
   return value;
 }
 
-function exportTokens(): ObjectLike {
-  const collections = figma.variables.getLocalVariableCollections();
+async function exportTokens(): Promise<ObjectLike> {
+  const collections = await figma.variables.getLocalVariableCollectionsAsync();
   if (collections.length === 0) {
     throw new Error("No local variable collections found.");
   }
 
   const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
-  const variables = figma.variables.getLocalVariables();
+  const variables = await figma.variables.getLocalVariablesAsync();
   const sortedVariables = [...variables].sort((left, right) => {
     const leftCollection = collectionById.get(left.variableCollectionId)?.name || "";
     const rightCollection = collectionById.get(right.variableCollectionId)?.name || "";
@@ -1326,7 +1326,7 @@ void initializeUiState();
 figma.ui.onmessage = async (msg: UiMessage) => {
   if (msg.type === "import-tokens") {
     try {
-      const result = importTokens(msg.payload);
+      const result = await importTokens(msg.payload);
       await postPublishChangePreview();
       figma.ui.postMessage({
         type: "import-result",
@@ -1345,7 +1345,7 @@ figma.ui.onmessage = async (msg: UiMessage) => {
 
   if (msg.type === "export-tokens") {
     try {
-      const payload = exportTokens();
+      const payload = await exportTokens();
       figma.ui.postMessage({
         type: "export-result",
         payload
@@ -1409,7 +1409,7 @@ figma.ui.onmessage = async (msg: UiMessage) => {
   if (msg.type === "publish-tokvista") {
     try {
       const saved = await saveRelaySettings(msg.payload);
-      const exported = exportTokens();
+      const exported = await exportTokens();
       const publishPayload = stripVolatilePublishFields(exported);
       const previousPayload = await getLastPublishedPayload();
       let changeLog = buildPublishChangeLog(previousPayload, publishPayload);
