@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tokvista — Cover Image</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  width: 1920px; height: 960px;
+  background: #080808;
+  font-family: 'Geist', sans-serif;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── BACKGROUND LAYERS ── */
+.bg-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.bg-glow-1 {
+  position: absolute;
+  width: 800px; height: 800px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%);
+  top: -200px; left: 300px;
+}
+
+.bg-glow-2 {
+  position: absolute;
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%);
+  bottom: -100px; right: 600px;
+}
+
+.bg-glow-3 {
+  position: absolute;
+  width: 400px; height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(74,222,128,0.07) 0%, transparent 70%);
+  top: 200px; right: 200px;
+}
+
+/* ── LEFT — HEADLINE SECTION ── */
+.left {
+  position: absolute;
+  left: 120px; top: 50%;
+  transform: translateY(-50%);
+  width: 680px;
+}
+
+.badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 100px;
+  padding: 5px 14px 5px 8px;
+  margin-bottom: 32px;
+}
+
+.badge-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 8px #4ade80;
+}
+
+.badge-text {
+  font-size: 12px; font-weight: 500;
+  color: rgba(255,255,255,0.6);
+  letter-spacing: 0.02em;
+}
+
+.brand-row {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 28px;
+}
+
+.brand-mark {
+  width: 52px; height: 52px;
+  background: #fafafa;
+  border-radius: 13px;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+
+.brand-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 52px; font-weight: 800;
+  color: #fafafa;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.headline {
+  font-family: 'Syne', sans-serif;
+  font-size: 58px; font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: #fafafa;
+  margin-bottom: 24px;
+}
+
+.headline em {
+  font-style: normal;
+  background: linear-gradient(135deg, #60a5fa 0%, #818cf8 50%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subline {
+  font-size: 20px;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.5;
+  margin-bottom: 48px;
+  max-width: 520px;
+  font-weight: 400;
+}
+
+.feature-list {
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+.feature {
+  display: flex; align-items: center; gap: 10px;
+}
+
+.feature-check {
+  width: 18px; height: 18px; border-radius: 5px;
+  background: rgba(74,222,128,0.12);
+  border: 1px solid rgba(74,222,128,0.25);
+  display: grid; place-items: center; flex-shrink: 0;
+}
+
+.feature-text {
+  font-size: 15px;
+  color: rgba(255,255,255,0.55);
+  font-weight: 400;
+}
+
+/* ── CENTER DIVIDER ── */
+.divider-line {
+  position: absolute;
+  left: 860px; top: 80px; bottom: 80px;
+  width: 1px;
+  background: linear-gradient(to bottom,
+    transparent 0%,
+    rgba(255,255,255,0.08) 20%,
+    rgba(255,255,255,0.08) 80%,
+    transparent 100%
+  );
+}
+
+/* ── RIGHT — PLUGIN UI MOCKUP ── */
+.right {
+  position: absolute;
+  right: 80px; top: 50%;
+  transform: translateY(-50%);
+  width: 900px;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+/* Plugin panel */
+.plugin {
+  width: 320px;
+  background: #111111;
+  border: 1px solid #2a2a2a;
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.04),
+    0 32px 80px rgba(0,0,0,0.8),
+    0 8px 24px rgba(0,0,0,0.4);
+}
+
+.plugin-titlebar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #1e1e1e;
+  background: #0e0e0e;
+}
+
+.plugin-logo {
+  width: 18px; height: 18px;
+  background: #fafafa; border-radius: 4px;
+  display: grid; place-items: center;
+}
+
+.plugin-title-text {
+  font-size: 11px; font-weight: 600;
+  color: rgba(255,255,255,0.7);
+}
+
+.plugin-close {
+  margin-left: auto;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #3a3a3a;
+}
+
+/* Tabs */
+.plugin-tabs {
+  display: flex;
+  padding: 8px 12px 0;
+  border-bottom: 1px solid #1e1e1e;
+  background: #0e0e0e;
+  gap: 2px;
+}
+
+.ptab {
+  height: 26px; padding: 0 8px;
+  font-size: 10px; font-weight: 500;
+  color: rgba(255,255,255,0.35);
+  display: flex; align-items: center; gap: 4px;
+  border-bottom: 1.5px solid transparent;
+  margin-bottom: -1px;
+}
+
+.ptab.active {
+  color: rgba(255,255,255,0.85);
+  border-bottom-color: rgba(255,255,255,0.7);
+}
+
+.ptab-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+}
+
+/* Plugin body */
+.plugin-body { padding: 10px 12px; }
+
+/* Sync row */
+.sync-row {
+  display: flex; align-items: center;
+  padding: 8px 10px;
+  background: #161616;
+  border: 1px solid #222;
+  border-radius: 7px;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.sync-icon {
+  width: 22px; height: 22px;
+  background: #1e1e1e; border: 1px solid #2a2a2a;
+  border-radius: 5px; display: grid; place-items: center; flex-shrink: 0;
+}
+
+.sync-label { font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.7); }
+.sync-meta  { font-size: 9px; color: rgba(255,255,255,0.3); }
+
+.sync-btn {
+  margin-left: auto;
+  background: #222; border: 1px solid #333;
+  border-radius: 5px; padding: 3px 8px;
+  font-size: 9px; font-weight: 500;
+  color: rgba(255,255,255,0.6);
+}
+
+/* Stats */
+.stat-row {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 5px; margin-bottom: 10px;
+}
+
+.stat {
+  background: #161616; border: 1px solid #222;
+  border-radius: 6px; padding: 6px 8px; text-align: center;
+}
+
+.stat-n { font-size: 14px; font-weight: 600; color: #fafafa; letter-spacing: -0.02em; }
+.stat-l { font-size: 8px; color: rgba(255,255,255,0.3); margin-top: 1px; }
+
+/* Section label */
+.slabel {
+  font-size: 8px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: rgba(255,255,255,0.25);
+  margin-bottom: 5px; margin-top: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.slabel::after { content: ''; flex: 1; height: 1px; background: #1e1e1e; }
+
+/* Token table */
+.tok-table {
+  border: 1px solid #1e1e1e; border-radius: 7px; overflow: hidden;
+}
+
+.tok-head {
+  display: grid; grid-template-columns: 20px 1fr auto;
+  padding: 0 8px; height: 22px; align-items: center; gap: 6px;
+  background: #161616; border-bottom: 1px solid #1e1e1e;
+}
+
+.tok-th { font-size: 8px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: rgba(255,255,255,0.2); }
+
+.tok-row {
+  display: grid; grid-template-columns: 20px 1fr auto;
+  padding: 0 8px; height: 28px; align-items: center; gap: 6px;
+  border-bottom: 1px solid #1a1a1a;
+}
+.tok-row:last-child { border-bottom: none; }
+
+.tok-sw { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.06); }
+.tok-name { font-family: 'DM Mono', monospace; font-size: 8.5px; color: rgba(255,255,255,0.4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tok-val  { font-family: 'DM Mono', monospace; font-size: 8.5px; color: rgba(255,255,255,0.7); font-weight: 500; }
+
+/* Publish section */
+.pub-banner {
+  display: flex; align-items: center;
+  padding: 7px 10px;
+  background: rgba(250,204,21,0.06);
+  border: 1px solid rgba(250,204,21,0.2);
+  border-radius: 6px; margin-bottom: 6px; gap: 6px; margin-top: 8px;
+}
+
+.pub-text { font-size: 9px; color: #facc15; flex: 1; font-weight: 500; }
+.pub-review { font-size: 8px; color: #facc15; border: 1px solid rgba(250,204,21,0.3); border-radius: 4px; padding: 2px 6px; background: none; }
+
+.pub-btn {
+  width: 100%; background: #fafafa;
+  border-radius: 6px; padding: 7px;
+  text-align: center; font-size: 10px;
+  font-weight: 600; color: #09090b;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+
+/* ── TOKEN SHOWCASE PANELS ── */
+.showcase {
+  flex: 1;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+/* Color showcase */
+.showcase-card {
+  background: #111111;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px; overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+}
+
+.sc-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  background: #0e0e0e;
+  border-bottom: 1px solid #1e1e1e;
+}
+
+.sc-title { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.5); letter-spacing: 0.04em; text-transform: uppercase; }
+.sc-count { font-family: 'DM Mono', monospace; font-size: 9px; color: rgba(255,255,255,0.25); background: #1a1a1a; border: 1px solid #222; border-radius: 8px; padding: 1px 6px; }
+
+/* Color strip */
+.color-strip { display: flex; height: 40px; }
+.cs { flex: 1; }
+
+/* Color rows */
+.color-rows { padding: 0; }
+.cr {
+  display: grid; grid-template-columns: 28px 1fr auto;
+  align-items: center; gap: 8px;
+  padding: 7px 14px;
+  border-bottom: 1px solid #161616;
+}
+.cr:last-child { border-bottom: none; }
+.cr-sw { width: 20px; height: 20px; border-radius: 5px; border: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; }
+.cr-name { font-family: 'DM Mono', monospace; font-size: 10px; color: rgba(255,255,255,0.45); }
+.cr-val  { font-family: 'DM Mono', monospace; font-size: 10px; color: rgba(255,255,255,0.65); font-weight: 500; }
+
+/* Spacing bars */
+.spacing-rows { padding: 8px 0; }
+.sr {
+  display: grid; grid-template-columns: 100px 60px 1fr;
+  align-items: center; gap: 8px;
+  padding: 5px 14px;
+  border-bottom: 1px solid #161616;
+}
+.sr:last-child { border-bottom: none; }
+.sr-name { font-family: 'DM Mono', monospace; font-size: 10px; color: rgba(255,255,255,0.4); }
+.sr-val  { font-family: 'DM Mono', monospace; font-size: 10px; color: rgba(255,255,255,0.65); font-weight: 500; text-align: right; }
+.sr-bar-wrap { position: relative; height: 20px; display: flex; align-items: center; }
+.sr-tick-left { position: absolute; left: 0; top: 2px; bottom: 2px; width: 1px; background: rgba(255,255,255,0.15); }
+.sr-bar { height: 8px; border-radius: 0 2px 2px 0; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.05); }
+
+/* Typography rows */
+.typo-rows { padding: 8px 0; }
+.tr {
+  display: grid; grid-template-columns: 100px 1fr;
+  align-items: center; gap: 8px;
+  padding: 6px 14px;
+  border-bottom: 1px solid #161616;
+}
+.tr:last-child { border-bottom: none; }
+.tr-name { font-family: 'DM Mono', monospace; font-size: 10px; color: rgba(255,255,255,0.35); }
+.tr-preview { color: rgba(255,255,255,0.7); overflow: hidden; white-space: nowrap; }
+
+/* ── FLOATING LABELS ── */
+.float-label {
+  position: absolute;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.2);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ── CONNECTOR LINES ── */
+.connector {
+  position: absolute;
+  border: 1px dashed rgba(255,255,255,0.05);
+}
+
+/* ── BOTTOM STRIP ── */
+.bottom-strip {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(96,165,250,0.4) 20%,
+    rgba(129,140,248,0.6) 50%,
+    rgba(167,139,250,0.4) 80%,
+    transparent 100%
+  );
+}
+
+/* ── CLI HINT ── */
+.cli-badge {
+  position: absolute;
+  bottom: 36px; left: 120px;
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+  padding: 8px 14px;
+}
+
+.cli-text {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  color: rgba(255,255,255,0.35);
+}
+
+.cli-text span { color: #60a5fa; }
+</style>
+</head>
+<body>
+
+<!-- BG -->
+<div class="bg-grid"></div>
+<div class="bg-glow-1"></div>
+<div class="bg-glow-2"></div>
+<div class="bg-glow-3"></div>
+
+<!-- LEFT HERO TEXT -->
+<div class="left">
+  <div class="badge">
+    <div class="badge-dot"></div>
+    <span class="badge-text">Figma Plugin + npm CLI</span>
+  </div>
+
+  <div class="brand-row">
+    <div class="brand-mark">
+      <svg width="28" height="28" viewBox="0 0 12 12" fill="none">
+        <rect x="1" y="1" width="4.5" height="4.5" rx="1" fill="#09090b"/>
+        <rect x="6.5" y="1" width="4.5" height="4.5" rx="1" fill="#09090b" opacity=".5"/>
+        <rect x="1" y="6.5" width="4.5" height="4.5" rx="1" fill="#09090b" opacity=".5"/>
+        <rect x="6.5" y="6.5" width="4.5" height="4.5" rx="1" fill="#09090b" opacity=".25"/>
+      </svg>
+    </div>
+    <span class="brand-name">tokvista</span>
+  </div>
+
+  <div class="headline">
+    Visual token docs,<br><em>inside Figma.</em>
+  </div>
+
+  <div class="subline">
+    Sync your Figma variables. Preview every token beautifully. Export for developers. Publish in one click.
+  </div>
+
+  <div class="feature-list">
+    <div class="feature">
+      <div class="feature-check">
+        <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span class="feature-text">Live sync from Figma variables — no Token Studio needed</span>
+    </div>
+    <div class="feature">
+      <div class="feature-check">
+        <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span class="feature-text">Download as tokens.json, CSS, SCSS, or Tailwind</span>
+    </div>
+    <div class="feature">
+      <div class="feature-check">
+        <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span class="feature-text">Track changes between publishes with a visual diff</span>
+    </div>
+    <div class="feature">
+      <div class="feature-check">
+        <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span class="feature-text">Also available as <code style="font-family:'DM Mono';color:#60a5fa">npx tokvista tokens.json</code></span>
+    </div>
+  </div>
+</div>
+
+<!-- DIVIDER -->
+<div class="divider-line"></div>
+
+<!-- RIGHT MOCKUP AREA -->
+<div class="right">
+
+  <!-- PLUGIN PANEL -->
+  <div class="plugin">
+    <div class="plugin-titlebar">
+      <div class="plugin-logo">
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+          <rect x="1" y="1" width="4.5" height="4.5" rx="1" fill="#09090b"/>
+          <rect x="6.5" y="1" width="4.5" height="4.5" rx="1" fill="#09090b" opacity=".5"/>
+          <rect x="1" y="6.5" width="4.5" height="4.5" rx="1" fill="#09090b" opacity=".5"/>
+          <rect x="6.5" y="6.5" width="4.5" height="4.5" rx="1" fill="#09090b" opacity=".25"/>
+        </svg>
+      </div>
+      <span class="plugin-title-text">Tokvista</span>
+      <div class="plugin-close"></div>
+    </div>
+
+    <div class="plugin-tabs">
+      <div class="ptab active">
+        <div class="ptab-dot" style="background:#fafafa;opacity:.7"></div>
+        Home
+      </div>
+      <div class="ptab">
+        <div class="ptab-dot" style="background:#818cf8"></div>
+        Import
+      </div>
+      <div class="ptab">
+        <div class="ptab-dot" style="background:#facc15"></div>
+        Changes
+      </div>
+      <div class="ptab">
+        <div class="ptab-dot" style="background:#71717a"></div>
+        Settings
+      </div>
+    </div>
+
+    <div class="plugin-body">
+
+      <!-- Sync -->
+      <div class="sync-row">
+        <div class="sync-icon">
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/></svg>
+        </div>
+        <div>
+          <div class="sync-label">Figma Variables</div>
+          <div class="sync-meta">85 tokens · synced just now</div>
+        </div>
+        <div class="sync-btn">Sync</div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stat-row">
+        <div class="stat"><div class="stat-n">24</div><div class="stat-l">Colors</div></div>
+        <div class="stat"><div class="stat-n">15</div><div class="stat-l">Spacing</div></div>
+        <div class="stat"><div class="stat-n">34</div><div class="stat-l">Typo</div></div>
+        <div class="stat"><div class="stat-n">12</div><div class="stat-l">Other</div></div>
+      </div>
+
+      <!-- Token preview -->
+      <div class="slabel">Token preview</div>
+      <div class="tok-table">
+        <div class="tok-head">
+          <span></span>
+          <span class="tok-th">Token</span>
+          <span class="tok-th">Value</span>
+        </div>
+        <div class="tok-row"><div class="tok-sw" style="background:#3B82F6"></div><span class="tok-name">--color-primary</span><span class="tok-val">#3B82F6</span></div>
+        <div class="tok-row"><div class="tok-sw" style="background:#22C55E"></div><span class="tok-name">--color-success</span><span class="tok-val">#22C55E</span></div>
+        <div class="tok-row"><div class="tok-sw" style="background:#EF4444"></div><span class="tok-name">--color-danger</span><span class="tok-val">#EF4444</span></div>
+        <div class="tok-row"><div class="tok-sw" style="background:#F59E0B"></div><span class="tok-name">--color-warning</span><span class="tok-val">#F59E0B</span></div>
+        <div class="tok-row"><div class="tok-sw" style="background:#1e1e1e;border:1px solid #333"></div><span class="tok-name">--spacing-4</span><span class="tok-val">16px</span></div>
+      </div>
+
+      <!-- Publish -->
+      <div class="pub-banner">
+        <svg width="9" height="9" viewBox="0 0 16 16" fill="none"><path d="M8 2a6 6 0 1 0 0 12A6 6 0 0 0 8 2ZM8 5v4M8 11v.5" stroke="#facc15" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span class="pub-text">2 changes pending</span>
+        <span class="pub-review">Review</span>
+      </div>
+      <div class="pub-btn">
+        <svg width="9" height="9" viewBox="0 0 16 16" fill="none"><path d="M8 10V2M4.5 5.5 8 2l3.5 3.5" stroke="#09090b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 12v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1" stroke="#09090b" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Publish to Tokvista
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SHOWCASE PANELS -->
+  <div class="showcase">
+
+    <!-- Colors card -->
+    <div class="showcase-card">
+      <div class="sc-header">
+        <span class="sc-title">Colors</span>
+        <span class="sc-count">24 tokens</span>
+      </div>
+      <div class="color-strip">
+        <div class="cs" style="background:#3B82F6"></div>
+        <div class="cs" style="background:#2563EB"></div>
+        <div class="cs" style="background:#1D4ED8"></div>
+        <div class="cs" style="background:#EFF6FF"></div>
+        <div class="cs" style="background:#22C55E"></div>
+        <div class="cs" style="background:#16A34A"></div>
+        <div class="cs" style="background:#F0FDF4"></div>
+        <div class="cs" style="background:#EF4444"></div>
+        <div class="cs" style="background:#DC2626"></div>
+        <div class="cs" style="background:#F59E0B"></div>
+        <div class="cs" style="background:#09090B"></div>
+        <div class="cs" style="background:#71717A"></div>
+      </div>
+      <div class="color-rows">
+        <div class="cr"><div class="cr-sw" style="background:#3B82F6"></div><span class="cr-name">--color-primary</span><span class="cr-val">#3B82F6</span></div>
+        <div class="cr"><div class="cr-sw" style="background:#22C55E"></div><span class="cr-name">--color-success</span><span class="cr-val">#22C55E</span></div>
+        <div class="cr"><div class="cr-sw" style="background:#EF4444"></div><span class="cr-name">--color-danger</span><span class="cr-val">#EF4444</span></div>
+        <div class="cr"><div class="cr-sw" style="background:#F59E0B"></div><span class="cr-name">--color-warning</span><span class="cr-val">#F59E0B</span></div>
+      </div>
+    </div>
+
+    <!-- Spacing card -->
+    <div class="showcase-card">
+      <div class="sc-header">
+        <span class="sc-title">Spacing</span>
+        <span class="sc-count">15 tokens</span>
+      </div>
+      <div class="spacing-rows">
+        <div class="sr"><span class="sr-name">--spacing-1</span><span class="sr-val">4px</span><div class="sr-bar-wrap"><div class="sr-tick-left"></div><div class="sr-bar" style="width:8%"></div></div></div>
+        <div class="sr"><span class="sr-name">--spacing-2</span><span class="sr-val">8px</span><div class="sr-bar-wrap"><div class="sr-tick-left"></div><div class="sr-bar" style="width:16%"></div></div></div>
+        <div class="sr"><span class="sr-name">--spacing-4</span><span class="sr-val">16px</span><div class="sr-bar-wrap"><div class="sr-tick-left"></div><div class="sr-bar" style="width:32%"></div></div></div>
+        <div class="sr"><span class="sr-name">--spacing-8</span><span class="sr-val">32px</span><div class="sr-bar-wrap"><div class="sr-tick-left"></div><div class="sr-bar" style="width:64%"></div></div></div>
+        <div class="sr"><span class="sr-name">--spacing-16</span><span class="sr-val">64px</span><div class="sr-bar-wrap"><div class="sr-tick-left"></div><div class="sr-bar" style="width:88%"></div></div></div>
+      </div>
+    </div>
+
+    <!-- Typography card -->
+    <div class="showcase-card">
+      <div class="sc-header">
+        <span class="sc-title">Typography</span>
+        <span class="sc-count">34 tokens</span>
+      </div>
+      <div class="typo-rows">
+        <div class="tr"><span class="tr-name">--text-xs</span><div class="tr-preview" style="font-size:10px">The quick brown fox</div></div>
+        <div class="tr"><span class="tr-name">--text-sm</span><div class="tr-preview" style="font-size:12px">The quick brown fox</div></div>
+        <div class="tr"><span class="tr-name">--text-base</span><div class="tr-preview" style="font-size:14px">The quick brown fox</div></div>
+        <div class="tr"><span class="tr-name">--text-lg</span><div class="tr-preview" style="font-size:17px">The quick brown fox</div></div>
+        <div class="tr"><span class="tr-name">--text-2xl</span><div class="tr-preview" style="font-size:22px;font-weight:600">The quick brown</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CLI BADGE -->
+<div class="cli-badge">
+  <span class="cli-text"><span>$</span> npx tokvista tokens.json</span>
+  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span class="cli-text" style="color:rgba(255,255,255,0.2)">opens in browser</span>
+</div>
+
+<!-- BOTTOM ACCENT -->
+<div class="bottom-strip"></div>
+
+</body>
+</html>
