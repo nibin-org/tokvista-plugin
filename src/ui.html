@@ -1,393 +1,370 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tokvista</title>
     <style>
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        margin: 16px;
-        color: #1f2937;
-        background: linear-gradient(180deg, #fbfcfe 0%, #f4f6f9 100%);
-      }
-      h1 {
-        margin: 0 0 12px;
-        font-size: 16px;
-      }
-      .row {
-        margin: 12px 0;
-      }
-      .section-title {
-        margin: 8px 0 6px;
-        font-size: 12px;
-        color: #374151;
-        font-weight: 600;
-      }
-      .actions {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-      .field {
-        display: block;
-        margin: 6px 0;
-      }
-      .field input {
-        width: 100%;
-        box-sizing: border-box;
-        border: 1px solid #d1d5db;
-        border-radius: 8px;
-        padding: 8px;
-      }
-      .hint {
-        font-size: 11px;
-        color: #6b7280;
-        margin-top: 6px;
-      }
-      .publish-panel {
-        border: 1px solid #d8dde6;
-        border-radius: 10px;
-        padding: 10px;
-        background: #ffffff;
-        box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
-      }
-      .preview-head {
-        margin-top: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-      }
-      .preview-hint {
-        margin-top: 4px;
-      }
-      .stats {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-        margin: 6px 0;
-      }
-      .pill {
-        font-size: 11px;
-        border-radius: 999px;
-        padding: 3px 8px;
-        border: 1px solid transparent;
-      }
-      .pill.added {
-        background: #ecfdf3;
-        border-color: #a7f3d0;
-        color: #065f46;
-      }
-      .pill.changed {
-        background: #fffbeb;
-        border-color: #fde68a;
-        color: #92400e;
-      }
-      .pill.removed {
-        background: #fef2f2;
-        border-color: #fecaca;
-        color: #991b1b;
-      }
-      .summary {
-        background: #f8fafc;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        padding: 8px 10px;
-        font-size: 12px;
-        color: #374151;
-      }
-      .changelog {
-        margin-top: 8px;
-        max-height: 140px;
-      }
-      button {
-        border: 1px solid #d1d5db;
-        background: #ffffff;
-        border-radius: 8px;
-        padding: 8px 12px;
-        cursor: pointer;
-      }
-      pre {
-        background: #f3f4f6;
-        border-radius: 8px;
-        padding: 10px;
-        font-size: 11px;
-        max-height: 220px;
-        overflow: auto;
-        white-space: pre-wrap;
-      }
+      :root{--bg:#06080d;--panel:#0d121b;--line:#263142;--soft:#1b2432;--txt:#f4f7ff;--muted:#8d9ab0;--ok:#34d399;--warn:#facc15;--bad:#f87171}
+      *{box-sizing:border-box} body{margin:0;background:radial-gradient(800px 280px at 85% -10%,rgba(77,93,123,.2),transparent 48%),var(--bg);color:var(--txt);font-family:"SF Pro Display","Inter","Segoe UI Variable","Segoe UI",-apple-system,sans-serif}
+      button{cursor:pointer}
+      button:disabled{cursor:not-allowed}
+      .top{position:sticky;top:0;background:rgba(6,8,13,.92);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border-bottom:1px solid var(--soft);padding:12px}
+      .row{display:flex;align-items:center;justify-content:space-between;gap:8px}.brand{display:flex;align-items:center;gap:8px}.dot{width:20px;height:20px;border-radius:6px;background:linear-gradient(#fff,#d8e0ef);display:grid;place-items:center;color:#111;font-size:11px}.name{font-size:24px;font-weight:800}.ver{font-size:11px;color:var(--muted);border:1px solid var(--line);padding:2px 7px;border-radius:999px}
+      .icon{width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--muted);cursor:pointer}
+      .top-actions{display:flex;align-items:center;gap:8px;position:relative}
+      .tabs-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+      .tabs{display:flex;gap:14px;min-width:0}.tab{border:0;background:transparent;color:#a7b3c7;cursor:pointer;font-size:14px;padding:6px 0;position:relative}.tab::before{content:"";display:inline-block;width:6px;height:6px;border-radius:99px;background:currentColor;margin-right:7px;transform:translateY(-1px)}.tab.on{color:#fff;font-weight:700}.tab.on::after{content:"";position:absolute;left:0;right:0;bottom:-9px;height:2px;background:#fff;border-radius:2px}
+      .badge{margin-left:6px;padding:0 5px;border:1px solid #8b5e00;border-radius:5px;color:var(--warn);font-size:11px}
+      .main{padding:10px}.panel{border:1px solid var(--line);border-radius:11px;background:linear-gradient(180deg,#111826,#0c1119);margin-bottom:8px;overflow:hidden}.pad{padding:8px 10px}
+      .h{margin:12px 0 6px;font-size:12px;letter-spacing:1.1px;text-transform:uppercase;color:#7686a1;display:flex;gap:8px;align-items:center}.h::after{content:"";height:1px;background:var(--soft);flex:1}
+      .h-publish{margin-top:4px}
+      .changes-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+      .changes-head .h{margin:0;flex:1}
+      #tab-changes .changes{margin-top:8px}
+      .btn-refresh{height:26px;padding:0 10px;font-size:11px;background:transparent;border:1px solid #2a2a2a;color:#a1a1aa;border-radius:6px;display:inline-flex;align-items:center;gap:5px}
+      .btn-refresh:hover{background:#10141d;border-color:#3a3a3a;color:#d4d4d8}
+      .btn-refresh svg{width:12px;height:12px;display:block;flex:0 0 12px}
+      #tab-import .h{letter-spacing:.8px;color:#52525b}
+      #tab-import .h::after{content:"";flex:1;height:1px;background:#2a2a2a}
+      #tab-settings .h-danger{margin-top:8px;color:#52525b}
+      .muted{font-size:12px;color:var(--muted)} .title{font-size:24px;font-weight:700}
+      .btn{border:1px solid #31435f;border-radius:10px;background:#111927;color:#f5f8ff;padding:7px 12px;font-weight:700;cursor:pointer;transition:background .12s ease,border-color .12s ease}
+      .btn:hover{background:#162235;border-color:#4a5f83}
+      .btn:active{background:#101a29}
+      .btn-light{background:#f4f6fa;color:#0e1420;border-color:#d4dbe7;box-shadow:0 1px 0 rgba(255,255,255,.5) inset}
+      .btn-save{width:100%;height:32px;border-radius:7px;border:1px solid #d4d4d8;background:#fafafa;color:#09090b;font-weight:600;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+      .btn-save:hover{background:#fff}
+      .btn-save svg{width:13px;height:13px;display:block;flex:0 0 13px}
+      .btn-import{width:100%;height:32px;border-radius:7px;border:1px solid #d4d4d8;background:#fafafa;color:#09090b;font-weight:600}
+      .btn-import:hover:not(:disabled){background:#ffffff}
+      .btn-import:disabled{opacity:.35;cursor:not-allowed}
+      .btn-primary{background:#fafafa;color:#09090b;font-weight:600;font-size:12px;height:34px;border-radius:7px;width:100%;border:1px solid #d4d4d8}
+      .btn-ghost{border:1px solid #8b6a22;border-radius:8px;background:transparent;color:#facc15;padding:4px 10px;font-size:12px;font-weight:600;line-height:1.2}
+      .btn-ghost:hover{background:#231a06;border-color:#c08a1b}
+      .btn-danger{height:26px;padding:0 10px;font-size:11px;border-radius:6px;background:linear-gradient(180deg,#2a0f12,#210b0f);border-color:#8e1d28;color:#ff7382}
+      .btn-danger:hover{background:linear-gradient(180deg,#321216,#280d12);border-color:#b42330}
+      .danger-title{font-size:12px;font-weight:500;color:#fafafa;line-height:1.25}
+      .danger-meta{font-size:11px;color:#71717a;line-height:1.25}
+      .sync-panel{display:flex;align-items:center;justify-content:space-between;gap:8px}
+      .sync-left{display:flex;align-items:center;gap:8px;min-width:0}
+      .sync-title{font-size:13px;font-weight:600;line-height:1.2}
+      .sync-meta{font-size:11px;line-height:1.2;color:var(--muted)}
+      .sync-dot{width:16px;height:16px;border-radius:5px;background:#111723;color:#aab8cf;border:1px solid var(--line);display:grid;place-items:center;font-size:9px}
+      .settings-host{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500}
+      .settings-host::before{content:"";width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 2px #0a1f0e;animation:statusPulse 1.8s ease-in-out infinite}
+      .settings-meta{font-size:11px;color:#71717a}
+      @keyframes statusPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.12);opacity:.75}}
+      .stats-wrap{margin-top:8px}
+      .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.stat{border:1px solid var(--line);border-radius:7px;background:#0a0f16;text-align:center;padding:7px 4px}.v{font-size:18px;font-weight:600;line-height:1}.l{font-size:10px;color:var(--muted);margin-top:3px}
+      table{width:100%;border-collapse:collapse} th,td{padding:10px;border-bottom:1px solid var(--soft);font-size:12px} tr:last-child td{border-bottom:0} th{font-size:11px;letter-spacing:.6px;color:#8090aa;text-transform:uppercase;text-align:left}
+      .preview-table{table-layout:fixed}
+      .preview-table th,.preview-table td{height:36px;padding-top:6px;padding-bottom:6px}
+      .preview-table th:nth-child(1),.preview-table td:nth-child(1){width:34px;padding-left:6px;padding-right:6px;text-align:center}
+      .preview-table th:nth-child(2),.preview-table td:nth-child(2){max-width:0}
+      .preview-table th:nth-child(3),.preview-table td:nth-child(3){width:34%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .mono{font-family:Consolas,"Courier New",monospace}.right{text-align:right}.tok{display:flex;gap:8px;align-items:center;min-width:0;width:100%}.token-name{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;width:100%}.sw{display:inline-block;vertical-align:middle;flex:0 0 16px;width:16px;height:16px;border:1px solid #3b4659;border-radius:4px;background:#2a3240}.type-pill{display:inline-grid;place-items:center;min-width:16px;height:16px;padding:0 4px;border-radius:4px;border:1px solid #334155;background:#111827;color:#8ea0b8;font-size:10px;line-height:1}.alias-pill{display:inline-block;max-width:120px;padding:3px 8px;border-radius:999px;border:1px solid #3a3a3a;background:#111827;color:#94a3b8;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+      .list{border-top:1px solid var(--soft)}.item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--soft)}.item:last-child{border-bottom:0}.chip{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:var(--muted)}
+      .import-map .item strong{font-size:12px;font-weight:500;color:#fafafa}
+      .import-map .chip{display:inline-flex;align-items:center;gap:4px;color:#4ade80;background:#0a1f0e;border:1px solid #166534;font-family:Consolas,"Courier New",monospace;font-size:10px;padding:2px 8px;border-radius:4px}
+      .import-map .chip::before{content:"\2192";line-height:1}
+      .download-pop{position:relative}
+      .download-trigger{width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:#101827;color:#c9d5e8;cursor:pointer;font-size:15px;display:grid;place-items:center;padding:0}
+      .download-trigger:hover{border-color:#4a5f83;background:#162235}
+      .download-trigger svg{width:18px;height:18px;display:block;transform:translateY(0.5px)}
+      .download-menu{position:absolute;right:0;top:42px;min-width:320px;background:#0c111a;border:1px solid #2e3a4f;border-radius:12px;overflow:hidden;box-shadow:0 12px 28px rgba(0,0,0,.45);z-index:9}
+      .download-head{padding:10px 12px;border-bottom:1px solid var(--soft)}
+      .download-title{font-size:12px;color:#b8c5da;margin-bottom:4px}
+      .download-current{font-weight:700;font-size:13px;color:#f4f7ff}
+      .download-option{display:block;width:100%;border:0;border-bottom:1px solid var(--soft);background:transparent;color:#dbe6fb;padding:10px 12px;text-align:left;font-size:13px;cursor:pointer}
+      .download-option:hover{background:#172238}
+      .download-option.active{background:#1a2a46;color:#fff}
+      .download-action{margin:10px;width:calc(100% - 20px)}
+      .note{border:1px solid #d7a928;background:linear-gradient(180deg,#211903,#181204);border-radius:10px;padding:9px 10px;color:#facc15;font-size:12px;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
+      .status{margin-top:9px;font-size:12px;color:var(--muted)} .status.err{color:#ff9aa4}
+      .tabp{display:none}.tabp.on{display:block;animation:in .16s ease-out}@keyframes in{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+      #tab-import{padding-bottom:16px}
+      .drop{border:1px dashed #374357;border-radius:10px;background:#090d14;padding:20px 12px;text-align:center;cursor:pointer}.drop.drag{border-color:#85aaff;background:#0c1323}
+      .drop-icon{width:20px;height:20px;display:block;margin:0 auto 6px;color:#71717a}
+      .drop-title{font-size:13px;font-weight:500;line-height:1.3}
+      .drop-sub{font-size:11px;color:#71717a;line-height:1.3;margin-top:2px}
+      .drop-file-row{margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px}
+      .drop-file{display:inline-flex;align-items:center;max-width:240px;padding:2px 8px;border-radius:999px;border:1px solid #166534;background:#0a1f0e;color:#4ade80;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .drop-clear{height:22px;padding:0 8px;border-radius:999px;border:1px solid #3f3f46;background:#111827;color:#a1a1aa;font-size:10px;font-weight:600}
+      .drop-clear:hover{border-color:#52525b;background:#181c27;color:#e4e4e7}
+      .field{margin:8px 0 0}
+      .field label{display:block;font-size:11px;color:#a1a1aa;margin:0 0 4px}
+      .field input{width:100%;border:1px solid #2a2a2a;border-radius:10px;background:#1c1c1c;color:var(--txt);padding:9px 10px}
+      .field input:focus{outline:none;border-color:#3a3a3a;box-shadow:0 0 0 2px rgba(250,250,250,0.05)}
+      .pills{display:flex;gap:6px;flex-wrap:wrap}.pill{font-size:10px;padding:2px 8px;border-radius:6px;border:1px solid;font-weight:700}.a{color:var(--ok);border-color:#14532d;background:#032313}.c{color:var(--warn);border-color:#8b5e00;background:#2b2204}.r{color:var(--bad);border-color:#991b1b;background:#2a0909}
+      .changes{border:1px solid var(--line);border-radius:10px;background:#090d14;max-height:190px;overflow:auto}
+      .chg{display:grid;grid-template-columns:14px minmax(0,1fr);align-items:start;gap:8px;padding:8px 10px;border-bottom:1px solid var(--soft)}
+      .chg:last-child{border-bottom:0}
+      .chg.added{background:linear-gradient(90deg,rgba(52,211,153,.12),transparent 58%)}
+      .chg.changed{background:linear-gradient(90deg,rgba(250,204,21,.12),transparent 58%)}
+      .chg.removed{background:linear-gradient(90deg,rgba(248,113,113,.12),transparent 58%)}
+      .chg-op{width:14px;height:14px;display:grid;place-items:center;border-radius:3px;font-size:10px;font-weight:700;line-height:1}
+      .chg-main{min-width:0;display:flex;flex-direction:column;gap:2px}
+      .chg-token{font-size:11px;color:#dce7ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .chg-diff{display:flex;align-items:center;gap:6px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .chg-old{color:#f87171}
+      .chg-arr{color:#8d9ab0}
+      .chg-new{color:#34d399}
+      .chg.added .chg-op{border:1px solid #14532d;background:#032313;color:#34d399}
+      .chg.changed .chg-op{border:1px solid #8b5e00;background:#2b2204;color:#facc15}
+      .chg.removed .chg-op{border:1px solid #991b1b;background:#2a0909;color:#f87171}
+      .chg-empty{padding:20px;min-height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px}
+      .chg-empty-icon{width:18px;height:18px;display:grid;place-items:center;border-radius:999px;border:1px solid #166534;background:#0a1f0e;color:#4ade80}
+      .chg-empty-icon svg{width:12px;height:12px;display:block}
+      .chg-empty-title{font-size:12px;font-weight:500;color:#fafafa;line-height:1.2}
+      .chg-empty-sub{font-size:11px;color:#71717a;line-height:1.2}
+      pre{margin:0;background:#090d14;border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:#dce7ff;max-height:280px;overflow:auto}
+      .snapshot-block{border:1px solid var(--line);border-radius:10px;background:#090d14;overflow:hidden}
+      .snapshot-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;border-bottom:1px solid var(--soft)}
+      .snapshot-title{font-size:12px;font-weight:600;color:#fafafa}
+      .snapshot-time{font-size:10px;color:#71717a;white-space:nowrap}
+      .snapshot-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid var(--soft)}
+      .snapshot-label{font-size:12px;color:#a1a1aa}
+      .snapshot-value{font-size:11px;color:#fafafa;max-width:65%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+      .snapshot-toggle-wrap{padding:8px 10px}
+      .snapshot-toggle{font-size:11px;background:transparent;border:1px solid #2a2a2a;color:#a1a1aa;border-radius:6px;height:24px;padding:0 9px}
+      .snapshot-toggle:hover{background:#10141d;border-color:#3a3a3a;color:#d4d4d8}
+      .snapshot-raw{border-top:1px solid var(--soft)}
+      .snapshot-raw pre{border:0;border-radius:0;max-height:140px;overflow-x:hidden;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+      .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:flex-end;z-index:8}.overlay.on{display:flex}.modal{width:100%;max-height:85vh;overflow:auto;background:#090d14;border-top:1px solid var(--line);border-radius:14px 14px 0 0}
+      .grab{width:46px;height:3px;background:#3b4454;border-radius:99px;margin:10px auto}.mh{padding:0 12px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px}.mt{font-size:13px;font-weight:600;line-height:1.3}.modal-close{width:24px;height:24px;display:grid;place-items:center;border-radius:5px;border:1px solid #2a2a2a;background:#0e1420;color:#8ea0b8;cursor:pointer;padding:0}.modal-close:hover{background:#121a28;border-color:#3a3a3a}.pub-card{border:1px solid #2a2a2a;border-radius:8px;overflow:hidden}.pub-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid #2a2a2a}.pub-row:last-child{border-bottom:0}.pub-label{font-size:12px;color:#a1a1aa;font-weight:500}.pub-value{margin-left:auto;max-width:68%;min-width:0;font-family:Consolas,"Courier New",monospace;font-size:11px;color:#fafafa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+      .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px}
+      .btn-modal-secondary{height:34px;border-radius:7px;background:transparent;border:1px solid #2a2a2a;color:#a1a1aa;font-weight:600}
+      .btn-modal-secondary:hover{background:#10141d;border-color:#3a3a3a}
+      .btn-modal-primary{height:34px;border-radius:7px;background:#fafafa;border:1px solid #d4d4d8;color:#09090b;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px}
+      .btn-modal-primary:hover{background:#ffffff}
+      .btn-modal-primary svg{width:16px;height:16px;display:block;flex:0 0 16px}
+      .hide{display:none}
     </style>
   </head>
   <body>
-    <h1>Tokvista Plugin</h1>
-
-    <div class="row">
-      <input id="tokensFile" type="file" accept="application/json" />
-      <button id="importBtn">Import Tokens</button>
-    </div>
-
-    <div class="row">
-      <div class="actions">
-        <button id="exportBtn">Export Tokens</button>
-        <button id="downloadBtn" disabled>Download JSON</button>
+    <div class="top">
+      <div class="row">
+        <div class="brand"><div class="dot">.</div><div class="name">tokvista</div><div class="ver">v2.4.1</div></div>
+      </div>
+      <div class="tabs-row">
+        <div class="tabs">
+          <button class="tab on" data-tab="home" type="button">Home</button>
+          <button class="tab" data-tab="import" type="button">Import</button>
+          <button class="tab" data-tab="changes" type="button">Changes <span id="changesBadge" class="badge">0</span></button>
+          <button class="tab" data-tab="settings" type="button">Settings</button>
+        </div>
+        <div class="top-actions">
+          <div class="download-pop">
+            <button id="downloadTriggerBtn" class="download-trigger" type="button" title="Download" aria-label="Download options">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M3,12.3v7a2,2,0,0,0,2,2H19a2,2,0,0,0,2-2v-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                <polyline points="7.9 12.3 12 16.3 16.1 12.3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                <line x1="12" y1="2.7" x2="12" y2="14.2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+              </svg>
+            </button>
+            <div id="downloadMenu" class="download-menu hide">
+              <div class="download-head">
+                <div class="download-title">Download format</div>
+                <div id="downloadCurrent" class="download-current">tokens.json (W3C design token format)</div>
+              </div>
+              <button class="download-option active" data-value="json" type="button">tokens.json (W3C design token format)</button>
+              <button class="download-option" data-value="css" type="button">CSS Variables (:root { --token: value })</button>
+              <button class="download-option" data-value="scss" type="button">SCSS Variables ($token: value)</button>
+              <button class="download-option" data-value="tailwind" type="button">Tailwind config (theme.extend)</button>
+              <button id="downloadTokensBtn" class="btn download-action" type="button">Download</button>
+            </div>
+          </div>
+          <button id="fullscreenToggleBtn" class="download-trigger" type="button" title="Enter fullscreen" aria-label="Enter fullscreen">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M6 6L16 15.8995" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M6 41.8995L16 32" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M42.0001 41.8995L32.1006 32" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M41.8995 6L32 15.8995" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M33 6H42V15" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M42 33V42H33" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M15 42H6V33" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M6 15V6H15" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
-    <div class="row">
-      <div class="publish-panel">
-        <div class="section-title">Tokvista Publish</div>
-        <label class="field">
-          <input id="relayUrlInput" type="text" placeholder="Relay URL (e.g. https://your-app.vercel.app/api)" />
-        </label>
-        <label class="field">
-          <input id="projectIdInput" type="text" placeholder="Project ID" />
-        </label>
-        <label class="field">
-          <input id="environmentInput" type="text" placeholder="Environment (default: dev)" />
-        </label>
-        <label class="field">
-          <input id="publishKeyInput" type="password" placeholder="Publish key (leave blank to keep saved)" />
-        </label>
-        <div class="actions">
-          <button id="saveRelayBtn">Save Publish Settings</button>
-          <button id="publishBtn">Publish to Tokvista</button>
+    <div class="main">
+      <section id="tab-home" class="tabp on">
+        <div class="panel"><div class="pad sync-panel">
+          <div class="sync-left">
+            <div class="sync-dot">[]</div>
+            <div>
+              <div class="sync-title">Figma Variables</div>
+              <div id="syncInfo" class="sync-meta">Waiting for sync...</div>
+            </div>
+          </div>
+          <button id="syncBtn" class="btn" type="button">Sync</button>
+        </div></div>
+        <div class="stats-wrap">
+          <div class="stats">
+            <div class="stat"><div id="statColors" class="v">0</div><div class="l">Colors</div></div>
+            <div class="stat"><div id="statSpacing" class="v">0</div><div class="l">Spacing</div></div>
+            <div class="stat"><div id="statTypography" class="v">0</div><div class="l">Typography</div></div>
+            <div class="stat"><div id="statOther" class="v">0</div><div class="l">Other</div></div>
+          </div>
         </div>
-        <div id="publishStatus" class="hint">Publish settings not configured.</div>
 
-        <div class="preview-head">
-          <div class="section-title" style="margin: 0">Change Preview</div>
-          <button id="refreshChangesBtn" type="button">Refresh Changes</button>
+        <div class="h">Token Preview</div>
+        <div class="panel"><table class="preview-table"><thead><tr><th></th><th>TOKEN</th><th class="right">VALUE</th></tr></thead><tbody id="previewRows"><tr><td class="muted" colspan="3">Sync to load token preview.</td></tr></tbody></table></div>
+
+        <div class="h h-publish">Publish</div>
+        <div class="note"><div id="homePublishHint">No changes pending since last publish</div><button id="previewPublishBtn" class="btn-ghost" type="button">Review</button></div>
+        <div style="margin-top:10px"><button id="openPublishBtn" class="btn-primary" type="button">Publish to Tokvista</button></div>
+        <div id="statusLine" class="status">Ready.</div>
+      </section>
+
+      <section id="tab-import" class="tabp">
+        <div class="h">Import tokens.json</div>
+        <input id="tokensFile" class="hide" type="file" accept="application/json" />
+        <div id="dropzone" class="drop" role="button" tabindex="0"><svg class="drop-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 16L12 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 11L12 8L15 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16V18.5C4 19.3284 4.67157 20 5.5 20H18.5C19.3284 20 20 19.3284 20 18.5V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="drop-title">Drop tokens.json here</div><div class="drop-sub">or click to browse</div><div id="selectedFileRow" class="drop-file-row hide"><div id="selectedFileName" class="drop-file"></div><button id="clearSelectedFileBtn" class="drop-clear" type="button">Clear</button></div></div>
+        <div style="margin-top:10px"><button id="importBtn" class="btn-import" type="button" disabled>Import to Figma</button></div>
+        <div class="h">What gets imported</div>
+        <div class="panel import-map">
+          <div class="item"><strong>Color tokens</strong><span class="chip">Figma variables</span></div>
+          <div class="item"><strong>Spacing / radius</strong><span class="chip">Number variables</span></div>
+          <div class="item"><strong>Typography</strong><span class="chip">String variables</span></div>
+          <div class="item"><strong>Aliases / references</strong><span class="chip">Variable aliases</span></div>
         </div>
-        <div id="changeSource" class="hint preview-hint">Preview compares current file with last published baseline.</div>
-        <div class="stats">
-          <span id="addedCount" class="pill added">+0 Added</span>
-          <span id="changedCount" class="pill changed">~0 Changed</span>
-          <span id="removedCount" class="pill removed">-0 Removed</span>
+      </section>
+
+      <section id="tab-changes" class="tabp">
+        <div class="changes-head"><div class="h">Since last publish</div><button id="refreshChangesBtn" class="btn-refresh" type="button"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M20 12C20 16.4183 16.4183 20 12 20C8.2014 20 5.02167 17.3524 4.2059 13.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 16V13.2C4 12.6477 4.44772 12.2 5 12.2H7.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 12C4 7.58172 7.58172 4 12 4C15.7986 4 18.9783 6.64756 19.7941 10.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M20 8V10.8C20 11.3523 19.5523 11.8 19 11.8H16.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Refresh</button></div>
+        <div class="pills"><span id="pillAdded" class="pill a">+0 Added</span><span id="pillChanged" class="pill c">~0 Changed</span><span id="pillRemoved" class="pill r">-0 Removed</span></div>
+        <div id="changesList" class="changes"><div class="chg-empty">No change data yet.</div></div>
+        <div class="h">Snapshot</div>
+        <div class="snapshot-block">
+          <div class="snapshot-head">
+            <div class="snapshot-title">Last snapshot</div>
+            <div id="snapshotTimestamp" class="snapshot-time mono">-</div>
+          </div>
+          <div class="snapshot-row"><span class="snapshot-label">Collections</span><span id="snapshotCollections" class="snapshot-value mono">-</span></div>
+          <div class="snapshot-row"><span class="snapshot-label">Token count</span><span id="snapshotTokenCount" class="snapshot-value mono">0</span></div>
+          <div class="snapshot-row"><span class="snapshot-label">Format</span><span id="snapshotFormat" class="snapshot-value mono">-</span></div>
+          <div class="snapshot-toggle-wrap"><button id="snapshotToggleBtn" class="snapshot-toggle" type="button">View raw JSON</button></div>
+          <div id="snapshotRawWrap" class="snapshot-raw hide"><pre id="snapshotPre" class="mono">No export yet.</pre></div>
         </div>
-        <div id="changeSummary" class="summary">Loading change preview...</div>
-        <pre id="changeLog" class="changelog">No publish changelog yet.</pre>
-      </div>
+      </section>
+
+      <section id="tab-settings" class="tabp">
+        <div class="h">Status</div>
+        <div class="panel"><div class="pad row"><div><div id="settingsHost" class="settings-host">Not configured</div><div id="settingsMeta" class="settings-meta">Last published: never</div></div><span class="pill a">Live</span></div></div>
+        <div class="h">Connection</div>
+        <div class="field"><label for="relayUrlInput">API URL</label><input id="relayUrlInput" class="mono" type="text" placeholder="https://your-app.vercel.app/api" /></div>
+        <div class="h">Project</div>
+        <div class="field"><label for="projectIdInput">Project name</label><input id="projectIdInput" type="text" placeholder="project-alpha" /></div>
+        <div class="field"><label for="environmentInput">Branch / environment</label><input id="environmentInput" type="text" placeholder="dev" /></div>
+        <div class="field"><label for="publishKeyInput">Publish key</label><input id="publishKeyInput" class="mono" type="password" placeholder="Leave blank to use saved key" /></div>
+        <div style="margin-top:12px"><button id="saveRelayBtn" class="btn-save" type="button"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 4.5H16.7L20 7.8V19.5C20 20.3 19.3 21 18.5 21H5.5C4.7 21 4 20.3 4 19.5V6C4 5.2 4.7 4.5 5.5 4.5H5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 4.5V9.5H15V4.5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 16H16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Save settings</button></div>
+        <div class="h h-danger">Danger zone</div>
+        <div class="panel">
+          <div class="item"><div><div class="danger-title">Reset baseline</div><div class="danger-meta">Clears the publish change history</div></div><button id="resetBaselineBtn" class="btn-danger" type="button">Reset</button></div>
+          <div class="item"><div><div class="danger-title">Clear saved key</div><div class="danger-meta">Clears key field locally</div></div><button id="clearKeyBtn" class="btn-danger" type="button">Clear</button></div>
+        </div>
+      </section>
     </div>
 
-    <pre id="output">No export yet.</pre>
+    <div id="publishModal" class="overlay">
+      <div class="modal">
+        <div class="grab"></div>
+        <div class="mh"><div class="mt">Review changes before publishing</div><button id="closeModalBtn" class="modal-close" type="button" aria-label="Close review modal">×</button></div>
+        <div style="padding:0 12px 10px">
+          <div class="pills"><span id="modalAdded" class="pill a">+0 Added</span><span id="modalChanged" class="pill c">~0 Changed</span><span id="modalRemoved" class="pill r">-0 Removed</span></div>
+          <div id="modalChanges" class="changes" style="margin-top:8px"><div class="chg-empty">No pending changes.</div></div>
+          <div class="h" style="margin-top:12px">Publishing to</div>
+          <div class="pub-card">
+            <div class="pub-row"><span class="pub-label">Endpoint</span><span id="modalEndpoint" class="pub-value">-</span></div>
+            <div class="pub-row"><span class="pub-label">Project</span><span id="modalProject" class="pub-value">-</span></div>
+            <div class="pub-row"><span class="pub-label">Branch</span><span id="modalBranch" class="pub-value">-</span></div>
+          </div>
+        </div>
+        <div class="acts"><button id="cancelPublishBtn" class="btn-modal-secondary" type="button">Cancel</button><button id="confirmPublishBtn" class="btn-modal-primary" type="button"><svg viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4.99997 5.50005H20M7.5 14L12.5 9.00003L17.5 14" stroke="currentColor" stroke-width="1.2"/><path d="M12.5 9.00003V20" stroke="currentColor" stroke-width="1.2"/></svg>Confirm &amp; Publish</button></div>
+      </div>
+    </div>
 
     <script>
-      const tokensFile = document.getElementById("tokensFile");
-      const importBtn = document.getElementById("importBtn");
-      const exportBtn = document.getElementById("exportBtn");
-      const downloadBtn = document.getElementById("downloadBtn");
-      const relayUrlInput = document.getElementById("relayUrlInput");
-      const projectIdInput = document.getElementById("projectIdInput");
-      const environmentInput = document.getElementById("environmentInput");
-      const publishKeyInput = document.getElementById("publishKeyInput");
-      const saveRelayBtn = document.getElementById("saveRelayBtn");
-      const publishBtn = document.getElementById("publishBtn");
-      const refreshChangesBtn = document.getElementById("refreshChangesBtn");
-      const publishStatus = document.getElementById("publishStatus");
-      const changeSource = document.getElementById("changeSource");
-      const changeSummary = document.getElementById("changeSummary");
-      const addedCount = document.getElementById("addedCount");
-      const changedCount = document.getElementById("changedCount");
-      const removedCount = document.getElementById("removedCount");
-      const changeLog = document.getElementById("changeLog");
-      const output = document.getElementById("output");
-      let latestExportText = "";
+      const tabs=[...document.querySelectorAll(".tab")],panels=[...document.querySelectorAll(".tabp")];
+      const el=(id)=>document.getElementById(id);
+      const state={latestExportPayload:null,latestExportText:"",selectedFile:null,downloadFormat:"json",fullscreen:false,snapshotRawOpen:false,changeLog:{summary:"No token changes detected.",lines:[],added:0,changed:0,removed:0}};
+      const refs={tokensFile:el("tokensFile"),dropzone:el("dropzone"),selectedFileRow:el("selectedFileRow"),selectedFileName:el("selectedFileName"),clearSelectedFileBtn:el("clearSelectedFileBtn"),importBtn:el("importBtn"),relayUrlInput:el("relayUrlInput"),projectIdInput:el("projectIdInput"),environmentInput:el("environmentInput"),publishKeyInput:el("publishKeyInput"),previewRows:el("previewRows"),syncInfo:el("syncInfo"),statusLine:el("statusLine"),snapshotPre:el("snapshotPre"),snapshotTimestamp:el("snapshotTimestamp"),snapshotCollections:el("snapshotCollections"),snapshotTokenCount:el("snapshotTokenCount"),snapshotFormat:el("snapshotFormat"),snapshotToggleBtn:el("snapshotToggleBtn"),snapshotRawWrap:el("snapshotRawWrap"),homePublishHint:el("homePublishHint"),changesBadge:el("changesBadge"),pillAdded:el("pillAdded"),pillChanged:el("pillChanged"),pillRemoved:el("pillRemoved"),changesList:el("changesList"),settingsHost:el("settingsHost"),settingsMeta:el("settingsMeta"),modal:el("publishModal"),modalAdded:el("modalAdded"),modalChanged:el("modalChanged"),modalRemoved:el("modalRemoved"),modalChanges:el("modalChanges"),modalEndpoint:el("modalEndpoint"),modalProject:el("modalProject"),modalBranch:el("modalBranch"),statColors:el("statColors"),statSpacing:el("statSpacing"),statTypography:el("statTypography"),statOther:el("statOther"),downloadTriggerBtn:el("downloadTriggerBtn"),downloadMenu:el("downloadMenu"),downloadCurrent:el("downloadCurrent"),fullscreenToggleBtn:el("fullscreenToggleBtn")};
 
-      function downloadTextFile(filename, text) {
-        const blob = new Blob([text], { type: "application/json;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = filename;
-        document.body.appendChild(anchor);
-        anchor.click();
-        document.body.removeChild(anchor);
-        URL.revokeObjectURL(url);
-      }
+      function setTab(id){tabs.forEach(t=>t.classList.toggle("on",t.dataset.tab===id));panels.forEach(p=>p.classList.toggle("on",p.id===`tab-${id}`))}
+      tabs.forEach(t=>t.addEventListener("click",()=>setTab(t.dataset.tab)));
+      function setStatus(msg,err){refs.statusLine.textContent=msg;refs.statusLine.classList.toggle("err",!!err)}
+      function readRelayPayload(){return{relayUrl:refs.relayUrlInput.value.trim(),projectId:refs.projectIdInput.value.trim(),environment:refs.environmentInput.value.trim(),publishKey:refs.publishKeyInput.value.trim()}}
+      function post(msg){parent.postMessage({pluginMessage:msg},"*")}
+      function isObj(v){return typeof v==="object"&&v!==null&&!Array.isArray(v)}
+      function fmt(v){if(typeof v==="string")return v;if(typeof v==="number"||typeof v==="boolean")return String(v);if(v===null)return"null";try{return JSON.stringify(v)}catch{return String(v)}}
+      function isAliasValue(v){return typeof v==="string"&&/^\{[^}]+\}$/.test(v.trim())}
+      function categoryForType(t){const n=String(t||"").toLowerCase();if(n.includes("color"))return"colors";if(n.includes("spacing")||n.includes("radius")||n.includes("number")||n.includes("dimension")||n.includes("sizing")||n.includes("opacity"))return"spacing";if(n.includes("typography")||n.includes("font")||n.includes("string")||n.includes("text"))return"typography";return"other"}
+      function typeChipLabel(row){const t=String(row.type||"").toLowerCase(),n=String(row.token||"").toLowerCase();if(t.includes("radius")||n.includes("radius"))return"r";if(t.includes("spacing")||t.includes("dimension")||t.includes("number")||t.includes("sizing")||n.includes("spacing")||n.includes("size"))return"px";if(t.includes("opacity")||n.includes("opacity"))return"%";if(t.includes("typography")||t.includes("font")||t.includes("string")||t.includes("text")||n.includes("font")||n.includes("text"))return"t";return"•"}
+      function rows(payload){const out=[];if(!isObj(payload))return out;const root=isObj(payload.tokens)?payload.tokens:payload;const walk=(n,p)=>{if(!isObj(n))return;const hv=Object.prototype.hasOwnProperty.call(n,"value")||Object.prototype.hasOwnProperty.call(n,"$value");if(hv&&p.length>0){const t=typeof n.type==="string"?n.type:typeof n.$type==="string"?n.$type:"unknown";const rv=Object.prototype.hasOwnProperty.call(n,"value")?n.value:n.$value;out.push({token:`--${p.join("-")}`,type:t,value:rv})}for(const[k,v]of Object.entries(n)){if(k.startsWith("$")||k==="type"||k==="$type"||k==="value"||k==="$value"||k==="description")continue;walk(v,[...p,k])}};walk(root,[]);return out}
+      function renderPreview(payload){const list=rows(payload),count={colors:0,spacing:0,typography:0,other:0};list.forEach((r)=>{count[categoryForType(r.type)]++});refs.statColors.textContent=String(count.colors);refs.statSpacing.textContent=String(count.spacing);refs.statTypography.textContent=String(count.typography);refs.statOther.textContent=String(count.other);refs.previewRows.innerHTML="";if(!list.length){refs.previewRows.innerHTML='<tr><td class="muted" colspan="3">No tokens available.</td></tr>';return}list.slice(0,6).forEach(r=>{const tr=document.createElement("tr"),swCell=document.createElement("td"),nameCell=document.createElement("td"),valueCell=document.createElement("td"),nameWrap=document.createElement("div"),name=document.createElement("span"),isColor=String(r.type).toLowerCase().includes("color"),rawValue=typeof r.value==="string"?r.value.trim():"",isAlias=isAliasValue(rawValue);if(isColor&&rawValue&&!isAlias){const sw=document.createElement("span");sw.className="sw";sw.style.background=rawValue;swCell.appendChild(sw)}else{const chip=document.createElement("span");chip.className="type-pill mono";chip.textContent=isColor&&isAlias?"ref":typeChipLabel(r);swCell.appendChild(chip)}nameWrap.className="tok";name.className="mono token-name";name.textContent=r.token;nameWrap.appendChild(name);nameCell.appendChild(nameWrap);valueCell.className="mono right";valueCell.style.fontWeight="700";if(isAliasValue(r.value)){const pill=document.createElement("span");pill.className="alias-pill mono";pill.textContent=String(r.value);valueCell.appendChild(pill)}else{valueCell.textContent=fmt(r.value)}tr.appendChild(swCell);tr.appendChild(nameCell);tr.appendChild(valueCell);refs.previewRows.appendChild(tr)})}
+      function parseLine(line){if(typeof line!=="string"||line.length<2)return{kind:"changed",token:String(line||""),oldValue:"",newValue:"",note:""};const p=line[0],kind=p==="+"?"added":p==="~"?"changed":p==="-"?"removed":"changed",body=(p==="+"||p==="~"||p==="-")?line.slice(1).trim():line.trim();if(kind!=="changed")return{kind,token:body,oldValue:"",newValue:"",note:""};const parts=body.split("\t");if(parts.length>=3)return{kind,token:parts[0].trim(),oldValue:parts[1].trim(),newValue:parts.slice(2).join("\t").trim(),note:""};if(/\(value changed\)$/i.test(body))return{kind,token:body.replace(/\s*\(value changed\)$/i,""),oldValue:"",newValue:"",note:"value changed"};return{kind,token:body,oldValue:"",newValue:"",note:"changed"}}
+      function renderChangeTarget(target,lines){target.innerHTML="";if(!lines.length){target.innerHTML='<div class="chg-empty"><span class="chg-empty-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 10.2L8.6 13.1L14.5 7.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div class="chg-empty-title">All caught up</div><div class="chg-empty-sub">No changes since last publish</div></div>';return}lines.forEach(line=>{const p=parseLine(line),r=document.createElement("div"),op=document.createElement("span"),main=document.createElement("div"),token=document.createElement("div");r.className=`chg ${p.kind}`;op.className="chg-op mono";op.textContent=p.kind==="added"?"+":p.kind==="removed"?"-":"~";main.className="chg-main";token.className="chg-token mono";token.textContent=p.token;main.appendChild(token);if(p.kind==="changed"){const diff=document.createElement("div");diff.className="chg-diff mono";if(p.oldValue&&p.newValue){const old=document.createElement("span"),arr=document.createElement("span"),next=document.createElement("span");old.className="chg-old";old.textContent=p.oldValue;arr.className="chg-arr";arr.textContent="->";next.className="chg-new";next.textContent=p.newValue;diff.appendChild(old);diff.appendChild(arr);diff.appendChild(next)}else{diff.className="chg-diff muted";diff.textContent=p.note||"value changed"}main.appendChild(diff)}r.appendChild(op);r.appendChild(main);target.appendChild(r)})}
+      function renderChangeLog(cl){const c=isObj(cl)?cl:{},a=Number(c.added||0),ch=Number(c.changed||0),r=Number(c.removed||0),lines=Array.isArray(c.lines)?c.lines.filter(x=>typeof x==="string"):[];refs.pillAdded.textContent=`+${a} Added`;refs.pillChanged.textContent=`~${ch} Changed`;refs.pillRemoved.textContent=`-${r} Removed`;refs.modalAdded.textContent=`+${a} Added`;refs.modalChanged.textContent=`~${ch} Changed`;refs.modalRemoved.textContent=`-${r} Removed`;const total=a+ch+r;refs.changesBadge.textContent=String(total);refs.homePublishHint.textContent=total?`${total} change${total===1?"":"s"} pending since last publish`:"No changes pending since last publish";renderChangeTarget(refs.changesList,lines);renderChangeTarget(refs.modalChanges,lines)}
+      function formatSnapshotTimestamp(raw){if(typeof raw!=="string"||!raw.trim())return"-";const d=new Date(raw);if(Number.isNaN(d.getTime()))return raw;return d.toLocaleString()}
+      function renderSnapshot(payload){const p=isObj(payload)?payload:null,meta=p&&isObj(p.meta)?p.meta:null,summary=p&&isObj(p.summary)?p.summary:null,collections=meta&&Array.isArray(meta.collections)?meta.collections:(p&&Array.isArray(p.collections)?p.collections:[]),count=summary&&typeof summary.exportedCount==="number"?summary.exportedCount:rows(p||{}).length,format=p&&typeof p.$format==="string"?p.$format:(p&&typeof p.format==="string"?p.format:"-"),exportedAt=p&&typeof p.$exportedAt==="string"?p.$exportedAt:(p&&typeof p.exportedAt==="string"?p.exportedAt:"");refs.snapshotTimestamp.textContent=formatSnapshotTimestamp(exportedAt);refs.snapshotCollections.textContent=collections.length?collections.join(", "):"-";refs.snapshotTokenCount.textContent=String(count);refs.snapshotFormat.textContent=format||"-";refs.snapshotPre.textContent=state.latestExportText||"No export yet."}
+      function updateSnapshotToggle(){refs.snapshotRawWrap.classList.toggle("hide",!state.snapshotRawOpen);refs.snapshotToggleBtn.textContent=state.snapshotRawOpen?"Hide raw JSON":"View raw JSON"}
+      function openModal(){refs.modalEndpoint.textContent=refs.relayUrlInput.value.trim()||"-";refs.modalProject.textContent=refs.projectIdInput.value.trim()||"-";refs.modalBranch.textContent=refs.environmentInput.value.trim()||"dev";refs.modal.classList.add("on")}
+      function closeModal(){refs.modal.classList.remove("on")}
+      function refresh(){refs.syncInfo.textContent="Syncing...";post({type:"export-tokens"});post({type:"preview-publish-changes"})}
+      function setFile(file){state.selectedFile=file||null;refs.selectedFileName.textContent=state.selectedFile?state.selectedFile.name:"";refs.selectedFileRow.classList.toggle("hide",!state.selectedFile);refs.importBtn.disabled=!state.selectedFile}
+      function getSelectedDownloadFormat(){return typeof state.downloadFormat==="string"?state.downloadFormat:"json"}
+      function getFormatLabel(v){if(v==="json")return"tokens.json (W3C design token format)";if(v==="css")return"CSS Variables (:root { --token: value })";if(v==="scss")return"SCSS Variables ($token: value)";return"Tailwind config (theme.extend)"}
+      function updateDownloadFormatUi(){const v=getSelectedDownloadFormat();refs.downloadCurrent.textContent=getFormatLabel(v);refs.downloadMenu.querySelectorAll(".download-option").forEach((btn)=>btn.classList.toggle("active",btn.dataset.value===v))}
+      const FULLSCREEN_ENTER_ICON='<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 6L16 15.8995" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 41.8995L16 32" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M42.0001 41.8995L32.1006 32" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M41.8995 6L32 15.8995" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 6H42V15" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M42 33V42H33" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 42H6V33" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 15V6H15" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      const FULLSCREEN_EXIT_ICON='<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.29289 3.29289C3.68342 2.90237 4.31658 2.90237 4.70711 3.29289L8 6.58579V5C8 4.44772 8.44772 4 9 4C9.55228 4 10 4.44772 10 5V9C10 9.55228 9.55228 10 9 10H5C4.44772 10 4 9.55228 4 9C4 8.44772 4.44772 8 5 8H6.58579L3.29289 4.70711C2.90237 4.31658 2.90237 3.68342 3.29289 3.29289ZM19.2929 3.29289C19.6834 2.90237 20.3166 2.90237 20.7071 3.29289C21.0976 3.68342 21.0976 4.31658 20.7071 4.70711L17.4142 8H19C19.5523 8 20 8.44772 20 9C20 9.55228 19.5523 10 19 10H15C14.4477 10 14 9.55228 14 9V5C14 4.44772 14.4477 4 15 4C15.5523 4 16 4.44772 16 5V6.58579L19.2929 3.29289ZM4 15C4 14.4477 4.44772 14 5 14H9C9.55228 14 10 14.4477 10 15V19C10 19.5523 9.55228 20 9 20C8.44772 20 8 19.5523 8 19V17.4142L4.70711 20.7071C4.31658 21.0976 3.68342 21.0976 3.29289 20.7071C2.90237 20.3166 2.90237 19.6834 3.29289 19.2929L6.58579 16H5C4.44772 16 4 15.5523 4 15ZM14 15C14 14.4477 14.4477 14 15 14H19C19.5523 14 20 14.4477 20 15C20 15.5523 19.5523 16 19 16H17.4142L20.7071 19.2929C21.0976 19.6834 21.0976 20.3166 20.7071 20.7071C20.3166 21.0976 19.6834 21.0976 19.2929 20.7071L16 17.4142V19C16 19.5523 15.5523 20 15 20C14.4477 20 14 19.5523 14 19V15Z" fill="currentColor"/></svg>';
+      function updateFullscreenButton(){if(state.fullscreen){refs.fullscreenToggleBtn.innerHTML=FULLSCREEN_EXIT_ICON;refs.fullscreenToggleBtn.title="Exit fullscreen";refs.fullscreenToggleBtn.setAttribute("aria-label","Exit fullscreen");return}refs.fullscreenToggleBtn.innerHTML=FULLSCREEN_ENTER_ICON;refs.fullscreenToggleBtn.title="Enter fullscreen";refs.fullscreenToggleBtn.setAttribute("aria-label","Enter fullscreen")}
 
-      importBtn.addEventListener("click", async () => {
-        const fileList = tokensFile.files;
-        const file = fileList && fileList.length > 0 ? fileList[0] : null;
-        if (!file) {
-          output.textContent = "Select a tokens.json file first.";
-          return;
-        }
+      el("syncBtn").addEventListener("click",refresh);
+      el("saveRelayBtn").addEventListener("click",()=>post({type:"save-relay-settings",payload:readRelayPayload()}));
+      el("refreshChangesBtn").addEventListener("click",()=>post({type:"preview-publish-changes"}));
+      el("previewPublishBtn").addEventListener("click",()=>{setTab("changes");post({type:"preview-publish-changes"})});
+      el("openPublishBtn").addEventListener("click",openModal);el("cancelPublishBtn").addEventListener("click",closeModal);el("closeModalBtn").addEventListener("click",closeModal);
+      refs.modal.addEventListener("click",(e)=>{if(e.target===refs.modal)closeModal()});
+      el("confirmPublishBtn").addEventListener("click",()=>{closeModal();setStatus("Publishing to Tokvista...",false);post({type:"publish-tokvista",payload:readRelayPayload()})});
+      el("downloadTokensBtn").addEventListener("click",()=>{if(!state.latestExportText){setStatus("No exported JSON available yet.",true);return}const format=getSelectedDownloadFormat();if(format!=="json"){setStatus(`${format.toUpperCase()} export is coming soon. Use JSON for now.`,true);return}const blob=new Blob([state.latestExportText],{type:"application/json;charset=utf-8"});const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="tokvista.tokens.json";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);setStatus("Downloaded tokvista.tokens.json",false)});
+      refs.downloadTriggerBtn.addEventListener("click",()=>{refs.downloadMenu.classList.toggle("hide")});
+      refs.downloadMenu.querySelectorAll(".download-option").forEach((btn)=>{btn.addEventListener("click",()=>{state.downloadFormat=btn.dataset.value||"json";refs.downloadMenu.classList.add("hide");updateDownloadFormatUi()})});
+      document.addEventListener("click",(e)=>{if(!e.target.closest(".download-pop"))refs.downloadMenu.classList.add("hide")});
+      refs.fullscreenToggleBtn.addEventListener("click",()=>post({type:"toggle-fullscreen"}));
+      el("clearKeyBtn").addEventListener("click",()=>{refs.publishKeyInput.value="";setStatus("Key field cleared in UI.",false)});
+      el("resetBaselineBtn").addEventListener("click",()=>{state.changeLog={summary:"No token changes detected.",lines:[],added:0,changed:0,removed:0};renderChangeLog(state.changeLog);setStatus("Local preview baseline view cleared.",false)});
 
-        try {
-          const text = await file.text();
-          const json = JSON.parse(text);
-          parent.postMessage(
-            {
-              pluginMessage: { type: "import-tokens", payload: json }
-            },
-            "*"
-          );
-          output.textContent = "Import sent to plugin runtime.";
-        } catch (error) {
-          output.textContent = `Invalid JSON: ${error}`;
-        }
-      });
+      refs.dropzone.addEventListener("click",()=>refs.tokensFile.click());
+      refs.dropzone.addEventListener("keydown",(e)=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();refs.tokensFile.click()}});
+      refs.tokensFile.addEventListener("change",()=>setFile(refs.tokensFile.files&&refs.tokensFile.files[0]?refs.tokensFile.files[0]:null));
+      refs.dropzone.addEventListener("dragover",(e)=>{e.preventDefault();refs.dropzone.classList.add("drag")});
+      refs.dropzone.addEventListener("dragleave",()=>refs.dropzone.classList.remove("drag"));
+      refs.dropzone.addEventListener("drop",(e)=>{e.preventDefault();refs.dropzone.classList.remove("drag");const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(!f)return;if(!f.name.toLowerCase().endsWith(".json")){setStatus("Only .json files are supported.",true);return}setFile(f)});
+      refs.clearSelectedFileBtn.addEventListener("click",(e)=>{e.preventDefault();e.stopPropagation();refs.tokensFile.value="";setFile(null);setStatus("Selected file cleared.",false)});
+      refs.importBtn.addEventListener("click",()=>{const f=state.selectedFile;if(!f){setStatus("Select a tokens.json file first.",true);return}f.text().then(t=>{const j=JSON.parse(t);post({type:"import-tokens",payload:j});setStatus("Import sent to plugin runtime.",false)}).catch(err=>setStatus(`Invalid JSON: ${err}`,true))});
+      refs.snapshotToggleBtn.addEventListener("click",()=>{state.snapshotRawOpen=!state.snapshotRawOpen;updateSnapshotToggle()});
 
-      exportBtn.addEventListener("click", () => {
-        parent.postMessage({ pluginMessage: { type: "export-tokens" } }, "*");
-      });
-
-      function readRelayPayload() {
-        return {
-          relayUrl: relayUrlInput.value.trim(),
-          projectId: projectIdInput.value.trim(),
-          environment: environmentInput.value.trim(),
-          publishKey: publishKeyInput.value.trim()
-        };
-      }
-
-      saveRelayBtn.addEventListener("click", () => {
-        parent.postMessage(
-          {
-            pluginMessage: { type: "save-relay-settings", payload: readRelayPayload() }
-          },
-          "*"
-        );
-      });
-
-      publishBtn.addEventListener("click", () => {
-        publishStatus.textContent = "Publishing to Tokvista...";
-        parent.postMessage(
-          {
-            pluginMessage: { type: "publish-tokvista", payload: readRelayPayload() }
-          },
-          "*"
-        );
-      });
-
-      refreshChangesBtn.addEventListener("click", () => {
-        changeSummary.textContent = "Refreshing change preview...";
-        parent.postMessage({ pluginMessage: { type: "preview-publish-changes" } }, "*");
-      });
-
-      downloadBtn.addEventListener("click", () => {
-        if (!latestExportText) {
-          output.textContent = "No exported JSON available yet.";
-          return;
-        }
-        downloadTextFile("tokvista.tokens.json", latestExportText);
-      });
-
-      function renderImportResult(result) {
-        const lines = [
-          `Collection: ${result.collection}`,
-          `Imported: ${result.imported}`,
-          `Created: ${result.created}`,
-          `Updated: ${result.updated}`,
-          `Replaced: ${result.replaced || 0}`,
-          `Skipped: ${result.skipped}`
-        ];
-        if (Array.isArray(result.warnings) && result.warnings.length > 0) {
-          lines.push("", "Warnings:");
-          for (const warning of result.warnings.slice(0, 20)) {
-            lines.push(`- ${warning}`);
-          }
-          if (result.warnings.length > 20) {
-            lines.push(`- ...and ${result.warnings.length - 20} more`);
-          }
-        }
-        output.textContent = lines.join("\n");
-      }
-
-      function setChangeCounters(added, changed, removed) {
-        addedCount.textContent = `+${added} Added`;
-        changedCount.textContent = `~${changed} Changed`;
-        removedCount.textContent = `-${removed} Removed`;
-      }
-
-      function renderPublishChangeLog(payload, sourceText) {
-        if (!payload || typeof payload !== "object") {
-          setChangeCounters(0, 0, 0);
-          changeSummary.textContent = "No publish changelog available.";
-          changeLog.textContent = "No publish changelog available.";
-          return;
-        }
-        const added = Number.isFinite(payload.added) ? Number(payload.added) : 0;
-        const changed = Number.isFinite(payload.changed) ? Number(payload.changed) : 0;
-        const removed = Number.isFinite(payload.removed) ? Number(payload.removed) : 0;
-        setChangeCounters(added, changed, removed);
-        const summary =
-          typeof payload.summary === "string" && payload.summary.trim()
-            ? payload.summary.trim()
-            : "No publish changelog available.";
-        changeSummary.textContent = summary;
-        if (typeof sourceText === "string" && sourceText.trim()) {
-          changeSource.textContent = sourceText;
-        }
-        const lines = Array.isArray(payload.lines)
-          ? payload.lines.filter((line) => typeof line === "string")
-          : [];
-        changeLog.textContent = lines.length > 0 ? lines.join("\n") : "No detailed token entries.";
-      }
-
-      window.onmessage = (event) => {
-        const msg = event.data.pluginMessage;
-        if (!msg) return;
-
-        if (msg.type === "relay-settings") {
-          const payload = msg.payload || {};
-          relayUrlInput.value = payload.relayUrl || "https://tokvista-plugin.vercel.app/api";
-          projectIdInput.value = payload.projectId || "";
-          environmentInput.value = payload.environment || "dev";
-          publishKeyInput.value = "";
-          publishStatus.textContent = payload.publishKeySaved
-            ? "Publish settings loaded. Key already saved."
-            : "Publish settings loaded. Add publish key and save.";
-        }
-
-        if (msg.type === "relay-settings-saved") {
-          publishStatus.textContent = "Publish settings saved.";
-          publishKeyInput.value = "";
-        }
-
-        if (msg.type === "publish-result") {
-          const payload = msg.payload || {};
-          publishStatus.textContent =
-            payload.versionId
-              ? `Published version ${payload.versionId}`
-              : (payload.message || "Published successfully.");
-          renderPublishChangeLog(payload.changeLog, "Published diff against last baseline.");
-        }
-
-        if (msg.type === "publish-change-preview") {
-          const payload = msg.payload || {};
-          if (typeof payload.error === "string" && payload.error.trim()) {
-            setChangeCounters(0, 0, 0);
-            changeSource.textContent = "Preview unavailable.";
-            changeSummary.textContent = payload.error;
-            changeLog.textContent = payload.error;
-            return;
-          }
-          renderPublishChangeLog(
-            payload.changeLog,
-            "Preview compares current tokens with last published baseline."
-          );
-        }
-
-        if (msg.type === "export-result") {
-          latestExportText = JSON.stringify(msg.payload, null, 2);
-          output.textContent = latestExportText;
-          downloadBtn.disabled = false;
-        }
-
-        if (msg.type === "import-result") {
-          renderImportResult(msg.payload);
-        }
-
-        if (msg.type === "error") {
-          output.textContent = `Error: ${msg.payload}`;
-          publishStatus.textContent = `Error: ${msg.payload}`;
-        }
+      window.onmessage=(event)=>{const msg=event.data.pluginMessage;if(!msg)return;
+        if(msg.type==="relay-settings"){const p=msg.payload||{};refs.relayUrlInput.value=p.relayUrl||"https://tokvista-plugin.vercel.app/api";refs.projectIdInput.value=p.projectId||"";refs.environmentInput.value=p.environment||"dev";refs.publishKeyInput.value="";refs.settingsHost.textContent=refs.relayUrlInput.value.replace(/^https?:\/\//i,"")||"Not configured";refs.settingsMeta.textContent=p.publishKeySaved?`Configured for ${refs.projectIdInput.value||"project"} / ${refs.environmentInput.value||"dev"}`:"Publish key not saved yet."}
+        if(msg.type==="relay-settings-saved"){setStatus("Publish settings saved.",false);refs.publishKeyInput.value="";refs.settingsHost.textContent=refs.relayUrlInput.value.replace(/^https?:\/\//i,"")||"Not configured";refs.settingsMeta.textContent=`Configured for ${refs.projectIdInput.value||"project"} / ${refs.environmentInput.value||"dev"}`}
+        if(msg.type==="publish-result"){const p=msg.payload||{};setStatus(p.versionId?`Published version ${p.versionId}`:(p.message||"Published successfully."),false);if(p.changeLog&&typeof p.changeLog==="object"){state.changeLog=p.changeLog;renderChangeLog(state.changeLog)}post({type:"preview-publish-changes"})}
+        if(msg.type==="publish-change-preview"){const p=msg.payload||{};if(typeof p.error==="string"&&p.error.trim()){setStatus(p.error,true);return}if(p.changeLog&&typeof p.changeLog==="object"){state.changeLog=p.changeLog;renderChangeLog(state.changeLog)}}
+        if(msg.type==="fullscreen-state"){const p=msg.payload||{};state.fullscreen=Boolean(p.enabled);updateFullscreenButton()}
+        if(msg.type==="export-result"){state.latestExportPayload=msg.payload||null;state.latestExportText=JSON.stringify(msg.payload,null,2);renderSnapshot(state.latestExportPayload);renderPreview(state.latestExportPayload);refs.syncInfo.textContent=`${rows(state.latestExportPayload).length} tokens - last synced ${new Date().toLocaleTimeString()}`;setStatus("Export complete.",false)}
+        if(msg.type==="import-result"){const p=msg.payload||{};setStatus(`Import complete: ${p.imported||0} applied (${p.created||0} created, ${p.updated||0} updated, ${p.replaced||0} replaced), ${p.skipped||0} skipped.`,false);refresh()}
+        if(msg.type==="error"){setStatus(`Error: ${msg.payload}`,true)}
       };
 
-      parent.postMessage({ pluginMessage: { type: "load-relay-settings" } }, "*");
-      parent.postMessage({ pluginMessage: { type: "preview-publish-changes" } }, "*");
+      updateDownloadFormatUi();
+      updateFullscreenButton();
+      updateSnapshotToggle();
+      renderSnapshot(null);
+      post({type:"load-relay-settings"});post({type:"preview-publish-changes"});post({type:"export-tokens"});
     </script>
   </body>
 </html>

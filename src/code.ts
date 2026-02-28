@@ -1,6 +1,11 @@
+const DEFAULT_UI_WIDTH = 460;
+const DEFAULT_UI_HEIGHT = 740;
+const FULLSCREEN_UI_WIDTH = 960;
+const FULLSCREEN_UI_HEIGHT = 860;
+
 figma.showUI(__html__, {
-  width: 460,
-  height: 420,
+  width: DEFAULT_UI_WIDTH,
+  height: DEFAULT_UI_HEIGHT,
   title: "Tokvista"
 });
 
@@ -20,6 +25,7 @@ type UiMessage =
   | { type: "export-tokens" }
   | { type: "load-relay-settings" }
   | { type: "preview-publish-changes" }
+  | { type: "toggle-fullscreen" }
   | { type: "save-relay-settings"; payload: unknown }
   | { type: "publish-tokvista"; payload: unknown };
 
@@ -72,6 +78,7 @@ type PublishChangeLog = {
 };
 
 const MAX_CHANGE_LOG_LINES = 40;
+let isFullscreen = false;
 
 function isObjectLike(value: unknown): value is ObjectLike {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -217,6 +224,32 @@ function stableSerialize(value: unknown): string {
   }
 }
 
+function toReadableChangeValue(serializedValue: string): string {
+  try {
+    const parsed = JSON.parse(serializedValue);
+    if (typeof parsed === "string") {
+      return parsed;
+    }
+    if (typeof parsed === "number" || typeof parsed === "boolean") {
+      return String(parsed);
+    }
+    if (parsed === null) {
+      return "null";
+    }
+    return JSON.stringify(parsed);
+  } catch {
+    return serializedValue;
+  }
+}
+
+function compactChangeValue(value: string): string {
+  const cleaned = value.replace(/\s+/g, " ").replace(/\t/g, " ").trim();
+  if (cleaned.length <= 72) {
+    return cleaned;
+  }
+  return `${cleaned.slice(0, 72)}...`;
+}
+
 function getSnapshotType(rawType: string | undefined): string {
   if (typeof rawType === "string" && rawType.trim()) {
     return rawType.trim();
@@ -286,11 +319,13 @@ function buildPublishChangeLog(previousPayload: ObjectLike | null, currentPayloa
       continue;
     }
     if (previous.type !== current.type) {
-      changed.push(`${path} (type: ${previous.type} -> ${current.type})`);
+      changed.push(`${path}\ttype:${previous.type}\ttype:${current.type}`);
       continue;
     }
     if (previous.valueSerialized !== current.valueSerialized) {
-      changed.push(`${path} (value changed)`);
+      const previousValue = compactChangeValue(toReadableChangeValue(previous.valueSerialized));
+      const currentValue = compactChangeValue(toReadableChangeValue(current.valueSerialized));
+      changed.push(`${path}\t${previousValue}\t${currentValue}`);
     }
   }
 
@@ -1271,9 +1306,19 @@ async function loadAndPostRelaySettings(): Promise<void> {
   postRelaySettingsToUi(settings);
 }
 
+function postFullscreenState(): void {
+  figma.ui.postMessage({
+    type: "fullscreen-state",
+    payload: {
+      enabled: isFullscreen
+    }
+  });
+}
+
 async function initializeUiState(): Promise<void> {
   await loadAndPostRelaySettings();
   await postPublishChangePreview();
+  postFullscreenState();
 }
 
 void initializeUiState();
@@ -1326,6 +1371,16 @@ figma.ui.onmessage = async (msg: UiMessage) => {
 
   if (msg.type === "preview-publish-changes") {
     await postPublishChangePreview();
+    return;
+  }
+
+  if (msg.type === "toggle-fullscreen") {
+    isFullscreen = !isFullscreen;
+    figma.ui.resize(
+      isFullscreen ? FULLSCREEN_UI_WIDTH : DEFAULT_UI_WIDTH,
+      isFullscreen ? FULLSCREEN_UI_HEIGHT : DEFAULT_UI_HEIGHT
+    );
+    postFullscreenState();
     return;
   }
 
