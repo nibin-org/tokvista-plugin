@@ -114,3 +114,14 @@ This starts:
 Stop both with `Ctrl + C`.
 
 Test file: [examples/tokens.sample.json](examples/tokens.sample.json)
+
+## Community publish metadata
+
+Before submitting to Figma Community, prepare:
+
+- Privacy policy page: [docs/privacy-policy.md](docs/privacy-policy.md)
+- Support page: [docs/support.md](docs/support.md)
+- Listing copy pack: [COMMUNITY_PUBLISH.md](COMMUNITY_PUBLISH.md)
+
+Note:
+- Figma requires URL fields for privacy/support. Host these docs on a public URL (for example GitHub Pages or your website) and paste those URLs into the publish form.
