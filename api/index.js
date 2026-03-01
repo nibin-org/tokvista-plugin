@@ -16,8 +16,7 @@ module.exports = async function handler(req, res) {
   sendJson(res, 200, {
     ok: true,
     service: "tokvista-relay-vercel",
-    endpoints: ["/api/health", "/api/publish-tokens"],
+    endpoints: ["/api/health", "/api/publish-tokens", "/api/preview-link", "/api/live-tokens", "/api/version-history"],
     projectsLoaded: Object.keys(projects).length
   });
 };
-

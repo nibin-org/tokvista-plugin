@@ -308,6 +308,23 @@ function normalizeCommitMessage(input, fallback) {
   return singleLine.slice(0, 120);
 }
 
+function firstLine(input) {
+  if (!input || typeof input !== "string") return "";
+  return input.split(/\r?\n/, 1)[0].trim();
+}
+
+function extractVersionId(message, sha) {
+  const normalized = typeof message === "string" ? message : "";
+  const match = normalized.match(/\bv\d{14,}\b/);
+  if (match && match[0]) {
+    return match[0];
+  }
+  if (typeof sha === "string" && sha) {
+    return `c${sha.slice(0, 7)}`;
+  }
+  return "unversioned";
+}
+
 async function handlePublish(req, res) {
   let body;
   try {
@@ -581,6 +598,97 @@ async function handleLiveTokens(req, res) {
   }
 }
 
+async function handleVersionHistory(req, res) {
+  const requestUrl = new URL(req.url || "/version-history", `http://${req.headers.host || `localhost:${PORT}`}`);
+  const projectId = (requestUrl.searchParams.get("projectId") || "").trim();
+  const environment = (requestUrl.searchParams.get("environment") || "dev").trim() || "dev";
+  const limitRaw = Number(requestUrl.searchParams.get("limit") || "12");
+  const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(50, Math.floor(limitRaw))) : 12;
+
+  if (!projectId) {
+    sendJson(res, 400, { error: "projectId is required." });
+    return;
+  }
+
+  const projectConfig = getProjectConfig(projectId);
+  if (!projectConfig) {
+    sendJson(res, 404, { error: "Unknown projectId." });
+    return;
+  }
+  if (typeof projectConfig.localPath === "string" && projectConfig.localPath.trim()) {
+    sendJson(res, 400, { error: "version-history is not supported in localPath mode." });
+    return;
+  }
+
+  const owner = projectConfig.owner;
+  const repo = projectConfig.repo;
+  const branch = projectConfig.branch || "main";
+  const path = getTargetPath(projectConfig, environment);
+  const githubToken = process.env.TOKVISTA_GITHUB_TOKEN || projectConfig.githubToken;
+
+  if (!owner || !repo || !path || !githubToken) {
+    sendJson(res, 500, {
+      error: "Project target is incomplete. Configure owner/repo/path and TOKVISTA_GITHUB_TOKEN."
+    });
+    return;
+  }
+
+  const commitsUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(
+    repo
+  )}/commits?sha=${encodeURIComponent(branch)}&path=${encodeURIComponent(path)}&per_page=${limit}`;
+
+  try {
+    const response = await githubRequest(commitsUrl, githubToken, { method: "GET" });
+    if (!response.ok) {
+      const text = await response.text();
+      sendJson(res, response.status, { error: `GitHub history failed (${response.status}): ${text}` });
+      return;
+    }
+
+    const payload = await response.json();
+    const commits = Array.isArray(payload) ? payload : [];
+    const items = commits.map((commitItem, index) => {
+      const sha = typeof commitItem?.sha === "string" ? commitItem.sha : "";
+      const message = firstLine(commitItem?.commit?.message);
+      const publishedAt =
+        typeof commitItem?.commit?.committer?.date === "string"
+          ? commitItem.commit.committer.date
+          : typeof commitItem?.commit?.author?.date === "string"
+            ? commitItem.commit.author.date
+            : "";
+      const rawUrl = buildRawUrl(owner, repo, sha, path);
+      const previewUrl = buildPreviewUrl(rawUrl);
+      const referenceUrl = typeof commitItem?.html_url === "string" ? commitItem.html_url : "";
+      const versionId = extractVersionId(message, sha);
+      return {
+        id: `${sha || versionId || index}`,
+        versionId,
+        commitSha: sha,
+        commitMessage: message,
+        publishedAt,
+        environment,
+        path,
+        rawUrl,
+        previewUrl,
+        referenceUrl
+      };
+    });
+
+    setNoStoreHeaders(res);
+    sendJson(res, 200, {
+      projectId,
+      environment,
+      branch,
+      path,
+      count: items.length,
+      items
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    sendJson(res, 502, { error: message });
+  }
+}
+
 const server = createServer(async (req, res) => {
   if (req.method === "OPTIONS") {
     setCorsHeaders(res);
@@ -594,7 +702,7 @@ const server = createServer(async (req, res) => {
       ok: true,
       service: "tokvista-relay",
       status: "running",
-      endpoints: ["/health", "/config-example", "/publish-tokens", "/preview-link", "/live-tokens"],
+      endpoints: ["/health", "/config-example", "/publish-tokens", "/preview-link", "/live-tokens", "/version-history"],
       projectsLoaded: Object.keys(PROJECTS).length
     });
     return;
@@ -639,6 +747,11 @@ const server = createServer(async (req, res) => {
 
   if (req.method === "GET" && req.url && req.url.startsWith("/live-tokens")) {
     await handleLiveTokens(req, res);
+    return;
+  }
+
+  if (req.method === "GET" && req.url && req.url.startsWith("/version-history")) {
+    await handleVersionHistory(req, res);
     return;
   }
 
