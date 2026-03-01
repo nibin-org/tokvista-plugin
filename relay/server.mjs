@@ -7,6 +7,7 @@ dotenv.config();
 
 const PORT = Number(process.env.PORT || 8787);
 const DATA_DIR = process.env.DATA_DIR || join(process.cwd(), "relay", "data");
+const PREVIEW_BASE_URL = (process.env.TOKVISTA_PREVIEW_BASE_URL || "https://tokvista-demo.vercel.app/").trim();
 
 function parseProjectsConfig() {
   const raw = process.env.TOKVISTA_PROJECTS;
@@ -240,6 +241,39 @@ function createVersionId() {
   return `v${iso}`;
 }
 
+function encodePathForRaw(path) {
+  return String(path)
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+}
+
+function buildRawUrl(owner, repo, commitSha, path) {
+  if (!owner || !repo || !commitSha || !path) {
+    return undefined;
+  }
+  return `https://raw.githubusercontent.com/${encodeURIComponent(owner)}/${encodeURIComponent(
+    repo
+  )}/${encodeURIComponent(commitSha)}/${encodePathForRaw(path)}`;
+}
+
+function buildBranchRawUrl(owner, repo, branch, path) {
+  if (!owner || !repo || !branch || !path) {
+    return undefined;
+  }
+  return `https://raw.githubusercontent.com/${encodeURIComponent(owner)}/${encodeURIComponent(
+    repo
+  )}/${encodeURIComponent(branch)}/${encodePathForRaw(path)}`;
+}
+
+function buildPreviewUrl(rawUrl) {
+  if (!rawUrl || !PREVIEW_BASE_URL) {
+    return undefined;
+  }
+  const normalizedBase = PREVIEW_BASE_URL.endsWith("/") ? PREVIEW_BASE_URL : `${PREVIEW_BASE_URL}/`;
+  return `${normalizedBase}?source=${encodeURIComponent(rawUrl)}`;
+}
+
 async function handlePublish(req, res) {
   let body;
   try {
@@ -318,17 +352,49 @@ async function handlePublish(req, res) {
         content
       });
       if (!githubResult.changed) {
+        const rawUrl = buildBranchRawUrl(owner, repo, branch, path);
+        const previewUrl = buildPreviewUrl(rawUrl);
         sendJson(res, 200, {
           message: "No changes to publish.",
+          rawUrl,
+          previewUrl,
           changed: false
         });
         return;
       }
       const githubPayload = githubResult.payload;
+      const commitSha =
+        githubPayload && githubPayload.commit && typeof githubPayload.commit.sha === "string"
+          ? githubPayload.commit.sha
+          : undefined;
       referenceUrl =
         githubPayload && githubPayload.commit && typeof githubPayload.commit.html_url === "string"
           ? githubPayload.commit.html_url
           : undefined;
+      const rawUrl = buildRawUrl(owner, repo, commitSha, path);
+      const previewUrl = buildPreviewUrl(rawUrl);
+      await persistVersion(projectId, versionId, {
+        versionId,
+        projectId,
+        environment,
+        source,
+        fileKey,
+        createdAt: new Date().toISOString(),
+        payload,
+        referenceUrl,
+        rawUrl,
+        previewUrl
+      });
+
+      sendJson(res, 200, {
+        versionId,
+        message: "Published successfully.",
+        referenceUrl,
+        rawUrl,
+        previewUrl,
+        changed: true
+      });
+      return;
     }
 
     await persistVersion(projectId, versionId, {

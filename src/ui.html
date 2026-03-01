@@ -1482,6 +1482,12 @@
     </div>
 
     <div class="header-actions nav-actions">
+      <button id="fullRefreshBtn" class="icon-btn has-tip" type="button" data-tip="Full refresh" data-tip-pos="bottom" aria-label="Full refresh">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 1 1-2-5.3M20 2v5h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button id="devPreviewBtn" class="icon-btn has-tip" type="button" data-tip="Generate developer preview link" data-tip-pos="bottom" aria-label="Developer preview link" disabled>
+        <svg viewBox="0 0 24 24" fill="none"><path d="M10 14L21 3M21 3h-6M21 3v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 14.5V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
       <!-- Download -->
       <div class="dl-pop">
         <button id="downloadTriggerBtn" class="icon-btn has-tip" type="button" data-tip="Download tokens" data-tip-pos="bottom" aria-label="Download tokens">
@@ -1802,6 +1808,10 @@ const state = {
   latestExportPayload: null,
   latestExportText: '',
   selectedFile: null,
+  latestPreviewUrl: '',
+  latestReferenceUrl: '',
+  latestRawUrl: '',
+  latestVersionId: '',
   downloadFormat: 'json',
   fullscreen: false,
   snapshotRawOpen: false,
@@ -1830,6 +1840,8 @@ const refs = {
   modalBranch: $('modalBranch'),
   statColors: $('statColors'), statSpacing: $('statSpacing'),
   statTypography: $('statTypography'), statOther: $('statOther'),
+  fullRefreshBtn: $('fullRefreshBtn'),
+  devPreviewBtn: $('devPreviewBtn'),
   downloadTriggerBtn: $('downloadTriggerBtn'), downloadMenu: $('downloadMenu'),
   downloadCurrent: $('downloadCurrent'), clearLoadedBtn: $('clearLoadedBtn'),
   fullscreenToggleBtn: $('fullscreenToggleBtn'),
@@ -1881,6 +1893,55 @@ function typeChipLabel(row) {
   if (t.includes('opacity') || n.includes('opacity'))  return '%';
   if (t.includes('typography') || t.includes('font') || t.includes('string') || t.includes('text') || n.includes('font') || n.includes('text')) return 'T';
   return '·';
+}
+function normalizeLinkValue(v) {
+  if (typeof v !== 'string') return '';
+  const trimmed = v.trim();
+  return trimmed;
+}
+function base64UrlEncodeUtf8(text) {
+  const b64 = btoa(unescape(encodeURIComponent(text)));
+  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+function buildInlinePreviewUrl(payload) {
+  if (!payload || !isObj(payload)) return '';
+  try {
+    const json = JSON.stringify(payload);
+    const encoded = base64UrlEncodeUtf8(json);
+    return `https://tokvista-demo.vercel.app/#data=${encoded}`;
+  } catch {
+    return '';
+  }
+}
+function setPreviewLinkState(payload) {
+  const p = isObj(payload) ? payload : {};
+  const nextPreview = normalizeLinkValue(p.previewUrl);
+  const nextReference = normalizeLinkValue(p.referenceUrl);
+  const nextRaw = normalizeLinkValue(p.rawUrl);
+  const nextVersion = normalizeLinkValue(p.versionId);
+  if (nextPreview) state.latestPreviewUrl = nextPreview;
+  if (nextReference) state.latestReferenceUrl = nextReference;
+  if (nextRaw) state.latestRawUrl = nextRaw;
+  if (nextVersion) state.latestVersionId = nextVersion;
+  updatePreviewLinkUi();
+}
+function updatePreviewLinkUi() {
+  const hasPreview = Boolean(state.latestPreviewUrl) || Boolean(state.latestExportPayload);
+  refs.devPreviewBtn.disabled = !hasPreview;
+  const tip = hasPreview ? 'Open and copy developer preview link' : 'Sync tokens to generate developer preview link';
+  refs.devPreviewBtn.setAttribute('data-tip', tip);
+  refs.devPreviewBtn.setAttribute('aria-label', tip);
+}
+function openDeveloperPreview() {
+  const url = state.latestPreviewUrl || buildInlinePreviewUrl(state.latestExportPayload);
+  if (!url) {
+    setStatus('Sync once to generate a developer preview link.', true);
+    return;
+  }
+  post({ type: 'open-external-url', payload: { url } });
+  navigator.clipboard?.writeText(url)
+    .then(() => setStatus('Developer preview opened and link copied.', false))
+    .catch(() => setStatus('Developer preview opened.', false));
 }
 function rows(payload) {
   const out = [];
@@ -2228,6 +2289,14 @@ function renderVisualPreview(payload) {
       <div class="vprev-sec-body">${bodyHtml}</div>
     </div>`;
   }
+  function nameListBody(tokens, limit = 40) {
+    let body = '<div class="other-list">';
+    tokens.slice(0, limit).forEach(t => {
+      body += `<div class="other-row"><span class="other-key">${esc(t.key)}</span></div>`;
+    });
+    body += '</div>';
+    return body;
+  }
 
   let html = '';
 
@@ -2250,160 +2319,33 @@ function renderVisualPreview(payload) {
     html += secWrap('Colors', 'color', totalColors, body);
   }
 
-  // ── Spacing ──
-  if (spacingTokens.length) {
-    const nums = spacingTokens.map(t => parseFloat(t.val) || 0);
-    const maxV = Math.max(...nums, 1);
-    let body = '<div class="spacing-list">';
-    spacingTokens.slice(0, 20).forEach((t, i) => {
-      const pct = Math.min((nums[i] / maxV) * 100, 100);
-      body += `<div class="spacing-row"><span class="spacing-label">${esc(t.key)}</span><div class="spacing-bar-wrap"><div class="spacing-bar" style="width:${pct.toFixed(1)}%"></div></div><span class="spacing-val">${esc(t.val)}</span></div>`;
-    });
-    body += '</div>';
-    html += secWrap('Spacing', 'spacing', spacingTokens.length, body);
-  }
-
-  // ── Sizing ──
-  if (sizingTokens.length) {
-    const nums = sizingTokens.map(t => parseFloat(t.val) || 0);
-    const maxV = Math.max(...nums, 1);
-    let body = '<div class="sizing-list">';
-    sizingTokens.slice(0, 16).forEach((t, i) => {
-      const pct = Math.min((nums[i] / maxV) * 100, 100);
-      body += `<div class="sizing-row"><span class="sizing-label">${esc(t.key)}</span><div class="sizing-bar-wrap"><div class="sizing-bar" style="width:${pct.toFixed(1)}%"></div></div><span class="sizing-val">${esc(t.val)}</span></div>`;
-    });
-    body += '</div>';
-    html += secWrap('Sizing', 'sizing', sizingTokens.length, body);
-  }
-
-  // ── Border Radius ──
-  if (radiusTokens.length) {
-    let body = '<div class="radius-strip">';
-    radiusTokens.slice(0, 12).forEach(t => {
-      const r = (t.val === '9999px' || t.val === '50%') ? '50%' : t.val;
-      body += `<div class="radius-item"><div class="radius-box" style="border-radius:${esc(r)}"></div><span class="radius-key">${esc(t.key)}</span></div>`;
-    });
-    body += '</div>';
-    html += secWrap('Border Radius', 'radius', radiusTokens.length, body);
-  }
-
-  // ── Border Width ──
-  if (borderWidthTokens.length) {
-    let body = '<div class="border-list">';
-    borderWidthTokens.slice(0, 8).forEach(t => {
-      const bw = parseFloat(t.val) || 1;
-      body += `<div class="border-row"><div class="border-sample" style="border-width:${esc(t.val)}"></div><span class="border-key">${esc(t.key)}</span><span class="border-val">${esc(t.val)}</span></div>`;
-    });
-    body += '</div>';
-    html += secWrap('Border Width', 'border', borderWidthTokens.length, body);
-  }
-
-  // ── Box Shadow ──
-  if (shadowTokens.length) {
-    let body = '<div class="shadow-list">';
-    shadowTokens.slice(0, 8).forEach(t => {
-      const sv = t.val === 'none' ? 'none' : t.val;
-      body += `<div class="shadow-row"><div class="shadow-swatch" style="box-shadow:${esc(sv)}"></div><span class="shadow-key">${esc(t.key)}</span><span class="shadow-val">${esc(t.val)}</span></div>`;
-    });
-    body += '</div>';
-    html += secWrap('Box Shadow', 'shadow', shadowTokens.length, body);
-  }
-
-  // ── Opacity ──
-  if (opacityTokens.length) {
-    let body = '<div class="opacity-list">';
-    opacityTokens.slice(0, 20).forEach(t => {
-      const opVal = parseFloat(t.val);
-      body += `<div class="opacity-item"><div class="opacity-swatch" style="opacity:${isNaN(opVal) ? 1 : opVal}"></div><span class="opacity-key">${esc(t.key)}</span></div>`;
-    });
-    body += '</div>';
-    html += secWrap('Opacity', 'opacity', opacityTokens.length, body);
-  }
-
-  // ── Font Sizes ──
-  if (fontSizeTokens.length) {
-    let body = '<div class="typo-list">';
-    fontSizeTokens.slice(0, 12).forEach(t => {
-      const sz = `clamp(10px, ${esc(t.val)}, 36px)`;
-      body += `<div class="typo-row"><span class="typo-key">${esc(t.key)}</span><span class="typo-sample" style="font-size:${sz}">Ag</span><span class="typo-val">${esc(t.val)}</span></div>`;
-    });
-    body += '</div>';
-    html += secWrap('Font Sizes', 'fontSize', fontSizeTokens.length, body);
-  }
-
-  // ── Font Weight ──
-  if (fontWeightTokens.length) {
-    let body = '<div class="fw-list">';
-    fontWeightTokens.slice(0, 10).forEach(t => {
-      const fw = parseFloat(t.val) || t.val;
-      body += `<div class="fw-row"><span class="fw-key">${esc(t.key)}</span><span class="fw-sample" style="font-weight:${fw}">The quick brown fox</span><span class="fw-val">${esc(t.val)}</span></div>`;
-    });
-    body += '</div>';
-    html += secWrap('Font Weight', 'fontWeight', fontWeightTokens.length, body);
-  }
-
-  // ── Font Family ──
-  if (fontFamilyTokens.length) {
-    let body = '<div class="ff-list">';
-    fontFamilyTokens.slice(0, 6).forEach(t => {
-      body += `<div class="ff-row"><span class="ff-key">${esc(t.key)}</span><span class="ff-sample" style="font-family:${esc(t.val)}">The quick brown fox</span><span class="ff-val" title="${esc(t.val)}">${esc(t.val.split(',')[0].replace(/['"]/g,'').trim())}</span></div>`;
-    });
-    body += '</div>';
-    html += secWrap('Font Family', 'fontFamily', fontFamilyTokens.length, body);
-  }
-
-  // ── Line Height ──
-  if (lineHeightTokens.length) {
-    let body = '<div class="lh-list">';
-    lineHeightTokens.slice(0, 10).forEach(t => {
-      const lhNum = parseFloat(t.val) || 1.5;
-      // Visualize as 2 text lines with gap proportional to line-height
-      const lineH = 8; const gapH = Math.round((lhNum - 0.7) * 12);
-      body += `<div class="lh-item"><div class="lh-vis" style="height:${lineH*2+gapH}px"><div class="lh-line" style="height:${lineH}px"></div><div class="lh-gap" style="height:${gapH}px"></div><div class="lh-line" style="height:${lineH}px"></div></div><span class="lh-key">${esc(t.key)}</span></div>`;
-    });
-    body += '</div>';
-    html += secWrap('Line Height', 'lineHeight', lineHeightTokens.length, body);
-  }
-
-  // ── Letter Spacing ──
-  if (letterSpacingTokens.length) {
-    let body = '<div class="ls-list">';
-    letterSpacingTokens.slice(0, 8).forEach(t => {
-      body += `<div class="ls-row"><span class="ls-key">${esc(t.key)}</span><span class="ls-sample" style="letter-spacing:${esc(t.val)}">TYPOGRAPHY</span><span class="ls-val">${esc(t.val)}</span></div>`;
-    });
-    body += '</div>';
-    html += secWrap('Letter Spacing', 'letterSp', letterSpacingTokens.length, body);
-  }
+  // Non-color categories: show names only (no visual previews)
+  if (spacingTokens.length) html += secWrap('Spacing', 'spacing', spacingTokens.length, nameListBody(spacingTokens, 40));
+  if (sizingTokens.length) html += secWrap('Sizing', 'sizing', sizingTokens.length, nameListBody(sizingTokens, 40));
+  if (radiusTokens.length) html += secWrap('Border Radius', 'radius', radiusTokens.length, nameListBody(radiusTokens, 40));
+  if (borderWidthTokens.length) html += secWrap('Border Width', 'border', borderWidthTokens.length, nameListBody(borderWidthTokens, 40));
+  if (shadowTokens.length) html += secWrap('Box Shadow', 'shadow', shadowTokens.length, nameListBody(shadowTokens, 40));
+  if (opacityTokens.length) html += secWrap('Opacity', 'opacity', opacityTokens.length, nameListBody(opacityTokens, 40));
+  if (fontSizeTokens.length) html += secWrap('Font Sizes', 'fontSize', fontSizeTokens.length, nameListBody(fontSizeTokens, 40));
+  if (fontWeightTokens.length) html += secWrap('Font Weight', 'fontWeight', fontWeightTokens.length, nameListBody(fontWeightTokens, 40));
+  if (fontFamilyTokens.length) html += secWrap('Font Family', 'fontFamily', fontFamilyTokens.length, nameListBody(fontFamilyTokens, 40));
+  if (lineHeightTokens.length) html += secWrap('Line Height', 'lineHeight', lineHeightTokens.length, nameListBody(lineHeightTokens, 40));
+  if (letterSpacingTokens.length) html += secWrap('Letter Spacing', 'letterSp', letterSpacingTokens.length, nameListBody(letterSpacingTokens, 40));
 
   // ── Component tokens (when filtered) ──
   const compKeys = Object.keys(compGroups);
   if (compKeys.length && (currentVisualFilter !== 'all' || !cgKeys.length)) {
     const compTotal = compKeys.reduce((a, k) => a + compGroups[k].length, 0);
-    let body = '';
+    const compNames = [];
     for (const grp of compKeys.slice(0, 20)) {
-      body += `<div class="comp-group"><div class="comp-group-name">${esc(grp)}</div><div class="comp-list">`;
-      for (const t of compGroups[grp].slice(0, 15)) {
-        const valHtml = t.isAlias
-          ? `<span class="comp-alias-chip">${esc(t.val)}</span>`
-          : `<span class="comp-val">${esc(t.val)}</span>`;
-        const swatchHtml = t.isColor && t.hex
-          ? `<div class="comp-swatch" style="background:${esc(t.hex)}"></div>`
-          : `<div class="comp-swatch" style="background:var(--overlay)"></div>`;
-        body += `<div class="comp-row">${swatchHtml}<span class="comp-key">${esc(t.key)}</span>${valHtml}</div>`;
-      }
-      body += '</div></div>';
+      compGroups[grp].slice(0, 15).forEach(t => compNames.push({ key: t.key }));
     }
-    html += secWrap('Token Values', 'other', compTotal, body);
+    html += secWrap('Token Values', 'other', compTotal, nameListBody(compNames, 300));
   }
 
   // ── Remaining other tokens ──
   if (otherTokens.length) {
-    let body = '<div class="other-list">';
-    otherTokens.slice(0, 20).forEach(t => {
-      body += `<div class="other-row"><span class="other-key">${esc(t.key)}</span><span class="other-val">${esc(t.val)}</span></div>`;
-    });
-    body += '</div>';
-    html += secWrap('Other', 'other', otherTokens.length, body);
+    html += secWrap('Other', 'other', otherTokens.length, nameListBody(otherTokens, 40));
   }
 
   if (!html) html = '<div class="vprev-empty">No visual tokens detected in this layer.</div>';
@@ -2502,6 +2444,13 @@ function refresh() {
   post({ type: 'export-tokens' });
   post({ type: 'preview-publish-changes' });
 }
+function fullRefresh() {
+  refs.syncInfo.textContent = 'Refreshing…';
+  post({ type: 'load-relay-settings' });
+  post({ type: 'export-tokens' });
+  post({ type: 'preview-publish-changes' });
+  setStatus('Refreshing plugin data…', false);
+}
 function clearLoadedData() {
   if (!state.latestExportPayload && !state.latestExportText && !state.selectedFile) {
     setStatus('Nothing to clear.', false);
@@ -2554,6 +2503,8 @@ function updateFsBtn() {
 
 /* ── EVENTS ── */
 $('syncBtn').addEventListener('click', refresh);
+$('fullRefreshBtn').addEventListener('click', fullRefresh);
+$('devPreviewBtn').addEventListener('click', openDeveloperPreview);
 $('saveRelayBtn').addEventListener('click', () => post({ type: 'save-relay-settings', payload: readRelayPayload() }));
 $('refreshChangesBtn').addEventListener('click', () => post({ type: 'preview-publish-changes' }));
 $('previewPublishBtn').addEventListener('click', () => { setTab('changes'); post({ type: 'preview-publish-changes' }); });
@@ -2644,19 +2595,24 @@ window.onmessage = event => {
   }
   if (msg.type === 'publish-result') {
     const p = msg.payload || {};
+    setPreviewLinkState(p);
     setStatus(p.versionId ? `Published version ${p.versionId}` : (p.message || 'Published.'), false);
     if (p.changeLog && typeof p.changeLog === 'object') { state.changeLog = p.changeLog; renderChangeLog(state.changeLog); }
     post({ type: 'preview-publish-changes' });
   }
+  if (msg.type === 'developer-preview-link') {
+    setPreviewLinkState(msg.payload || {});
+  }
   if (msg.type === 'publish-change-preview') {
     const p = msg.payload || {};
-    if (typeof p.error === 'string' && p.error.trim()) { setStatus(p.error, true); return; }
     if (p.changeLog && typeof p.changeLog === 'object') { state.changeLog = p.changeLog; renderChangeLog(state.changeLog); }
+    if (typeof p.error === 'string' && p.error.trim()) { setStatus(p.error, true); }
   }
   if (msg.type === 'fullscreen-state') { state.fullscreen = Boolean((msg.payload || {}).enabled); updateFsBtn(); }
   if (msg.type === 'export-result') {
     state.latestExportPayload = msg.payload || null;
     state.latestExportText    = JSON.stringify(msg.payload, null, 2);
+    updatePreviewLinkUi();
     updateFilterBar(state.latestExportPayload || {});
     renderSnapshot(state.latestExportPayload);
     renderPreview(state.latestExportPayload);
@@ -2728,6 +2684,7 @@ function renderJsonView(payload) {
 /* ── INIT ── */
 updateDlUi();
 updateFsBtn();
+updatePreviewLinkUi();
 updateSnapToggle();
 renderSnapshot(null);
 post({ type: 'load-relay-settings' });

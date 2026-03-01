@@ -17,8 +17,10 @@ const RAW_TYPE_PLUGIN_KEY = "tokvista_raw_type";
 const COMPLEX_JSON_PLUGIN_KEY = "tokvista_complex_json";
 const RELAY_SETTINGS_KEY = "tokvista_relay_settings";
 const LAST_PUBLISHED_PAYLOAD_KEY = "tokvista_last_published_payload";
+const LAST_PUBLISHED_LINKS_KEY = "tokvista_last_published_links";
 const DEFAULT_RELAY_URL = "https://tokvista-plugin.vercel.app/api";
 const DEFAULT_RELAY_ENVIRONMENT = "dev";
+const DEFAULT_TOKVISTA_PREVIEW_BASE_URL = "https://tokvista-demo.vercel.app/";
 
 type UiMessage =
   | { type: "import-tokens"; payload: unknown }
@@ -27,7 +29,8 @@ type UiMessage =
   | { type: "preview-publish-changes" }
   | { type: "toggle-fullscreen" }
   | { type: "save-relay-settings"; payload: unknown }
-  | { type: "publish-tokvista"; payload: unknown };
+  | { type: "publish-tokvista"; payload: unknown }
+  | { type: "open-external-url"; payload: { url: string } };
 
 type ObjectLike = Record<string, unknown>;
 type TokenValueType = "COLOR" | "FLOAT" | "STRING";
@@ -66,7 +69,16 @@ type RelayPublishResult = {
   versionId: string;
   message: string;
   referenceUrl?: string;
+  rawUrl?: string;
+  previewUrl?: string;
   changed?: boolean;
+};
+
+type PublishedLinks = {
+  versionId?: string;
+  referenceUrl?: string;
+  rawUrl?: string;
+  previewUrl?: string;
 };
 
 type PublishChangeLog = {
@@ -75,6 +87,10 @@ type PublishChangeLog = {
   added: number;
   changed: number;
   removed: number;
+};
+
+type ExportTokensOptions = {
+  allowEmpty?: boolean;
 };
 
 const MAX_CHANGE_LOG_LINES = 40;
@@ -371,10 +387,29 @@ async function setLastPublishedPayload(payload: ObjectLike): Promise<void> {
   await figma.clientStorage.setAsync(LAST_PUBLISHED_PAYLOAD_KEY, payload);
 }
 
+function createEmptyExportPayload(collections: string[] = []): ObjectLike {
+  return {
+    $schemaVersion: SCHEMA_VERSION,
+    $format: EXPORT_FORMAT,
+    $source: "figma",
+    $exportedAt: new Date().toISOString(),
+    meta: {
+      exportScope: "all-local-collections",
+      collections
+    },
+    summary: {
+      exportedCount: 0,
+      exportedAliasCount: 0,
+      skippedCount: 0
+    },
+    tokens: {}
+  };
+}
+
 async function postPublishChangePreview(): Promise<void> {
   try {
     const previousPayload = await getLastPublishedPayload();
-    const exported = await exportTokens();
+    const exported = await exportTokens({ allowEmpty: true });
     const publishPayload = stripVolatilePublishFields(exported);
     const changeLog = buildPublishChangeLog(previousPayload, publishPayload);
     figma.ui.postMessage({
@@ -433,6 +468,150 @@ function postRelaySettingsToUi(settings: RelaySettings | null): void {
   });
 }
 
+function normalizeUrlField(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  return trimmed;
+}
+
+function encodePathForRawUrl(path: string): string {
+  return path
+    .split("/")
+    .filter((segment) => segment.length > 0)
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+}
+
+function buildPreviewUrlFromRawUrl(rawUrl: string): string {
+  const base = DEFAULT_TOKVISTA_PREVIEW_BASE_URL;
+  const normalizedBase = base.endsWith("/") ? base : `${base}/`;
+  return `${normalizedBase}?source=${encodeURIComponent(rawUrl)}`;
+}
+
+function parseGitHubCommitReferenceUrl(referenceUrl: string): { owner: string; repo: string; sha: string } | null {
+  const match = referenceUrl.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/commit\/([a-f0-9]{7,40})(?:[/?#].*)?$/i);
+  if (!match) {
+    return null;
+  }
+  const owner = match[1];
+  const repo = match[2];
+  const sha = match[3];
+  if (!owner || !repo || !sha) {
+    return null;
+  }
+  return { owner, repo, sha };
+}
+
+async function resolvePreviewLinksFromReference(
+  referenceUrl: string
+): Promise<{ rawUrl?: string; previewUrl?: string }> {
+  const parsed = parseGitHubCommitReferenceUrl(referenceUrl);
+  if (!parsed) {
+    return {};
+  }
+  try {
+    const endpoint = `https://api.github.com/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(
+      parsed.repo
+    )}/commits/${encodeURIComponent(parsed.sha)}`;
+    const response = await fetch(endpoint, {
+      method: "GET",
+      headers: {
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28"
+      }
+    });
+    if (!response.ok) {
+      return {};
+    }
+    const payload = (await response.json()) as ObjectLike;
+    const filesRaw = Array.isArray(payload.files) ? payload.files : [];
+    const files = filesRaw.filter(isObjectLike);
+    if (!files.length) {
+      return {};
+    }
+    const preferred =
+      files.find((file) => {
+        const filename = typeof file.filename === "string" ? file.filename.toLowerCase() : "";
+        return filename.endsWith(".json") && filename.includes("token");
+      }) ||
+      files.find((file) => {
+        const filename = typeof file.filename === "string" ? file.filename.toLowerCase() : "";
+        return filename.endsWith(".json");
+      });
+    if (!preferred || typeof preferred.filename !== "string") {
+      return {};
+    }
+    const encodedPath = encodePathForRawUrl(preferred.filename);
+    const rawUrl = `https://raw.githubusercontent.com/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(
+      parsed.repo
+    )}/${encodeURIComponent(parsed.sha)}/${encodedPath}`;
+    return {
+      rawUrl,
+      previewUrl: buildPreviewUrlFromRawUrl(rawUrl)
+    };
+  } catch {
+    return {};
+  }
+}
+
+function normalizePublishedLinks(input: unknown): PublishedLinks | null {
+  if (!isObjectLike(input)) {
+    return null;
+  }
+  const normalized: PublishedLinks = {
+    versionId: normalizeUrlField(input.versionId),
+    referenceUrl: normalizeUrlField(input.referenceUrl),
+    rawUrl: normalizeUrlField(input.rawUrl),
+    previewUrl: normalizeUrlField(input.previewUrl)
+  };
+  if (!normalized.versionId && !normalized.referenceUrl && !normalized.rawUrl && !normalized.previewUrl) {
+    return null;
+  }
+  return normalized;
+}
+
+async function getStoredPublishedLinks(): Promise<PublishedLinks | null> {
+  const raw = await figma.clientStorage.getAsync(LAST_PUBLISHED_LINKS_KEY);
+  return normalizePublishedLinks(raw);
+}
+
+async function setStoredPublishedLinks(links: PublishedLinks): Promise<void> {
+  const normalized = normalizePublishedLinks(links);
+  if (!normalized) {
+    await figma.clientStorage.deleteAsync(LAST_PUBLISHED_LINKS_KEY);
+    return;
+  }
+  await figma.clientStorage.setAsync(LAST_PUBLISHED_LINKS_KEY, normalized);
+}
+
+function postPublishedLinksToUi(links: PublishedLinks | null): void {
+  figma.ui.postMessage({
+    type: "developer-preview-link",
+    payload: links || {}
+  });
+}
+
+async function loadAndPostPublishedLinks(): Promise<void> {
+  let links = await getStoredPublishedLinks();
+  if (links && !links.previewUrl && links.referenceUrl) {
+    const resolved = await resolvePreviewLinksFromReference(links.referenceUrl);
+    if (resolved.previewUrl || resolved.rawUrl) {
+      links = {
+        ...links,
+        rawUrl: links.rawUrl || resolved.rawUrl,
+        previewUrl: links.previewUrl || resolved.previewUrl
+      };
+      await setStoredPublishedLinks(links);
+    }
+  }
+  postPublishedLinksToUi(links);
+}
+
 async function publishToRelay(
   settings: RelaySettings,
   exportPayload: ObjectLike
@@ -485,11 +664,20 @@ async function publishToRelay(
   const versionId = typeof data.versionId === "string" ? data.versionId : "";
   const message = typeof data.message === "string" ? data.message : "Published successfully.";
   const referenceUrl = typeof data.referenceUrl === "string" ? data.referenceUrl : undefined;
+  let rawUrl = typeof data.rawUrl === "string" ? data.rawUrl : undefined;
+  let previewUrl = typeof data.previewUrl === "string" ? data.previewUrl : undefined;
+  if ((!rawUrl || !previewUrl) && referenceUrl) {
+    const resolved = await resolvePreviewLinksFromReference(referenceUrl);
+    rawUrl = rawUrl || resolved.rawUrl;
+    previewUrl = previewUrl || resolved.previewUrl;
+  }
   const changed = typeof data.changed === "boolean" ? data.changed : undefined;
   return {
     versionId,
     message,
     referenceUrl,
+    rawUrl,
+    previewUrl,
     changed
   };
 }
@@ -1173,9 +1361,12 @@ function toTokenValueForExport(variable: Variable, value: string): unknown {
   return value;
 }
 
-async function exportTokens(): Promise<ObjectLike> {
+async function exportTokens(options: ExportTokensOptions = {}): Promise<ObjectLike> {
   const collections = await figma.variables.getLocalVariableCollectionsAsync();
   if (collections.length === 0) {
+    if (options.allowEmpty) {
+      return createEmptyExportPayload();
+    }
     throw new Error("No local variable collections found.");
   }
 
@@ -1260,6 +1451,9 @@ async function exportTokens(): Promise<ObjectLike> {
   }
 
   if (exportedCount === 0) {
+    if (options.allowEmpty) {
+      return createEmptyExportPayload([...exportedCollectionNames]);
+    }
     throw new Error("No exportable local variables found in default modes.");
   }
 
@@ -1317,6 +1511,7 @@ function postFullscreenState(): void {
 
 async function initializeUiState(): Promise<void> {
   await loadAndPostRelaySettings();
+  await loadAndPostPublishedLinks();
   await postPublishChangePreview();
   postFullscreenState();
 }
@@ -1345,7 +1540,7 @@ figma.ui.onmessage = async (msg: UiMessage) => {
 
   if (msg.type === "export-tokens") {
     try {
-      const payload = await exportTokens();
+      const payload = await exportTokens({ allowEmpty: true });
       figma.ui.postMessage({
         type: "export-result",
         payload
@@ -1362,6 +1557,7 @@ figma.ui.onmessage = async (msg: UiMessage) => {
   if (msg.type === "load-relay-settings") {
     try {
       await loadAndPostRelaySettings();
+      await loadAndPostPublishedLinks();
     } catch (error) {
       const message = toErrorMessage(error);
       figma.ui.postMessage({ type: "error", payload: message });
@@ -1424,12 +1620,25 @@ figma.ui.onmessage = async (msg: UiMessage) => {
         };
       }
       await setLastPublishedPayload(publishPayload);
+      const existingLinks = await getStoredPublishedLinks();
+      const mergedLinks = normalizePublishedLinks({
+        versionId: publishResult.versionId || existingLinks?.versionId,
+        referenceUrl: publishResult.referenceUrl || existingLinks?.referenceUrl,
+        rawUrl: publishResult.rawUrl || existingLinks?.rawUrl,
+        previewUrl: publishResult.previewUrl || existingLinks?.previewUrl
+      });
+      if (mergedLinks) {
+        await setStoredPublishedLinks(mergedLinks);
+      }
+      postPublishedLinksToUi(mergedLinks);
       figma.ui.postMessage({
         type: "publish-result",
         payload: {
           versionId: publishResult.versionId,
           message: publishResult.message,
           referenceUrl: publishResult.referenceUrl,
+          rawUrl: publishResult.rawUrl,
+          previewUrl: publishResult.previewUrl,
           changed: publishResult.changed,
           changeLog
         }
@@ -1444,5 +1653,14 @@ figma.ui.onmessage = async (msg: UiMessage) => {
       figma.ui.postMessage({ type: "error", payload: message });
       figma.notify(`Publish failed: ${message}`);
     }
+    return;
+  }
+
+  if (msg.type === "open-external-url") {
+    const url = isObjectLike(msg.payload) && typeof msg.payload.url === "string" ? msg.payload.url.trim() : "";
+    if (!url || !/^https?:\/\//i.test(url)) {
+      return;
+    }
+    figma.openExternal(url);
   }
 };

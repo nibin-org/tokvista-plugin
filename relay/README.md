@@ -43,6 +43,7 @@ Required fields in `.env`:
 - `TOKVISTA_PROJECTS` (required JSON map)
 - `PORT` (optional, default `8787`)
 - `DATA_DIR` (optional, default `relay/data`)
+- `TOKVISTA_PREVIEW_BASE_URL` (optional, default `https://tokvista-demo.vercel.app/`)
 
 ### `TOKVISTA_PROJECTS` example
 ```json
@@ -94,6 +95,8 @@ Success:
 {
   "versionId": "v20260227123000000",
   "message": "Published successfully.",
-  "referenceUrl": "https://github.com/..."
+  "referenceUrl": "https://github.com/...",
+  "rawUrl": "https://raw.githubusercontent.com/owner/repo/commitSha/tokens.json",
+  "previewUrl": "https://tokvista-demo.vercel.app/?source=https%3A%2F%2Fraw.githubusercontent.com%2F..."
 }
 ```
