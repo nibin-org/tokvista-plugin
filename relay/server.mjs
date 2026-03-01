@@ -274,6 +274,31 @@ function buildPreviewUrl(rawUrl) {
   return `${normalizedBase}?source=${encodeURIComponent(rawUrl)}`;
 }
 
+function buildServerBaseUrl(req) {
+  const protoHeader = req.headers["x-forwarded-proto"];
+  const hostHeader = req.headers["x-forwarded-host"] || req.headers.host;
+  const proto =
+    typeof protoHeader === "string" && protoHeader.trim() ? protoHeader.split(",")[0].trim() : "http";
+  const host = typeof hostHeader === "string" && hostHeader.trim() ? hostHeader.trim() : `localhost:${PORT}`;
+  return `${proto}://${host}`;
+}
+
+function buildLiveSourceUrl(req, projectId, environment) {
+  if (!projectId) {
+    return undefined;
+  }
+  const baseUrl = buildServerBaseUrl(req);
+  return `${baseUrl}/live-tokens?projectId=${encodeURIComponent(projectId)}&environment=${encodeURIComponent(
+    environment || "dev"
+  )}`;
+}
+
+function setNoStoreHeaders(res) {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+}
+
 async function handlePublish(req, res) {
   let body;
   try {
@@ -353,7 +378,7 @@ async function handlePublish(req, res) {
       });
       if (!githubResult.changed) {
         const rawUrl = buildBranchRawUrl(owner, repo, branch, path);
-        const previewUrl = buildPreviewUrl(rawUrl);
+        const previewUrl = buildPreviewUrl(buildLiveSourceUrl(req, projectId, environment) || rawUrl);
         sendJson(res, 200, {
           message: "No changes to publish.",
           rawUrl,
@@ -372,7 +397,9 @@ async function handlePublish(req, res) {
           ? githubPayload.commit.html_url
           : undefined;
       const rawUrl = buildRawUrl(owner, repo, commitSha, path);
-      const previewUrl = buildPreviewUrl(rawUrl || buildBranchRawUrl(owner, repo, branch, path));
+      const previewSource =
+        buildLiveSourceUrl(req, projectId, environment) || rawUrl || buildBranchRawUrl(owner, repo, branch, path);
+      const previewUrl = buildPreviewUrl(previewSource);
       await persistVersion(projectId, versionId, {
         versionId,
         projectId,
@@ -463,7 +490,7 @@ async function handlePreviewLink(req, res) {
   }
 
   const rawUrl = buildBranchRawUrl(owner, repo, branch, path);
-  const previewUrl = buildPreviewUrl(rawUrl);
+  const previewUrl = buildPreviewUrl(buildLiveSourceUrl(req, projectId, environment) || rawUrl);
   sendJson(res, 200, {
     projectId,
     environment,
@@ -472,6 +499,62 @@ async function handlePreviewLink(req, res) {
     rawUrl,
     previewUrl
   });
+}
+
+async function handleLiveTokens(req, res) {
+  const requestUrl = new URL(req.url || "/live-tokens", `http://${req.headers.host || `localhost:${PORT}`}`);
+  const projectId = (requestUrl.searchParams.get("projectId") || "").trim();
+  const environment = (requestUrl.searchParams.get("environment") || "dev").trim() || "dev";
+  if (!projectId) {
+    sendJson(res, 400, { error: "projectId is required." });
+    return;
+  }
+
+  const projectConfig = getProjectConfig(projectId);
+  if (!projectConfig) {
+    sendJson(res, 404, { error: "Unknown projectId." });
+    return;
+  }
+
+  try {
+    let contentText = "";
+    const localPath = projectConfig.localPath;
+    if (typeof localPath === "string" && localPath.trim()) {
+      const absolutePath = resolveLocalPath(localPath);
+      contentText = await readFile(absolutePath, "utf8");
+    } else {
+      const owner = projectConfig.owner;
+      const repo = projectConfig.repo;
+      const branch = projectConfig.branch || "main";
+      const path = getTargetPath(projectConfig, environment);
+      const githubToken = process.env.TOKVISTA_GITHUB_TOKEN || projectConfig.githubToken;
+      if (!owner || !repo || !path || !githubToken) {
+        sendJson(res, 500, {
+          error: "Project target is incomplete. Configure localPath or owner/repo/path and TOKVISTA_GITHUB_TOKEN."
+        });
+        return;
+      }
+      const existing = await getContentMeta({
+        owner,
+        repo,
+        branch,
+        path,
+        token: githubToken
+      });
+      if (!existing || typeof existing.content !== "string") {
+        sendJson(res, 404, { error: "Token file not found." });
+        return;
+      }
+      contentText = existing.content;
+    }
+
+    const parsed = JSON.parse(contentText);
+    setNoStoreHeaders(res);
+    sendJson(res, 200, parsed);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    sendJson(res, 502, { error: message });
+  }
 }
 
 const server = createServer(async (req, res) => {
@@ -487,7 +570,7 @@ const server = createServer(async (req, res) => {
       ok: true,
       service: "tokvista-relay",
       status: "running",
-      endpoints: ["/health", "/config-example", "/publish-tokens"],
+      endpoints: ["/health", "/config-example", "/publish-tokens", "/preview-link", "/live-tokens"],
       projectsLoaded: Object.keys(PROJECTS).length
     });
     return;
@@ -527,6 +610,11 @@ const server = createServer(async (req, res) => {
 
   if (req.method === "POST" && req.url === "/preview-link") {
     await handlePreviewLink(req, res);
+    return;
+  }
+
+  if (req.method === "GET" && req.url && req.url.startsWith("/live-tokens")) {
+    await handleLiveTokens(req, res);
     return;
   }
 

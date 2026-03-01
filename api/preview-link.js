@@ -36,6 +36,27 @@ function buildPreviewUrl(rawUrl) {
   return `${normalizedBase}?source=${encodeURIComponent(rawUrl)}`;
 }
 
+function buildApiBaseUrl(req) {
+  const protoHeader = req.headers["x-forwarded-proto"];
+  const hostHeader = req.headers["x-forwarded-host"] || req.headers.host;
+  const proto = typeof protoHeader === "string" && protoHeader.trim() ? protoHeader.split(",")[0].trim() : "https";
+  const host = typeof hostHeader === "string" && hostHeader.trim() ? hostHeader.trim() : "";
+  if (!host) {
+    return undefined;
+  }
+  return `${proto}://${host}`;
+}
+
+function buildLiveSourceUrl(req, projectId, environment) {
+  const baseUrl = buildApiBaseUrl(req);
+  if (!baseUrl || !projectId) {
+    return undefined;
+  }
+  return `${baseUrl}/api/live-tokens?projectId=${encodeURIComponent(projectId)}&environment=${encodeURIComponent(
+    environment || "dev"
+  )}`;
+}
+
 module.exports = async function handler(req, res) {
   if (handleOptions(req, res)) {
     return;
@@ -90,7 +111,7 @@ module.exports = async function handler(req, res) {
   }
 
   const rawUrl = buildBranchRawUrl(owner, repo, branch, path);
-  const previewUrl = buildPreviewUrl(rawUrl);
+  const previewUrl = buildPreviewUrl(buildLiveSourceUrl(req, projectId, environment) || rawUrl);
   sendJson(res, 200, {
     projectId,
     environment,
