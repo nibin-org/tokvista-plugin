@@ -1,383 +1,2726 @@
 ﻿<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tokvista</title>
-    <style>
-      :root{--bg:#06080d;--panel:#0d121b;--line:#263142;--soft:#1b2432;--txt:#f4f7ff;--muted:#8d9ab0;--ok:#34d399;--warn:#facc15;--bad:#f87171}
-      *{box-sizing:border-box} body{margin:0;background:radial-gradient(800px 280px at 85% -10%,rgba(77,93,123,.2),transparent 48%),var(--bg);color:var(--txt);font-family:"SF Pro Display","Inter","Segoe UI Variable","Segoe UI",-apple-system,sans-serif}
-      button{cursor:pointer}
-      button:disabled{cursor:not-allowed}
-      .top{position:sticky;top:0;background:rgba(6,8,13,.92);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border-bottom:1px solid var(--soft);padding:12px}
-      .row{display:flex;align-items:center;justify-content:space-between;gap:8px}.brand{display:flex;align-items:center;gap:8px}.dot{width:20px;height:20px;border-radius:6px;background:linear-gradient(#fff,#d8e0ef);display:grid;place-items:center;color:#111;font-size:11px}.name{font-size:24px;font-weight:800}.ver{font-size:11px;color:var(--muted);border:1px solid var(--line);padding:2px 7px;border-radius:999px}
-      .icon{width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--muted);cursor:pointer}
-      .top-actions{display:flex;align-items:center;gap:8px;position:relative}
-      .tabs-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
-      .tabs{display:flex;gap:14px;min-width:0}.tab{border:0;background:transparent;color:#a7b3c7;cursor:pointer;font-size:14px;padding:6px 0;position:relative}.tab::before{content:"";display:inline-block;width:6px;height:6px;border-radius:99px;background:currentColor;margin-right:7px;transform:translateY(-1px)}.tab.on{color:#fff;font-weight:700}.tab.on::after{content:"";position:absolute;left:0;right:0;bottom:-9px;height:2px;background:#fff;border-radius:2px}
-      .badge{margin-left:6px;padding:0 5px;border:1px solid #8b5e00;border-radius:5px;color:var(--warn);font-size:11px}
-      .main{padding:10px}.panel{border:1px solid var(--line);border-radius:11px;background:linear-gradient(180deg,#111826,#0c1119);margin-bottom:8px;overflow:hidden}.pad{padding:8px 10px}
-      .h{margin:12px 0 6px;font-size:12px;letter-spacing:1.1px;text-transform:uppercase;color:#7686a1;display:flex;gap:8px;align-items:center}.h::after{content:"";height:1px;background:var(--soft);flex:1}
-      .h-publish{margin-top:4px}
-      .changes-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
-      .changes-head .h{margin:0;flex:1}
-      #tab-changes .changes{margin-top:8px}
-      .btn-refresh{height:26px;padding:0 10px;font-size:11px;background:transparent;border:1px solid #2a2a2a;color:#a1a1aa;border-radius:6px;display:inline-flex;align-items:center;gap:5px}
-      .btn-refresh:hover{background:#10141d;border-color:#3a3a3a;color:#d4d4d8}
-      .btn-refresh svg{width:12px;height:12px;display:block;flex:0 0 12px}
-      #tab-import .h{letter-spacing:.8px;color:#52525b}
-      #tab-import .h::after{content:"";flex:1;height:1px;background:#2a2a2a}
-      #tab-settings .h-danger{margin-top:8px;color:#52525b}
-      .muted{font-size:12px;color:var(--muted)} .title{font-size:24px;font-weight:700}
-      .btn{border:1px solid #31435f;border-radius:10px;background:#111927;color:#f5f8ff;padding:7px 12px;font-weight:700;cursor:pointer;transition:background .12s ease,border-color .12s ease}
-      .btn:hover{background:#162235;border-color:#4a5f83}
-      .btn:active{background:#101a29}
-      .btn-light{background:#f4f6fa;color:#0e1420;border-color:#d4dbe7;box-shadow:0 1px 0 rgba(255,255,255,.5) inset}
-      .btn-save{width:100%;height:32px;border-radius:7px;border:1px solid #d4d4d8;background:#fafafa;color:#09090b;font-weight:600;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
-      .btn-save:hover{background:#fff}
-      .btn-save svg{width:13px;height:13px;display:block;flex:0 0 13px}
-      .btn-import{width:100%;height:32px;border-radius:7px;border:1px solid #d4d4d8;background:#fafafa;color:#09090b;font-weight:600}
-      .btn-import:hover:not(:disabled){background:#ffffff}
-      .btn-import:disabled{opacity:.35;cursor:not-allowed}
-      .btn-primary{background:#fafafa;color:#09090b;font-weight:600;font-size:12px;height:34px;border-radius:7px;width:100%;border:1px solid #d4d4d8}
-      .btn-ghost{border:1px solid #8b6a22;border-radius:8px;background:transparent;color:#facc15;padding:4px 10px;font-size:12px;font-weight:600;line-height:1.2}
-      .btn-ghost:hover{background:#231a06;border-color:#c08a1b}
-      .btn-danger{height:26px;padding:0 10px;font-size:11px;border-radius:6px;background:linear-gradient(180deg,#2a0f12,#210b0f);border-color:#8e1d28;color:#ff7382}
-      .btn-danger:hover{background:linear-gradient(180deg,#321216,#280d12);border-color:#b42330}
-      .danger-title{font-size:12px;font-weight:500;color:#fafafa;line-height:1.25}
-      .danger-meta{font-size:11px;color:#71717a;line-height:1.25}
-      .sync-panel{display:flex;align-items:center;justify-content:space-between;gap:8px}
-      .sync-left{display:flex;align-items:center;gap:8px;min-width:0}
-      .sync-title{font-size:13px;font-weight:600;line-height:1.2}
-      .sync-meta{font-size:11px;line-height:1.2;color:var(--muted)}
-      .sync-dot{width:16px;height:16px;border-radius:5px;background:#111723;color:#aab8cf;border:1px solid var(--line);display:grid;place-items:center;font-size:9px}
-      .settings-host{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500}
-      .settings-host::before{content:"";width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 2px #0a1f0e;animation:statusPulse 1.8s ease-in-out infinite}
-      .settings-meta{font-size:11px;color:#71717a}
-      @keyframes statusPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.12);opacity:.75}}
-      .stats-wrap{margin-top:8px}
-      .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.stat{border:1px solid var(--line);border-radius:7px;background:#0a0f16;text-align:center;padding:7px 4px}.v{font-size:18px;font-weight:600;line-height:1}.l{font-size:10px;color:var(--muted);margin-top:3px}
-      table{width:100%;border-collapse:collapse} th,td{padding:10px;border-bottom:1px solid var(--soft);font-size:12px} tr:last-child td{border-bottom:0} th{font-size:11px;letter-spacing:.6px;color:#8090aa;text-transform:uppercase;text-align:left}
-      .preview-table{table-layout:fixed}
-      .preview-table th,.preview-table td{height:36px;padding-top:6px;padding-bottom:6px}
-      .preview-table th:nth-child(1),.preview-table td:nth-child(1){width:34px;padding-left:6px;padding-right:6px;text-align:center}
-      .preview-table th:nth-child(2),.preview-table td:nth-child(2){max-width:0}
-      .preview-table th:nth-child(3),.preview-table td:nth-child(3){width:34%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .mono{font-family:Consolas,"Courier New",monospace}.right{text-align:right}.tok{display:flex;gap:8px;align-items:center;min-width:0;width:100%}.token-name{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;width:100%}.sw{display:inline-block;vertical-align:middle;flex:0 0 16px;width:16px;height:16px;border:1px solid #3b4659;border-radius:4px;background:#2a3240}.type-pill{display:inline-grid;place-items:center;min-width:16px;height:16px;padding:0 4px;border-radius:4px;border:1px solid #334155;background:#111827;color:#8ea0b8;font-size:10px;line-height:1}.alias-pill{display:inline-block;max-width:120px;padding:3px 8px;border-radius:999px;border:1px solid #3a3a3a;background:#111827;color:#94a3b8;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
-      .list{border-top:1px solid var(--soft)}.item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--soft)}.item:last-child{border-bottom:0}.chip{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:var(--muted)}
-      .import-map .item strong{font-size:12px;font-weight:500;color:#fafafa}
-      .import-map .chip{display:inline-flex;align-items:center;gap:4px;color:#4ade80;background:#0a1f0e;border:1px solid #166534;font-family:Consolas,"Courier New",monospace;font-size:10px;padding:2px 8px;border-radius:4px}
-      .import-map .chip::before{content:"\2192";line-height:1}
-      .download-pop{position:relative}
-      .download-trigger{width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:#101827;color:#c9d5e8;cursor:pointer;font-size:15px;display:grid;place-items:center;padding:0}
-      .download-trigger:hover{border-color:#4a5f83;background:#162235}
-      .download-trigger svg{width:18px;height:18px;display:block;transform:translateY(0.5px)}
-      .download-menu{position:absolute;right:0;top:42px;min-width:320px;background:#0c111a;border:1px solid #2e3a4f;border-radius:12px;overflow:hidden;box-shadow:0 12px 28px rgba(0,0,0,.45);z-index:9}
-      .download-head{padding:10px 12px;border-bottom:1px solid var(--soft)}
-      .download-title{font-size:12px;color:#b8c5da;margin-bottom:4px}
-      .download-current{font-weight:700;font-size:13px;color:#f4f7ff}
-      .download-option{display:block;width:100%;border:0;border-bottom:1px solid var(--soft);background:transparent;color:#dbe6fb;padding:10px 12px;text-align:left;font-size:13px;cursor:pointer}
-      .download-option:hover{background:#172238}
-      .download-option.active{background:#1a2a46;color:#fff}
-      .download-action{margin:10px;width:calc(100% - 20px)}
-      .note{border:1px solid #d7a928;background:linear-gradient(180deg,#211903,#181204);border-radius:10px;padding:9px 10px;color:#facc15;font-size:12px;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
-      .status{margin-top:9px;font-size:12px;color:var(--muted)} .status.err{color:#ff9aa4}
-      .tabp{display:none}.tabp.on{display:block;animation:in .16s ease-out}@keyframes in{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
-      #tab-import{padding-bottom:16px}
-      .drop{border:1px dashed #374357;border-radius:10px;background:#090d14;padding:20px 12px;text-align:center;cursor:pointer}.drop.drag{border-color:#85aaff;background:#0c1323}
-      .drop-icon{width:20px;height:20px;display:block;margin:0 auto 6px;color:#71717a}
-      .drop-title{font-size:13px;font-weight:500;line-height:1.3}
-      .drop-sub{font-size:11px;color:#71717a;line-height:1.3;margin-top:2px}
-      .drop-file-row{margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px}
-      .drop-file{display:inline-flex;align-items:center;max-width:240px;padding:2px 8px;border-radius:999px;border:1px solid #166534;background:#0a1f0e;color:#4ade80;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .drop-clear{height:22px;padding:0 8px;border-radius:999px;border:1px solid #3f3f46;background:#111827;color:#a1a1aa;font-size:10px;font-weight:600}
-      .drop-clear:hover{border-color:#52525b;background:#181c27;color:#e4e4e7}
-      .field{margin:8px 0 0}
-      .field label{display:block;font-size:11px;color:#a1a1aa;margin:0 0 4px}
-      .field input{width:100%;border:1px solid #2a2a2a;border-radius:10px;background:#1c1c1c;color:var(--txt);padding:9px 10px}
-      .field input:focus{outline:none;border-color:#3a3a3a;box-shadow:0 0 0 2px rgba(250,250,250,0.05)}
-      .pills{display:flex;gap:6px;flex-wrap:wrap}.pill{font-size:10px;padding:2px 8px;border-radius:6px;border:1px solid;font-weight:700}.a{color:var(--ok);border-color:#14532d;background:#032313}.c{color:var(--warn);border-color:#8b5e00;background:#2b2204}.r{color:var(--bad);border-color:#991b1b;background:#2a0909}
-      .changes{border:1px solid var(--line);border-radius:10px;background:#090d14;max-height:190px;overflow:auto}
-      .chg{display:grid;grid-template-columns:14px minmax(0,1fr);align-items:start;gap:8px;padding:8px 10px;border-bottom:1px solid var(--soft)}
-      .chg:last-child{border-bottom:0}
-      .chg.added{background:linear-gradient(90deg,rgba(52,211,153,.12),transparent 58%)}
-      .chg.changed{background:linear-gradient(90deg,rgba(250,204,21,.12),transparent 58%)}
-      .chg.removed{background:linear-gradient(90deg,rgba(248,113,113,.12),transparent 58%)}
-      .chg-op{width:14px;height:14px;display:grid;place-items:center;border-radius:3px;font-size:10px;font-weight:700;line-height:1}
-      .chg-main{min-width:0;display:flex;flex-direction:column;gap:2px}
-      .chg-token{font-size:11px;color:#dce7ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .chg-diff{display:flex;align-items:center;gap:6px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .chg-old{color:#f87171}
-      .chg-arr{color:#8d9ab0}
-      .chg-new{color:#34d399}
-      .chg.added .chg-op{border:1px solid #14532d;background:#032313;color:#34d399}
-      .chg.changed .chg-op{border:1px solid #8b5e00;background:#2b2204;color:#facc15}
-      .chg.removed .chg-op{border:1px solid #991b1b;background:#2a0909;color:#f87171}
-      .chg-empty{padding:20px;min-height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px}
-      .chg-empty-icon{width:18px;height:18px;display:grid;place-items:center;border-radius:999px;border:1px solid #166534;background:#0a1f0e;color:#4ade80}
-      .chg-empty-icon svg{width:12px;height:12px;display:block}
-      .chg-empty-title{font-size:12px;font-weight:500;color:#fafafa;line-height:1.2}
-      .chg-empty-sub{font-size:11px;color:#71717a;line-height:1.2}
-      pre{margin:0;background:#090d14;border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:#dce7ff;max-height:280px;overflow:auto}
-      .snapshot-block{border:1px solid var(--line);border-radius:10px;background:#090d14;overflow:hidden}
-      .snapshot-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;border-bottom:1px solid var(--soft)}
-      .snapshot-title{font-size:12px;font-weight:600;color:#fafafa}
-      .snapshot-time{font-size:10px;color:#71717a;white-space:nowrap}
-      .snapshot-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid var(--soft)}
-      .snapshot-label{font-size:12px;color:#a1a1aa}
-      .snapshot-value{font-size:11px;color:#fafafa;max-width:65%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
-      .snapshot-toggle-wrap{padding:8px 10px}
-      .snapshot-toggle{font-size:11px;background:transparent;border:1px solid #2a2a2a;color:#a1a1aa;border-radius:6px;height:24px;padding:0 9px}
-      .snapshot-toggle:hover{background:#10141d;border-color:#3a3a3a;color:#d4d4d8}
-      .snapshot-raw{border-top:1px solid var(--soft)}
-      .snapshot-raw pre{border:0;border-radius:0;max-height:140px;overflow-x:hidden;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
-      .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:flex-end;z-index:8}.overlay.on{display:flex}.modal{width:100%;max-height:85vh;overflow:auto;background:#090d14;border-top:1px solid var(--line);border-radius:14px 14px 0 0}
-      .grab{width:46px;height:3px;background:#3b4454;border-radius:99px;margin:10px auto}.mh{padding:0 12px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px}.mt{font-size:13px;font-weight:600;line-height:1.3}.modal-close{width:24px;height:24px;display:grid;place-items:center;border-radius:5px;border:1px solid #2a2a2a;background:#0e1420;color:#8ea0b8;cursor:pointer;padding:0}.modal-close:hover{background:#121a28;border-color:#3a3a3a}.pub-card{border:1px solid #2a2a2a;border-radius:8px;overflow:hidden}.pub-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid #2a2a2a}.pub-row:last-child{border-bottom:0}.pub-label{font-size:12px;color:#a1a1aa;font-weight:500}.pub-value{margin-left:auto;max-width:68%;min-width:0;font-family:Consolas,"Courier New",monospace;font-size:11px;color:#fafafa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
-      .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px}
-      .btn-modal-secondary{height:34px;border-radius:7px;background:transparent;border:1px solid #2a2a2a;color:#a1a1aa;font-weight:600}
-      .btn-modal-secondary:hover{background:#10141d;border-color:#3a3a3a}
-      .btn-modal-primary{height:34px;border-radius:7px;background:#fafafa;border:1px solid #d4d4d8;color:#09090b;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px}
-      .btn-modal-primary:hover{background:#ffffff}
-      .btn-modal-primary svg{width:16px;height:16px;display:block;flex:0 0 16px}
-      .hide{display:none}
-    </style>
-  </head>
-  <body>
-    <div class="top">
-      <div class="row">
-        <div class="brand"><div class="dot">.</div><div class="name">tokvista</div><div class="ver">v2.4.1</div></div>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Tokvista</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ╔══════════════════════════════════════╗
+       ║  DESIGN SYSTEM                       ║
+       ╚══════════════════════════════════════╝ */
+    :root {
+      /* Warm charcoal — feels premium, not cold */
+      --bg:        #141210;
+      --surface:   #1c1a17;
+      --raised:    #222019;
+      --overlay:   #2a271f;
+      --border:    #2e2b23;
+      --border-hi: #3d3a30;
+
+      /* Text — warm whites */
+      --t1: #f0ebe3;
+      --t2: #9c9487;
+      --t3: #5c5649;
+      --t4: #3a3630;
+
+      /* Accent — amber gold, distinctive */
+      --a:     #d4a84b;
+      --a-dim: rgba(212,168,75,0.12);
+      --a-brd: rgba(212,168,75,0.28);
+
+      /* Semantic */
+      --green:   #4ec994;
+      --gn-dim:  rgba(78,201,148,0.10);
+      --gn-brd:  rgba(78,201,148,0.25);
+      --yellow:  #e8b84b;
+      --yn-dim:  rgba(232,184,75,0.10);
+      --yn-brd:  rgba(232,184,75,0.25);
+      --red:     #e06c6c;
+      --rd-dim:  rgba(224,108,108,0.10);
+      --rd-brd:  rgba(224,108,108,0.25);
+      --blue:    #6b9fe8;
+      --bl-dim:  rgba(107,159,232,0.10);
+      --bl-brd:  rgba(107,159,232,0.25);
+
+      --font: 'Geist', system-ui, sans-serif;
+      --mono: 'Geist Mono', 'Courier New', monospace;
+      --r:  10px;
+      --rs: 7px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: var(--bg);
+      color: var(--t1);
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      /* Mask host webview edge bleed (thin light seam on rounded corners). */
+      box-shadow: inset 0 0 0 1px var(--bg);
+    }
+
+    button { cursor: pointer; font-family: var(--font); border: none; }
+    button:disabled { cursor: not-allowed; opacity: 0.35; }
+
+    /* Scrollbar — wide enough to grab, styled to match UI */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--surface); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-hi);
+      border-radius: 99px;
+      border: 1px solid var(--surface);
+    }
+    ::-webkit-scrollbar-thumb:hover { background: var(--t3); }
+    ::-webkit-scrollbar-corner { background: transparent; }
+
+    /* ── STICKY HEADER ── */
+    .top {
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(20,18,16,0.94);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 13px 16px 0;
+      flex: 0 0 auto;
+    }
+
+    /* ── BRAND ── */
+    .header-row {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 9px; }
+
+    .brand-mark {
+      width: 28px; height: 28px; border-radius: 7px;
+      background: var(--t1); flex-shrink: 0;
+      display: grid; place-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+    .brand-mark svg { width: 14px; height: 14px; display: block; }
+
+    .brand-name {
+      font-size: 18px; font-weight: 700;
+      letter-spacing: -0.03em; color: var(--t1);
+    }
+
+    .ver {
+      font-family: var(--mono); font-size: 12px; font-weight: 500;
+      color: var(--t3); background: var(--raised);
+      border: 1px solid var(--border); border-radius: 99px;
+      padding: 3px 9px;
+    }
+
+    /* ── HEADER ACTIONS ── */
+    .header-actions { display: flex; align-items: center; gap: 6px; }
+
+    .icon-btn {
+      width: 32px; height: 32px; border-radius: var(--rs);
+      border: 1px solid var(--border); background: var(--surface);
+      color: var(--t3); display: grid; place-items: center;
+      transition: all 0.15s;
+    }
+    .icon-btn:hover {
+      background: var(--overlay); color: var(--t1);
+      border-color: var(--border-hi);
+    }
+    .icon-btn svg { width: 15px; height: 15px; display: block; }
+    .has-tip { position: relative; }
+    .has-tip::after,
+    .has-tip::before {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.14s ease, transform 0.14s ease;
+      position: absolute;
+      z-index: 120;
+    }
+    .has-tip::after {
+      content: attr(data-tip);
+      left: 50%;
+      bottom: calc(100% + 8px);
+      transform: translate(-50%, 3px);
+      padding: 6px 9px;
+      border-radius: 8px;
+      border: 1px solid var(--a-brd);
+      background: linear-gradient(180deg, #282319, #1d1a13);
+      color: var(--t1);
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.55);
+    }
+    .has-tip::before {
+      content: '';
+      left: 50%;
+      bottom: calc(100% + 3px);
+      transform: translateX(-50%);
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 5px solid #1d1a13;
+    }
+    .has-tip[data-tip-pos="bottom"]::after {
+      bottom: auto;
+      top: calc(100% + 8px);
+      transform: translate(-50%, -3px);
+    }
+    .has-tip[data-tip-pos="bottom"]::before {
+      bottom: auto;
+      top: calc(100% + 3px);
+      border-top: none;
+      border-bottom: 5px solid #1d1a13;
+    }
+    .has-tip:hover::after,
+    .has-tip:hover::before,
+    .has-tip:focus-visible::after,
+    .has-tip:focus-visible::before {
+      opacity: 1;
+    }
+    .has-tip:hover::after,
+    .has-tip:focus-visible::after {
+      transform: translate(-50%, 0);
+    }
+    .has-tip[data-tip-pos="bottom"]:hover::after,
+    .has-tip[data-tip-pos="bottom"]:focus-visible::after {
+      transform: translate(-50%, 0);
+    }
+
+    /* ── TABS ── */
+    .nav-tabs {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px;
+      margin-bottom: -1px;
+    }
+    .nav-tabs-left { display: flex; gap: 2px; }
+    .nav-actions .icon-btn { width: 30px; height: 30px; }
+
+    .tab {
+      width: 38px; height: 34px; padding: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: none;
+      background: transparent; color: var(--t3);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px; position: relative;
+      transition: color 0.15s, background 0.15s;
+      border-radius: 6px 6px 0 0;
+    }
+    .tab svg { width: 15px; height: 15px; display: block; flex-shrink: 0; }
+    .tab:hover { color: var(--t2); }
+    .tab.on {
+      color: var(--t1);
+      border-bottom-color: var(--a);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .chg-badge {
+      position: absolute; top: 1px; right: 1px;
+      min-width: 16px; height: 16px; padding: 0 4px;
+      background: var(--yn-dim); border: 1px solid var(--yn-brd);
+      border-radius: 99px; color: var(--yellow);
+      font-size: 10px; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+
+    /* ── LAYOUT ── */
+    .main {
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 14px 16px 0;
+      background: var(--bg);
+      overflow-y: auto;
+      overflow-x: hidden;
+      overscroll-behavior: contain;
+    }
+    /* Home tab: lock main scroll, scroll only inside preview content area */
+    .main.home-scroll-lock {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .main.home-scroll-lock > #tab-home {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    .main.home-scroll-lock > #tab-home .explorer-card {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .main.home-scroll-lock > #tab-home .explorer-preview {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .main.home-scroll-lock > #tab-home #viewVisualPanel,
+    .main.home-scroll-lock > #tab-home #viewPreviewPanel,
+    .main.home-scroll-lock > #tab-home #viewJsonPanel {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    .main.home-scroll-lock > #tab-home #viewVisualPanel {
+      display: flex;
+      flex-direction: column;
+    }
+    .main.home-scroll-lock > #tab-home #visualContent {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+      overscroll-behavior: contain;
+    }
+    .main.home-scroll-lock > #tab-home #viewPreviewPanel {
+      overflow: auto;
+      overscroll-behavior: contain;
+    }
+    .main.home-scroll-lock > #tab-home #viewJsonPanel {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .main.home-scroll-lock > #tab-home #viewJsonPanel .json-terminal {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .main.home-scroll-lock > #tab-home #viewJsonPanel .json-scroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      max-height: none;
+    }
+
+    /* ── STICKY PUBLISH FOOTER ── */
+    .publish-footer {
+      flex: 0 0 auto;
+      background: rgba(20,18,16,0.96);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      padding: 8px 10px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .publish-footer-row {
+      display: flex; align-items: stretch; gap: 8px;
+    }
+    .publish-footer-hint {
+      display: flex; align-items: center; gap: 10px;
+      flex: 1; min-width: 0;
+      min-height: 42px;
+      padding: 8px 10px;
+      background: var(--yn-dim); border: 1px solid var(--yn-brd);
+      border-radius: var(--rs);
+    }
+    .publish-footer-hint svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--yellow); }
+    .publish-footer-hint span {
+      font-size: 13px; color: var(--yellow); flex: 1; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .publish-footer-hint .btn-warn {
+      height: 30px; padding: 0 12px;
+      border-radius: 8px;
+    }
+    .publish-fab {
+      width: 40px; min-width: 40px; height: auto;
+      border-radius: 10px; border: none;
+      background: var(--t1); color: var(--bg);
+      display: inline-flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      transition: all 0.15s;
+    }
+    .publish-fab:hover { opacity: 0.86; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+    .publish-fab:active { transform: scale(0.98); }
+    .publish-fab svg { width: 16px; height: 16px; display: block; }
+    .publish-footer .status {
+      display: none;
+      margin-top: 0; margin-left: 2px; font-size: 12px;
+    }
+    .publish-footer .status.err { display: block; }
+
+    .tabp { display: none; }
+    .tabp.on { display: block; animation: fadeUp 0.18s ease-out; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(5px); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* ── SECTION LABELS ── */
+    .sec {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--t3); margin: 18px 0 8px;
+    }
+    .sec::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .sec-first { margin-top: 2px; }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    /* ── SYNC BLOCK ── */
+    .sync-block {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+      padding: 13px 15px;
+    }
+    .sync-left { display: flex; align-items: center; gap: 11px; min-width: 0; }
+    .sync-icon {
+      width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
+      background: var(--raised); border: 1px solid var(--border);
+      display: grid; place-items: center; color: var(--t2);
+    }
+    .sync-icon svg { width: 16px; height: 16px; display: block; }
+    .sync-title { font-size: 16px; font-weight: 600; color: var(--t1); letter-spacing: -0.01em; }
+    .sync-meta  { font-size: 14px; color: var(--t3); margin-top: 1px; }
+
+    /* ══════════════════════════════════════
+       UNIFIED TOKEN EXPLORER CARD
+       Layers + counts + preview in one shell
+       ══════════════════════════════════════ */
+
+    /* The outer unified card wrapping layers + preview */
+    .explorer-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    /* ── EXPLORER HEADER: total count + view toggle ── */
+    .explorer-head {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--raised);
+    }
+    .explorer-total {
+      display: flex; align-items: baseline; gap: 6px;
+    }
+    .explorer-count {
+      font-size: 20px; font-weight: 700;
+      letter-spacing: -0.04em; color: var(--t1);
+    }
+    .explorer-count-label {
+      font-size: 12px; color: var(--t3); font-weight: 500;
+    }
+    /* mini type pills row */
+    .explorer-types {
+      display: flex; gap: 4px; align-items: center; flex-wrap: wrap;
+    }
+    .etype {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 2px 7px; border-radius: 99px;
+      border: 1px solid var(--border); background: var(--overlay);
+      font-family: var(--mono); font-size: 10px; font-weight: 600;
+      color: var(--t3); white-space: nowrap;
+    }
+    .etype-dot {
+      width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
+    }
+
+    /* ── LAYER ROWS inside explorer card ── */
+    .layers-inner {
+      border-bottom: 1px solid var(--border);
+    }
+    .lgroup-inline {
+      border-bottom: 1px solid var(--border);
+    }
+    .lgroup-inline:last-child { border-bottom: none; }
+
+    .lgroup-inline-head {
+      display: flex; align-items: center; gap: 9px;
+      padding: 8px 14px; cursor: pointer; user-select: none;
+      transition: background 0.1s;
+    }
+    .lgroup-inline-head:hover { background: var(--raised); }
+
+    .lgi-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .lgi-name {
+      flex: 1; font-size: 13px; font-weight: 600;
+      color: var(--t2); letter-spacing: -0.01em;
+    }
+    .lgroup-inline.active .lgi-name { color: var(--t1); }
+
+    /* inline count badge — shows how many tokens from this group */
+    .lgi-count {
+      font-family: var(--mono); font-size: 11px;
+      color: var(--t4); font-weight: 500;
+      padding: 1px 6px; border-radius: 4px;
+      background: var(--overlay); border: 1px solid var(--border);
+    }
+    .lgroup-inline.active .lgi-count {
+      color: var(--t3);
+    }
+
+    /* slim amber toggle */
+    .ltoggle {
+      width: 28px; height: 15px; border-radius: 99px;
+      background: var(--border); border: none; cursor: pointer;
+      position: relative; flex-shrink: 0; transition: background 0.2s;
+      padding: 0;
+    }
+    .ltoggle::after {
+      content: ''; position: absolute;
+      top: 2px; left: 2px;
+      width: 11px; height: 11px; border-radius: 50%;
+      background: var(--t3); transition: transform 0.2s, background 0.2s;
+    }
+    .ltoggle.on { background: var(--a-brd); }
+    .ltoggle.on::after { transform: translateX(13px); background: var(--a); }
+
+    .lgi-arrow {
+      width: 11px; height: 11px; color: var(--t4); flex-shrink: 0;
+      transition: transform 0.18s;
+    }
+    .lgroup-inline.open .lgi-arrow { transform: rotate(90deg); }
+
+    /* sub-layer items */
+    .lgi-children {
+      display: none; background: rgba(0,0,0,0.12);
+    }
+    .lgroup-inline.open .lgi-children { display: block; }
+
+    .lgi-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 14px 5px 30px;
+      cursor: pointer; transition: background 0.1s;
+      border-top: 1px solid var(--border);
+    }
+    .lgi-item:hover { background: var(--raised); }
+    .lgi-item-name {
+      flex: 1; font-size: 12px; color: var(--t3);
+      font-family: var(--mono);
+    }
+    .lgi-item.on .lgi-item-name { color: var(--t2); }
+    .lgi-item-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: transparent; transition: background 0.15s; flex-shrink: 0;
+    }
+    .lgi-item.on .lgi-item-dot { background: var(--a); }
+
+    /* ── ADD LAYER ROW ── */
+    .layers-add-row {
+      display: flex; align-items: center; gap: 7px;
+      padding: 7px 14px;
+      cursor: pointer; font-size: 12px; color: var(--t4);
+      transition: all 0.12s; background: transparent;
+      border-bottom: 1px solid var(--border);
+    }
+    .layers-add-row:hover { background: var(--raised); color: var(--a); }
+    .layers-add-row svg { width: 11px; height: 11px; }
+
+    /* ── PREVIEW ZONE inside the unified card ── */
+    .explorer-preview {
+      /* no extra background, flows inside the card */
+    }
+
+    /* ── VIEW SEGMENT BAR ── */
+    .preview-seg-bar {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--raised);
+      gap: 10px;
+    }
+    .psb-left {
+      display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1;
+    }
+    .psb-label {
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--t3); white-space: nowrap; flex-shrink: 0;
+    }
+    .view-seg {
+      display: flex; gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 5px; overflow: hidden;
+    }
+    .vseg-btn {
+      height: 22px; padding: 0 10px;
+      border: none; background: transparent; color: var(--t3);
+      font-family: var(--mono); font-size: 10px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.12s;
+      border-right: 1px solid var(--border);
+      position: relative;
+    }
+    .vseg-btn:last-child { border-right: none; }
+    .vseg-btn:hover { color: var(--t2); background: var(--overlay); }
+    .vseg-btn.on { background: var(--a-dim); color: var(--a); }
+    .vseg-btn.on::after {
+      content: ''; position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px; background: var(--a);
+    }
+
+    /* token table inside explorer — no extra border needed */
+    .explorer-table { width: 100%; border-collapse: collapse; }
+    .explorer-table th {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--t4);
+      padding: 8px 14px; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .explorer-table th:last-child { text-align: right; }
+    .explorer-table td {
+      padding: 9px 14px; border-bottom: 1px solid var(--border);
+      font-size: 14px; vertical-align: middle;
+    }
+    .explorer-table tr:last-child td { border-bottom: none; }
+    .explorer-table tbody tr { transition: background 0.1s; }
+    .explorer-table tbody tr:hover td { background: var(--raised); }
+
+    /* empty state */
+    .explorer-empty {
+      padding: 24px 14px; text-align: center;
+      font-size: 13px; color: var(--t4);
+      font-family: var(--mono);
+    }
+
+    /* JSON terminal — same as before, but now lives inside explorer card */
+    .json-terminal {
+      background: #0e0d0b;
+    }
+    .json-terminal-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 12px;
+      background: var(--raised);
+      border-bottom: 1px solid var(--border);
+    }
+    .jt-dots { display: flex; gap: 5px; }
+    .jt-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .jt-dot-r { background: #e06c6c44; border: 1px solid #e06c6c88; }
+    .jt-dot-y { background: #e8b84b44; border: 1px solid #e8b84b88; }
+    .jt-dot-g { background: #4ec99444; border: 1px solid #4ec99488; }
+    .jt-filename { font-family: var(--mono); font-size: 11px; color: var(--t4); }
+    .jt-copy {
+      height: 18px; padding: 0 7px; border-radius: 4px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--t3); font-family: var(--mono); font-size: 10px;
+      cursor: pointer; transition: all 0.12s; font-weight: 600;
+    }
+    .jt-copy:hover { background: var(--raised); color: var(--t2); }
+    .jt-copy.copied { color: var(--green); border-color: var(--gn-brd); }
+    .json-scroll { display: flex; max-height: 260px; overflow: auto; }
+    .json-gutter {
+      padding: 12px 8px 12px 10px;
+      font-family: var(--mono); font-size: 11px; color: var(--t4);
+      line-height: 1.75; text-align: right; user-select: none;
+      flex-shrink: 0; border-right: 1px solid #1e1c18;
+      background: rgba(0,0,0,0.2); min-width: 28px;
+    }
+    .json-code {
+      padding: 12px 14px; font-family: var(--mono); font-size: 11px;
+      color: #7a7264; line-height: 1.75; white-space: pre; flex: 1;
+      background: transparent; margin: 0; border: none; tab-size: 2;
+    }
+    .j-k  { color: #c4a472; } .j-s  { color: #d4a84b; }
+    .j-n  { color: #e8c97a; } .j-b  { color: #9c9487; }
+    .j-br { color: #3d3a30; }
+
+    /* ── TOKEN TABLE ── */
+    .tok-table { width: 100%; border-collapse: collapse; }
+    .tok-table th {
+      font-size: 12px; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--t3);
+      padding: 10px 12px; text-align: left;
+      border-bottom: 1px solid var(--border);
+      background: var(--raised);
+    }
+    .tok-table th:last-child { text-align: right; }
+    .tok-table td {
+      padding: 10px 12px; border-bottom: 1px solid var(--border);
+      font-size: 15px; vertical-align: middle;
+    }
+    .tok-table tr:last-child td { border-bottom: none; }
+    .tok-table tbody tr { transition: background 0.1s; }
+    .tok-table tbody tr:hover td { background: var(--raised); }
+
+    .tc-sw   { width: 30px; padding-left: 12px; padding-right: 4px; }
+    .tc-name { }
+    .tc-val  { text-align: right; white-space: nowrap; }
+
+    .sw {
+      display: inline-block; width: 17px; height: 17px;
+      border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);
+      vertical-align: middle;
+    }
+    .type-chip {
+      display: inline-grid; place-items: center;
+      min-width: 22px; height: 19px; padding: 0 5px;
+      border-radius: 4px; border: 1px solid var(--border);
+      background: var(--overlay); color: var(--t3);
+      font-family: var(--mono); font-size: 10px; font-weight: 600;
+    }
+    .tok-name {
+      font-family: var(--mono); font-size: 14px; color: var(--t2);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 148px; display: block;
+    }
+    .tok-val {
+      font-family: var(--mono); font-size: 14px;
+      font-weight: 600; color: var(--t1);
+    }
+    .alias-chip {
+      display: inline-block; max-width: 130px;
+      padding: 3px 9px; border-radius: 5px;
+      border: 1px solid var(--bl-brd); background: var(--bl-dim);
+      color: var(--blue); font-family: var(--mono); font-size: 13px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      vertical-align: middle;
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      height: 34px; padding: 0 14px; border-radius: var(--rs);
+      border: 1px solid var(--border-hi); background: var(--raised);
+      color: var(--t1); font-size: 15px; font-weight: 500;
+      font-family: var(--font); display: inline-flex;
+      align-items: center; gap: 6px; transition: all 0.15s;
+      white-space: nowrap; letter-spacing: -0.01em;
+    }
+    .btn svg { width: 14px; height: 14px; display: block; }
+    .btn:hover { background: var(--overlay); border-color: var(--border-hi); }
+    .btn:active { transform: scale(0.98); }
+
+    .btn-primary {
+      width: 100%; height: 40px; border-radius: var(--rs);
+      background: var(--t1); color: var(--bg);
+      border: none; font-size: 15px; font-weight: 700;
+      font-family: var(--font); display: flex;
+      align-items: center; justify-content: center; gap: 7px;
+      transition: all 0.15s; letter-spacing: -0.02em;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+    .btn-primary:active { transform: scale(0.99); opacity: 0.9; }
+    .btn-primary svg { width: 15px; height: 15px; display: block; }
+
+    .btn-save {
+      width: 100%; height: 38px; border-radius: var(--rs);
+      border: 1px solid var(--border-hi); background: var(--surface);
+      color: var(--t1); font-size: 15px; font-weight: 600;
+      font-family: var(--font); display: flex;
+      align-items: center; justify-content: center; gap: 7px;
+      transition: all 0.15s;
+    }
+    .btn-save:hover { background: var(--raised); }
+    .btn-save svg { width: 15px; height: 15px; display: block; }
+
+    .btn-import {
+      width: 100%; height: 38px; border-radius: var(--rs);
+      border: 1px solid var(--border); background: var(--surface);
+      color: var(--t1); font-size: 15px; font-weight: 600;
+      font-family: var(--font); transition: all 0.15s;
+    }
+    .btn-import:hover:not(:disabled) { background: var(--raised); border-color: var(--border-hi); }
+
+    .btn-warn {
+      height: 28px; padding: 0 11px; border-radius: 6px;
+      border: 1px solid var(--yn-brd); background: var(--yn-dim);
+      color: var(--yellow); font-size: 13px; font-weight: 600;
+      font-family: var(--font); white-space: nowrap; transition: all 0.12s;
+    }
+    .btn-warn:hover { background: rgba(232,184,75,0.18); }
+
+    .btn-danger {
+      height: 28px; padding: 0 11px; border-radius: 6px;
+      border: 1px solid var(--rd-brd); background: var(--rd-dim);
+      color: var(--red); font-size: 13px; font-weight: 600;
+      font-family: var(--font); white-space: nowrap; transition: all 0.12s;
+    }
+    .btn-danger:hover { background: rgba(224,108,108,0.18); }
+
+    .btn-sm {
+      height: 28px; padding: 0 10px; border-radius: 6px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--t3); font-size: 13px; font-weight: 500;
+      font-family: var(--font); display: inline-flex;
+      align-items: center; gap: 5px; transition: all 0.12s;
+    }
+    .btn-sm:hover { background: var(--raised); color: var(--t1); border-color: var(--border-hi); }
+    .btn-sm svg { width: 12px; height: 12px; display: block; }
+
+    /* ── STATUS ── */
+    .status {
+      margin-top: 10px; font-size: 14px; color: var(--t3);
+      font-family: var(--mono);
+    }
+    .status.err { color: var(--red); }
+
+    /* ── PENDING BANNER ── */
+    .pending {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 14px;
+      background: var(--yn-dim); border: 1px solid var(--yn-brd);
+      border-radius: var(--rs); margin-bottom: 10px;
+    }
+    .pending svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--yellow); }
+    .pending-text { font-size: 15px; color: var(--yellow); flex: 1; font-weight: 500; }
+
+    /* ── PILLS ── */
+    .pill {
+      display: inline-flex; align-items: center;
+      font-family: var(--mono); font-size: 13px; font-weight: 700;
+      padding: 4px 10px; border-radius: 5px; border: 1px solid;
+    }
+    .pill-g { color: var(--green);  background: var(--gn-dim); border-color: var(--gn-brd); }
+    .pill-y { color: var(--yellow); background: var(--yn-dim); border-color: var(--yn-brd); }
+    .pill-r { color: var(--red);    background: var(--rd-dim); border-color: var(--rd-brd); }
+    .pill-n { color: var(--t2);     background: var(--raised); border-color: var(--border); }
+
+    .pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+
+    /* ── CHANGES ── */
+    .changes-head {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .changes-list {
+      border: 1px solid var(--border); border-radius: var(--rs);
+      background: rgba(0,0,0,0.18); max-height: 200px; overflow: auto;
+    }
+
+    .chg {
+      display: grid; grid-template-columns: 20px 1fr;
+      align-items: start; gap: 9px;
+      padding: 10px 12px; border-bottom: 1px solid var(--border);
+    }
+    .chg:last-child { border-bottom: none; }
+    .chg.added   { background: linear-gradient(90deg, rgba(78,201,148,0.07), transparent 65%); }
+    .chg.changed { background: linear-gradient(90deg, rgba(232,184,75,0.07), transparent 65%); }
+    .chg.removed { background: linear-gradient(90deg, rgba(224,108,108,0.07), transparent 65%); }
+
+    .chg-op {
+      width: 20px; height: 20px; border-radius: 4px;
+      display: grid; place-items: center;
+      font-family: var(--mono); font-size: 12px; font-weight: 700;
+    }
+    .chg.added   .chg-op { background: var(--gn-dim); border: 1px solid var(--gn-brd); color: var(--green); }
+    .chg.changed .chg-op { background: var(--yn-dim); border: 1px solid var(--yn-brd); color: var(--yellow); }
+    .chg.removed .chg-op { background: var(--rd-dim); border: 1px solid var(--rd-brd); color: var(--red); }
+
+    .chg-body { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .chg-tok  { font-family: var(--mono); font-size: 14px; color: var(--t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chg-diff { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 13px; }
+    .chg-old { color: var(--red); } .chg-arr { color: var(--t4); } .chg-new { color: var(--green); }
+
+    .chg-empty {
+      padding: 30px 16px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center; gap: 8px;
+    }
+    .chg-empty-ico {
+      width: 30px; height: 30px; border-radius: 50%;
+      border: 1px solid var(--gn-brd); background: var(--gn-dim);
+      color: var(--green); display: grid; place-items: center;
+    }
+    .chg-empty-ico svg { width: 14px; height: 14px; display: block; }
+    .chg-empty-t { font-size: 16px; font-weight: 600; color: var(--t1); }
+    .chg-empty-s { font-size: 14px; color: var(--t3); }
+
+    /* ── SNAPSHOT ── */
+    .snapshot {
+      border: 1px solid var(--border); border-radius: var(--rs);
+      background: var(--surface); overflow: hidden;
+    }
+    .snap-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 14px; border-bottom: 1px solid var(--border);
+      background: var(--raised);
+    }
+    .snap-title { font-size: 15px; font-weight: 600; color: var(--t1); }
+    .snap-time  { font-family: var(--mono); font-size: 13px; color: var(--t3); }
+
+    .snap-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .snap-row:last-of-type { border-bottom: none; }
+    .snap-label { font-size: 15px; color: var(--t2); }
+    .snap-val {
+      font-family: var(--mono); font-size: 14px; font-weight: 500;
+      color: var(--t1); text-align: right;
+      max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    .snap-tog-wrap { padding: 11px 14px; border-top: 1px solid var(--border); background: var(--raised); }
+    .snap-tog {
+      height: 30px; padding: 0 12px; border-radius: 6px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--t3); font-family: var(--font);
+      font-size: 14px; font-weight: 500; transition: all 0.12s;
+    }
+    .snap-tog:hover { background: var(--surface); color: var(--t1); }
+
+    .snap-raw { border-top: 1px solid var(--border); }
+    .snap-raw pre {
+      max-height: 140px; overflow: auto; white-space: pre-wrap;
+      word-break: break-all; background: rgba(0,0,0,0.25);
+      padding: 12px 14px; font-family: var(--mono);
+      font-size: 13px; color: var(--t2); line-height: 1.6;
+    }
+
+    /* ── STATUS BAR (settings) ── */
+    .status-bar {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+      padding: 13px 15px;
+    }
+    .status-host {
+      font-size: 16px; font-weight: 600; color: var(--t1);
+      display: flex; align-items: center; gap: 9px;
+      letter-spacing: -0.01em;
+    }
+    .status-host::before {
+      content: ''; width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green); flex-shrink: 0;
+      box-shadow: 0 0 0 3px var(--gn-dim);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 3px var(--gn-dim); }
+      50%       { box-shadow: 0 0 0 5px var(--gn-dim); }
+    }
+    .status-meta { font-size: 14px; color: var(--t3); margin-top: 2px; }
+
+    /* ── FIELDS ── */
+    .field { margin-bottom: 10px; }
+    .field label {
+      display: block; font-size: 14px; font-weight: 500;
+      color: var(--t2); margin-bottom: 5px;
+    }
+    .field input {
+      width: 100%; height: 38px; padding: 0 12px;
+      border: 1px solid var(--border); border-radius: var(--rs);
+      background: var(--surface); color: var(--t1);
+      font-family: var(--font); font-size: 15px; outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field input:focus {
+      border-color: var(--border-hi);
+      box-shadow: 0 0 0 3px rgba(212,168,75,0.08);
+    }
+    .field input::placeholder { color: var(--t4); }
+    .field .is-mono { font-family: var(--mono); font-size: 13px; }
+
+    /* ── DANGER ROWS ── */
+    .danger-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .danger-row:last-child { border-bottom: none; }
+    .danger-title { font-size: 15px; font-weight: 500; color: var(--t1); }
+    .danger-meta  { font-size: 14px; color: var(--t3); margin-top: 2px; }
+
+    /* ── DROP ZONE ── */
+    .drop {
+      border: 1.5px dashed var(--border-hi); border-radius: var(--r);
+      background: var(--surface); padding: 28px 18px;
+      text-align: center; cursor: pointer; transition: all 0.2s;
+    }
+    .drop:hover { border-color: var(--t3); background: var(--raised); }
+    .drop.drag  { border-color: var(--a); background: var(--a-dim); border-style: solid; }
+
+    .drop-ico   { width: 22px; height: 22px; display: block; margin: 0 auto 10px; color: var(--t3); }
+    .drop-title { font-size: 16px; font-weight: 600; color: var(--t1); margin-bottom: 4px; }
+    .drop-sub   { font-size: 14px; color: var(--t3); }
+
+    .drop-file-row { margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .drop-file {
+      display: inline-flex; align-items: center; max-width: 200px;
+      padding: 3px 10px; border-radius: 99px;
+      border: 1px solid var(--gn-brd); background: var(--gn-dim);
+      color: var(--green); font-family: var(--mono); font-size: 12px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .drop-clear {
+      height: 24px; padding: 0 10px; border-radius: 99px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--t3); font-family: var(--font); font-size: 12px;
+      font-weight: 600; transition: all 0.12s;
+    }
+    .drop-clear:hover { background: var(--raised); color: var(--t1); }
+
+    /* ── IMPORT MAP ── */
+    .import-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .import-row:last-child { border-bottom: none; }
+    .import-label { font-size: 15px; font-weight: 500; color: var(--t1); }
+    .import-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-family: var(--mono); font-size: 13px;
+      color: var(--green); background: var(--gn-dim);
+      border: 1px solid var(--gn-brd); border-radius: 5px;
+      padding: 3px 9px; white-space: nowrap;
+    }
+    .import-chip::before { content: '→ '; }
+
+    /* ── DOWNLOAD POPUP ── */
+    .dl-pop { position: relative; }
+
+    .dl-menu {
+      position: absolute; right: 0; top: 40px;
+      min-width: 300px; z-index: 100;
+      background: var(--raised); border: 1px solid var(--border-hi);
+      border-radius: var(--r); overflow: hidden;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.7);
+    }
+    .dl-head {
+      padding: 11px 13px; border-bottom: 1px solid var(--border);
+    }
+    .dl-head-label { font-size: 12px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--t3); margin-bottom: 3px; }
+    .dl-current    { font-size: 15px; font-weight: 600; color: var(--t1); }
+
+    .dl-option {
+      display: block; width: 100%; border: none;
+      border-bottom: 1px solid var(--border);
+      background: transparent; color: var(--t2);
+      padding: 12px 13px; text-align: left;
+      font-family: var(--font); font-size: 15px;
+      cursor: pointer; transition: background 0.1s;
+    }
+    .dl-option:last-of-type { border-bottom: none; }
+    .dl-option:hover { background: var(--overlay); color: var(--t1); }
+    .dl-option.on { background: rgba(255,255,255,0.03); color: var(--t1); font-weight: 500; }
+
+    .dl-action { padding: 10px; border-top: 1px solid var(--border); }
+    .dl-action .btn { width: 100%; justify-content: center; }
+
+    /* ── MODAL ── */
+    .modal-wrap {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: none; align-items: flex-end;
+    }
+    .modal-wrap.on { display: flex; }
+
+    .modal {
+      width: 100%; max-height: 88vh; overflow: auto;
+      background: #1c1a17;
+      border-top: 1px solid var(--border-hi);
+      border-radius: 14px 14px 0 0;
+      box-shadow: 0 -8px 48px rgba(0,0,0,0.7);
+      animation: slideUp 0.22s cubic-bezier(0.4,0,0.2,1);
+    }
+    @keyframes slideUp {
+      from { transform: translateY(16px); opacity: 0; }
+      to   { transform: none; opacity: 1; }
+    }
+
+    .modal-handle {
+      width: 38px; height: 4px; background: var(--border-hi);
+      border-radius: 99px; margin: 11px auto 0;
+    }
+    .modal-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 16px 11px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-title { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+
+    .modal-close {
+      width: 28px; height: 28px; border-radius: 6px;
+      border: 1px solid var(--border); background: var(--raised);
+      color: var(--t2); display: grid; place-items: center;
+      font-size: 18px; cursor: pointer; transition: all 0.12s;
+    }
+    .modal-close:hover { background: var(--overlay); color: var(--t1); }
+
+    .modal-body { padding: 14px 16px 10px; }
+
+    .pub-card {
+      border: 1px solid var(--border); border-radius: var(--rs);
+      overflow: hidden; background: rgba(0,0,0,0.2);
+    }
+    .pub-row {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 12px; padding: 10px 13px;
+      border-bottom: 1px solid var(--border);
+    }
+    .pub-row:last-child { border-bottom: none; }
+    .pub-label { font-size: 15px; color: var(--t2); font-weight: 500; }
+    .pub-val {
+      font-family: var(--mono); font-size: 14px; color: var(--t1);
+      max-width: 60%; text-align: right;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .modal-foot {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; padding: 10px 16px 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn-mc {
+      height: 38px; border-radius: var(--rs);
+      background: transparent; border: 1px solid var(--border);
+      color: var(--t2); font-family: var(--font);
+      font-size: 14px; font-weight: 500; transition: all 0.12s;
+    }
+    .btn-mc:hover { background: var(--raised); color: var(--t1); }
+
+    .btn-mp {
+      height: 38px; border-radius: var(--rs);
+      background: var(--t1); color: var(--bg);
+      border: none; font-family: var(--font);
+      font-size: 15px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: all 0.15s;
+    }
+    .btn-mp:hover { opacity: 0.86; }
+    .btn-mp svg { width: 14px; height: 14px; display: block; }
+
+    .hide { display: none !important; }
+
+    /* preview-bar / view-seg already defined above in explorer styles */
+
+    /* ══ RICH VISUAL PREVIEW ══ */
+
+    /* 3-mode toggle: Visual | Table | JSON */
+    .vseg-btn { min-width: 48px; }
+
+    /* ── Layer filter tabs ── */
+    .vprev-filter-bar {
+      display: flex; gap: 2px; padding: 8px 14px 0;
+      border-bottom: 1px solid var(--border);
+      background: var(--raised);
+      flex-wrap: wrap;
+    }
+    .vprev-filter-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 10px; border-radius: 5px 5px 0 0;
+      border: 1px solid transparent; border-bottom: none;
+      background: transparent; color: var(--t3);
+      font-size: 12px; font-weight: 600; font-family: var(--font);
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+      margin-bottom: -1px;
+    }
+    .vprev-filter-btn:hover { color: var(--t2); background: var(--overlay); }
+    .vprev-filter-btn.on {
+      color: var(--t1); background: var(--bg);
+      border-color: var(--border); border-bottom-color: var(--bg);
+      z-index: 1; position: relative;
+    }
+    .vprev-filter-dot {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+    }
+
+    /* ── Color section ── */
+    .vprev-section {
+      padding: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .vprev-section:last-child { border-bottom: none; }
+
+    .vprev-sec-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 14px; cursor: pointer; user-select: none;
+      transition: background 0.1s;
+    }
+    .vprev-sec-head:hover { background: var(--raised); }
+    .vprev-sec-body {
+      padding: 0 14px 10px;
+    }
+    .vprev-section.collapsed .vprev-sec-body { display: none; }
+    .vprev-sec-title {
+      font-size: 12px; font-weight: 600; color: var(--t2);
+      display: flex; align-items: center; gap: 7px;
+    }
+    .vprev-sec-icon {
+      width: 18px; height: 18px; border-radius: 4px;
+      background: var(--overlay); border: 1px solid var(--border);
+      display: grid; place-items: center; flex-shrink: 0; color: var(--t3);
+    }
+    .vprev-sec-icon svg { width: 10px; height: 10px; display: block; }
+    .vprev-sec-right { display: flex; align-items: center; gap: 6px; }
+    .vprev-count {
+      font-family: var(--mono); font-size: 10px; color: var(--t4);
+      background: var(--overlay); border: 1px solid var(--border);
+      padding: 1px 5px; border-radius: 3px;
+    }
+    .vprev-chevron {
+      width: 12px; height: 12px; color: var(--t4); transition: transform 0.18s;
+      transform: rotate(-90deg);
+    }
+    .vprev-section.collapsed .vprev-chevron { transform: rotate(-90deg); }
+    .vprev-section:not(.collapsed) .vprev-chevron { transform: rotate(0deg); }
+
+    /* Color palette group */
+    .color-palette-group { margin-bottom: 8px; }
+    .color-palette-group:last-child { margin-bottom: 0; }
+    .color-group-name {
+      font-size: 11px; font-weight: 600; color: var(--t3);
+      margin-bottom: 5px; text-transform: capitalize;
+      letter-spacing: 0.01em;
+    }
+    .color-strip {
+      display: flex; gap: 3px; flex-wrap: wrap;
+    }
+    .color-swatch {
+      position: relative;
+      width: 26px; height: 26px; border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.08);
+      cursor: pointer; transition: transform 0.12s, box-shadow 0.12s;
+      flex-shrink: 0;
+    }
+    .color-swatch:hover {
+      transform: scale(1.18) translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      z-index: 2;
+    }
+    /* tooltip on hover */
+    .color-swatch::after {
+      content: attr(data-tip);
+      position: absolute; bottom: calc(100% + 5px); left: 50%;
+      transform: translateX(-50%);
+      background: var(--overlay); border: 1px solid var(--border-hi);
+      color: var(--t1); font-family: var(--mono); font-size: 9px;
+      padding: 2px 5px; border-radius: 4px; white-space: nowrap;
+      pointer-events: none; opacity: 0; transition: opacity 0.12s;
+      z-index: 10;
+    }
+    .color-swatch:hover::after { opacity: 1; }
+
+    /* Alias swatch (references another token) */
+    .color-swatch.is-alias {
+      background: var(--overlay) !important;
+      border: 1px dashed var(--border-hi);
+      display: grid; place-items: center;
+    }
+    .color-swatch.is-alias::before {
+      content: '→'; font-size: 9px; color: var(--t3); font-weight: 700;
+    }
+
+    /* ── Spacing bars ── */
+    .spacing-list { display: flex; flex-direction: column; gap: 5px; }
+    .spacing-row {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .spacing-label {
+      font-family: var(--mono); font-size: 10px; color: var(--t3);
+      width: 28px; text-align: right; flex-shrink: 0;
+    }
+    .spacing-bar-wrap {
+      flex: 1; height: 8px; background: var(--overlay);
+      border-radius: 2px; overflow: hidden;
+    }
+    .spacing-bar {
+      height: 100%; background: var(--a-brd);
+      border-radius: 2px; transition: width 0.3s ease;
+      min-width: 2px;
+    }
+    .spacing-val {
+      font-family: var(--mono); font-size: 10px; color: var(--t4);
+      width: 36px; flex-shrink: 0;
+    }
+
+    /* ── Typography ── */
+    .typo-list { display: flex; flex-direction: column; gap: 6px; }
+    .typo-row {
+      display: flex; align-items: baseline; gap: 10px;
+      padding: 5px 0; border-bottom: 1px solid var(--border);
+    }
+    .typo-row:last-child { border-bottom: none; }
+    .typo-key {
+      font-family: var(--mono); font-size: 10px; color: var(--t3);
+      width: 52px; flex-shrink: 0;
+    }
+    .typo-sample {
+      flex: 1; color: var(--t1); line-height: 1.2;
+      overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    }
+    .typo-val {
+      font-family: var(--mono); font-size: 10px; color: var(--t4);
+      flex-shrink: 0;
+    }
+
+    /* ── Border radius ── */
+    .radius-strip { display: flex; gap: 6px; flex-wrap: wrap; align-items: flex-end; }
+    .radius-item {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+    .radius-box {
+      width: 24px; height: 24px;
+      background: var(--a-dim); border: 1.5px solid var(--a-brd);
+    }
+    .radius-key {
+      font-family: var(--mono); font-size: 9px; color: var(--t4);
+    }
+
+    /* ── Shadow preview ── */
+    .shadow-list { display: flex; flex-direction: column; gap: 8px; }
+    .shadow-row {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .shadow-swatch {
+      width: 32px; height: 22px; border-radius: 5px;
+      background: var(--surface); flex-shrink: 0;
+    }
+    .shadow-key {
+      font-family: var(--mono); font-size: 11px; color: var(--t2); flex: 1;
+    }
+    .shadow-val {
+      font-family: var(--mono); font-size: 10px; color: var(--t4);
+      max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* ── Border Width ── */
+    .border-list { display: flex; flex-direction: column; gap: 6px; }
+    .border-row {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .border-sample {
+      width: 36px; height: 18px; border-radius: 3px;
+      background: var(--overlay); flex-shrink: 0;
+      border-style: solid; border-color: var(--a-brd);
+    }
+    .border-key {
+      font-family: var(--mono); font-size: 11px; color: var(--t2); flex: 1;
+    }
+    .border-val {
+      font-family: var(--mono); font-size: 10px; color: var(--t4);
+    }
+
+    /* ── Opacity ── */
+    .opacity-list { display: flex; gap: 4px; flex-wrap: wrap; align-items: flex-end; }
+    .opacity-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .opacity-swatch {
+      width: 22px; height: 22px; border-radius: 4px;
+      background: var(--a); flex-shrink: 0;
+    }
+    .opacity-key { font-family: var(--mono); font-size: 9px; color: var(--t4); }
+
+    /* ── Font Weight ── */
+    .fw-list { display: flex; flex-direction: column; gap: 0; }
+    .fw-row {
+      display: flex; align-items: baseline; gap: 10px;
+      padding: 5px 0; border-bottom: 1px solid var(--border);
+    }
+    .fw-row:last-child { border-bottom: none; }
+    .fw-key { font-family: var(--mono); font-size: 10px; color: var(--t3); width: 72px; flex-shrink: 0; }
+    .fw-sample { flex: 1; color: var(--t1); font-size: 14px; line-height: 1.2; overflow: hidden; white-space: nowrap; }
+    .fw-val { font-family: var(--mono); font-size: 10px; color: var(--t4); flex-shrink: 0; }
+
+    /* ── Line Height ── */
+    .lh-list { display: flex; gap: 6px; flex-wrap: wrap; }
+    .lh-item {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      width: 48px;
+    }
+    .lh-vis {
+      width: 44px; display: flex; flex-direction: column; gap: 0; overflow: hidden;
+      border: 1px solid var(--border); border-radius: 3px; background: var(--overlay);
+    }
+    .lh-line { width: 100%; height: 5px; background: var(--t3); }
+    .lh-gap { width: 100%; background: transparent; }
+    .lh-key { font-family: var(--mono); font-size: 9px; color: var(--t4); text-align: center; }
+
+    /* ── Letter Spacing ── */
+    .ls-list { display: flex; flex-direction: column; gap: 0; }
+    .ls-row {
+      display: flex; align-items: baseline; gap: 10px;
+      padding: 5px 0; border-bottom: 1px solid var(--border);
+    }
+    .ls-row:last-child { border-bottom: none; }
+    .ls-key { font-family: var(--mono); font-size: 10px; color: var(--t3); width: 60px; flex-shrink: 0; }
+    .ls-sample { flex: 1; color: var(--t1); font-size: 12px; line-height: 1.2; overflow: hidden; white-space: nowrap; }
+    .ls-val { font-family: var(--mono); font-size: 10px; color: var(--t4); flex-shrink: 0; }
+
+    /* ── Font Family ── */
+    .ff-list { display: flex; flex-direction: column; gap: 0; }
+    .ff-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 6px 0; border-bottom: 1px solid var(--border);
+    }
+    .ff-row:last-child { border-bottom: none; }
+    .ff-key { font-family: var(--mono); font-size: 10px; color: var(--t3); width: 60px; flex-shrink: 0; }
+    .ff-sample { flex: 1; color: var(--t1); font-size: 13px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .ff-val { font-family: var(--mono); font-size: 10px; color: var(--t4); max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
+
+    /* ── Sizing tokens ── */
+    .sizing-list { display: flex; flex-direction: column; gap: 4px; }
+    .sizing-row { display: flex; align-items: center; gap: 8px; }
+    .sizing-label { font-family: var(--mono); font-size: 10px; color: var(--t3); width: 28px; text-align: right; flex-shrink: 0; }
+    .sizing-bar-wrap { flex: 1; height: 8px; background: var(--overlay); border-radius: 2px; overflow: hidden; }
+    .sizing-bar { height: 100%; background: var(--bl-brd); border-radius: 2px; min-width: 2px; }
+    .sizing-val { font-family: var(--mono); font-size: 10px; color: var(--t4); width: 44px; flex-shrink: 0; }
+
+    /* ── Other token rows ── */
+    .other-list { display: flex; flex-direction: column; gap: 0; }
+    .other-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 0; border-bottom: 1px solid var(--border);
+    }
+    .other-row:last-child { border-bottom: none; }
+    .other-key {
+      font-family: var(--mono); font-size: 11px; color: var(--t2); flex: 1;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .other-val {
+      font-family: var(--mono); font-size: 11px; color: var(--t4);
+      max-width: 120px; text-align: right;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* ── Component token rows (key-value list style) ── */
+    .comp-group { margin-bottom: 10px; }
+    .comp-group:last-child { margin-bottom: 0; }
+    .comp-group-name {
+      font-size: 11px; font-weight: 700; color: var(--a);
+      text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;
+    }
+    .comp-list { display: flex; flex-direction: column; gap: 0; }
+    .comp-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 4px 0; border-bottom: 1px solid var(--border);
+    }
+    .comp-row:last-child { border-bottom: none; }
+    .comp-swatch {
+      width: 14px; height: 14px; border-radius: 3px;
+      border: 1px solid rgba(255,255,255,0.08); flex-shrink: 0;
+    }
+    .comp-key {
+      font-family: var(--mono); font-size: 10px; color: var(--t2); flex: 1;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .comp-val {
+      font-family: var(--mono); font-size: 10px; color: var(--t4);
+      max-width: 120px; text-align: right;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .comp-alias-chip {
+      font-family: var(--mono); font-size: 10px; color: var(--blue);
+      background: var(--bl-dim); border: 1px solid var(--bl-brd);
+      border-radius: 3px; padding: 0 4px; max-width: 110px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* empty visual state */
+    .vprev-empty {
+      padding: 28px 14px; text-align: center;
+      color: var(--t4); font-size: 12px; font-family: var(--mono);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════ HEADER ══════ -->
+<div class="top">
+  <div class="header-row">
+    <div class="brand">
+      <div class="brand-mark">
+        <!-- tokvista grid mark -->
+        <svg viewBox="0 0 12 12" fill="none">
+          <rect x="1"   y="1"   width="4.5" height="4.5" rx="1"   fill="#141210"/>
+          <rect x="6.5" y="1"   width="4.5" height="4.5" rx="1"   fill="#141210" opacity=".55"/>
+          <rect x="1"   y="6.5" width="4.5" height="4.5" rx="1"   fill="#141210" opacity=".55"/>
+          <rect x="6.5" y="6.5" width="4.5" height="4.5" rx="1"   fill="#141210" opacity=".25"/>
+        </svg>
       </div>
-      <div class="tabs-row">
-        <div class="tabs">
-          <button class="tab on" data-tab="home" type="button">Home</button>
-          <button class="tab" data-tab="import" type="button">Import</button>
-          <button class="tab" data-tab="changes" type="button">Changes <span id="changesBadge" class="badge">0</span></button>
-          <button class="tab" data-tab="settings" type="button">Settings</button>
-        </div>
-        <div class="top-actions">
-          <div class="download-pop">
-            <button id="downloadTriggerBtn" class="download-trigger" type="button" title="Download" aria-label="Download options">
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M3,12.3v7a2,2,0,0,0,2,2H19a2,2,0,0,0,2-2v-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-                <polyline points="7.9 12.3 12 16.3 16.1 12.3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-                <line x1="12" y1="2.7" x2="12" y2="14.2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-              </svg>
+      <span class="brand-name">tokvista</span>
+      <span class="ver">v2.4.1</span>
+    </div>
+
+  </div>
+
+  <nav class="nav-tabs" role="tablist">
+    <div class="nav-tabs-left">
+      <button class="tab on has-tip" data-tab="home" type="button" role="tab" aria-label="Home" data-tip="Home" data-tip-pos="bottom">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3L21 10.5V20a1 1 0 0 1-1 1H15V15H9v6H4a1 1 0 0 1-1-1V10.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="tab has-tip" data-tab="import" type="button" role="tab" aria-label="Import" data-tip="Import" data-tip-pos="bottom">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V8M9 13l3 3 3-3M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="tab has-tip" data-tab="changes" type="button" role="tab" aria-label="Changes" data-tip="Changes" data-tip-pos="bottom">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span id="changesBadge" class="chg-badge">0</span>
+      </button>
+      <button class="tab has-tip" data-tab="settings" type="button" role="tab" aria-label="Settings" data-tip="Settings" data-tip-pos="bottom">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.8"/></svg>
+      </button>
+    </div>
+
+    <div class="header-actions nav-actions">
+      <button id="fullRefreshBtn" class="icon-btn has-tip" type="button" data-tip="Full refresh" data-tip-pos="bottom" aria-label="Full refresh">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 1 1-2-5.3M20 2v5h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button id="devPreviewBtn" class="icon-btn has-tip" type="button" data-tip="Generate developer preview link" data-tip-pos="bottom" aria-label="Developer preview link">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M10 14L21 3M21 3h-6M21 3v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 14.5V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <!-- Download -->
+      <div class="dl-pop">
+        <button id="downloadTriggerBtn" class="icon-btn has-tip" type="button" data-tip="Download tokens" data-tip-pos="bottom" aria-label="Download tokens">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M3 12.3v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7.9 12.3 12 16.3 16.1 12.3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/><line x1="12" y1="2.7" x2="12" y2="14.2" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg>
+        </button>
+        <div id="downloadMenu" class="dl-menu hide">
+          <div class="dl-head">
+            <div class="dl-head-label">Download format</div>
+            <div id="downloadCurrent" class="dl-current">tokens.json</div>
+          </div>
+          <button class="dl-option on" data-value="json" type="button">tokens.json — W3C design token format</button>
+          <button class="dl-option"    data-value="css"      type="button">CSS Variables — :root { --token: value }</button>
+          <button class="dl-option"    data-value="scss"     type="button">SCSS Variables — $token: value</button>
+          <button class="dl-option"    data-value="tailwind" type="button">Tailwind Config — theme.extend</button>
+          <div class="dl-action">
+            <button id="downloadTokensBtn" class="btn" type="button" style="width:100%;justify-content:center">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M3 12.3v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7.9 12.3 12 16.3 16.1 12.3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/><line x1="12" y1="2.7" x2="12" y2="14.2" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg>
+              Download
             </button>
-            <div id="downloadMenu" class="download-menu hide">
-              <div class="download-head">
-                <div class="download-title">Download format</div>
-                <div id="downloadCurrent" class="download-current">tokens.json (W3C design token format)</div>
+          </div>
+        </div>
+      </div>
+      <!-- Clear loaded preview data -->
+      <button id="clearLoadedBtn" class="icon-btn has-tip" type="button" data-tip="Clear loaded data" data-tip-pos="bottom" aria-label="Clear loaded data">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5.8A1.8 1.8 0 0 1 10.8 4h2.4A1.8 1.8 0 0 1 15 5.8V7M8.2 7l.6 11.1A2 2 0 0 0 10.8 20h2.4a2 2 0 0 0 2-1.9L15.8 7M10 10.3v6.2M14 10.3v6.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <!-- Fullscreen -->
+      <button id="fullscreenToggleBtn" class="icon-btn has-tip" type="button" data-tip="Enter fullscreen" data-tip-pos="bottom" aria-label="Enter fullscreen">
+        <svg viewBox="0 0 48 48" fill="none"><path d="M6 6L16 16M6 42L16 32M42 42L32 32M42 6L32 16" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M33 6H42V15M42 33V42H33M15 42H6V33M6 15V6H15" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </nav>
+</div>
+
+<!-- ══════ MAIN ══════ -->
+<div class="main home-scroll-lock">
+
+  <!-- ─── HOME ─── -->
+  <section id="tab-home" class="tabp on" role="tabpanel">
+
+    <!-- Sync bar -->
+    <div class="card">
+      <div class="sync-block">
+        <div class="sync-left">
+          <div class="sync-icon">
+            <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="3" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="13" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="13" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6" opacity=".38"/></svg>
+          </div>
+          <div>
+            <div class="sync-title">Figma Variables</div>
+            <div id="syncInfo" class="sync-meta">Waiting for sync…</div>
+          </div>
+        </div>
+        <button id="syncBtn" class="btn" type="button">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 1 1-2-5.3M20 2v5h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Sync
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ TOKEN EXPLORER CARD ══ -->
+    <div class="explorer-card">
+
+      <!-- Preview zone -->
+      <div class="explorer-preview">
+
+        <div class="preview-seg-bar">
+          <div class="psb-left">
+            <span class="psb-label">Token Preview</span>
+          </div>
+          <div class="view-seg">
+            <button class="vseg-btn on" id="vseg-visual"   onclick="setViewMode('visual')">Visual</button>
+            <button class="vseg-btn"    id="vseg-preview"  onclick="setViewMode('table')">Table</button>
+            <button class="vseg-btn"    id="vseg-json"     onclick="setViewMode('json')">JSON</button>
+          </div>
+        </div>
+
+        <!-- ── VISUAL MODE ── -->
+        <div id="viewVisualPanel">
+          <!-- Layer filter tabs -->
+          <div class="vprev-filter-bar" id="vprevFilterBar">
+            <button class="vprev-filter-btn on" data-filter="all" onclick="setVisualFilter('all')">
+              All
+            </button>
+          </div>
+          <div id="visualContent">
+            <div class="vprev-empty">Sync to load visual preview.</div>
+          </div>
+        </div>
+
+        <!-- ── TABLE MODE ── -->
+        <div id="viewPreviewPanel" class="hide">
+          <table class="explorer-table">
+            <thead>
+              <tr>
+                <th style="width:28px;padding-left:14px"></th>
+                <th>Token</th>
+                <th style="text-align:right">Value</th>
+              </tr>
+            </thead>
+            <tbody id="previewRows">
+              <tr><td colspan="3"><div class="explorer-empty">Sync to load tokens.</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ── JSON terminal ── -->
+        <div id="viewJsonPanel" class="hide">
+          <div class="json-terminal">
+            <div class="json-terminal-bar">
+              <div class="jt-dots">
+                <div class="jt-dot jt-dot-r"></div>
+                <div class="jt-dot jt-dot-y"></div>
+                <div class="jt-dot jt-dot-g"></div>
               </div>
-              <button class="download-option active" data-value="json" type="button">tokens.json (W3C design token format)</button>
-              <button class="download-option" data-value="css" type="button">CSS Variables (:root { --token: value })</button>
-              <button class="download-option" data-value="scss" type="button">SCSS Variables ($token: value)</button>
-              <button class="download-option" data-value="tailwind" type="button">Tailwind config (theme.extend)</button>
-              <button id="downloadTokensBtn" class="btn download-action" type="button">Download</button>
+              <span class="jt-filename">tokvista.tokens.json</span>
+              <button class="jt-copy" id="jtCopyBtn" onclick="copyJson()">copy</button>
+            </div>
+            <div class="json-scroll">
+              <div id="jsonGutter" class="json-gutter">1</div>
+              <pre id="jsonCodePre" class="json-code">// Sync to load JSON.</pre>
             </div>
           </div>
-          <button id="fullscreenToggleBtn" class="download-trigger" type="button" title="Enter fullscreen" aria-label="Enter fullscreen">
-            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M6 6L16 15.8995" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M6 41.8995L16 32" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M42.0001 41.8995L32.1006 32" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M41.8995 6L32 15.8995" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M33 6H42V15" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M42 33V42H33" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M15 42H6V33" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M6 15V6H15" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
         </div>
+
+      </div><!-- /explorer-preview -->
+    </div><!-- /explorer-card -->
+
+  </section>
+
+  <!-- ─── IMPORT ─── -->
+  <section id="tab-import" class="tabp" role="tabpanel" style="padding-bottom:16px">
+    <div class="sec sec-first">Import tokens.json</div>
+
+    <input id="tokensFile" class="hide" type="file" accept="application/json"/>
+    <div id="dropzone" class="drop" role="button" tabindex="0">
+      <svg class="drop-ico" viewBox="0 0 24 24" fill="none"><path d="M12 16V8M9 11l3-3 3 3M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="drop-title">Drop tokens.json here</div>
+      <div class="drop-sub">or click to browse</div>
+      <div id="selectedFileRow" class="drop-file-row hide">
+        <span id="selectedFileName" class="drop-file"></span>
+        <button id="clearSelectedFileBtn" class="drop-clear" type="button">Clear</button>
       </div>
     </div>
 
-    <div class="main">
-      <section id="tab-home" class="tabp on">
-        <div class="panel"><div class="pad sync-panel">
-          <div class="sync-left">
-            <div class="sync-dot">[]</div>
-            <div>
-              <div class="sync-title">Figma Variables</div>
-              <div id="syncInfo" class="sync-meta">Waiting for sync...</div>
-            </div>
-          </div>
-          <button id="syncBtn" class="btn" type="button">Sync</button>
-        </div></div>
-        <div class="stats-wrap">
-          <div class="stats">
-            <div class="stat"><div id="statColors" class="v">0</div><div class="l">Colors</div></div>
-            <div class="stat"><div id="statSpacing" class="v">0</div><div class="l">Spacing</div></div>
-            <div class="stat"><div id="statTypography" class="v">0</div><div class="l">Typography</div></div>
-            <div class="stat"><div id="statOther" class="v">0</div><div class="l">Other</div></div>
-          </div>
-        </div>
-
-        <div class="h">Token Preview</div>
-        <div class="panel"><table class="preview-table"><thead><tr><th></th><th>TOKEN</th><th class="right">VALUE</th></tr></thead><tbody id="previewRows"><tr><td class="muted" colspan="3">Sync to load token preview.</td></tr></tbody></table></div>
-
-        <div class="h h-publish">Publish</div>
-        <div class="note"><div id="homePublishHint">No changes pending since last publish</div><button id="previewPublishBtn" class="btn-ghost" type="button">Review</button></div>
-        <div style="margin-top:10px"><button id="openPublishBtn" class="btn-primary" type="button">Publish to Tokvista</button></div>
-        <div id="statusLine" class="status">Ready.</div>
-      </section>
-
-      <section id="tab-import" class="tabp">
-        <div class="h">Import tokens.json</div>
-        <input id="tokensFile" class="hide" type="file" accept="application/json" />
-        <div id="dropzone" class="drop" role="button" tabindex="0"><svg class="drop-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 16L12 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 11L12 8L15 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16V18.5C4 19.3284 4.67157 20 5.5 20H18.5C19.3284 20 20 19.3284 20 18.5V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="drop-title">Drop tokens.json here</div><div class="drop-sub">or click to browse</div><div id="selectedFileRow" class="drop-file-row hide"><div id="selectedFileName" class="drop-file"></div><button id="clearSelectedFileBtn" class="drop-clear" type="button">Clear</button></div></div>
-        <div style="margin-top:10px"><button id="importBtn" class="btn-import" type="button" disabled>Import to Figma</button></div>
-        <div class="h">What gets imported</div>
-        <div class="panel import-map">
-          <div class="item"><strong>Color tokens</strong><span class="chip">Figma variables</span></div>
-          <div class="item"><strong>Spacing / radius</strong><span class="chip">Number variables</span></div>
-          <div class="item"><strong>Typography</strong><span class="chip">String variables</span></div>
-          <div class="item"><strong>Aliases / references</strong><span class="chip">Variable aliases</span></div>
-        </div>
-      </section>
-
-      <section id="tab-changes" class="tabp">
-        <div class="changes-head"><div class="h">Since last publish</div><button id="refreshChangesBtn" class="btn-refresh" type="button"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M20 12C20 16.4183 16.4183 20 12 20C8.2014 20 5.02167 17.3524 4.2059 13.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 16V13.2C4 12.6477 4.44772 12.2 5 12.2H7.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 12C4 7.58172 7.58172 4 12 4C15.7986 4 18.9783 6.64756 19.7941 10.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M20 8V10.8C20 11.3523 19.5523 11.8 19 11.8H16.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Refresh</button></div>
-        <div class="pills"><span id="pillAdded" class="pill a">+0 Added</span><span id="pillChanged" class="pill c">~0 Changed</span><span id="pillRemoved" class="pill r">-0 Removed</span></div>
-        <div id="changesList" class="changes"><div class="chg-empty">No change data yet.</div></div>
-        <div class="h">Snapshot</div>
-        <div class="snapshot-block">
-          <div class="snapshot-head">
-            <div class="snapshot-title">Last snapshot</div>
-            <div id="snapshotTimestamp" class="snapshot-time mono">-</div>
-          </div>
-          <div class="snapshot-row"><span class="snapshot-label">Collections</span><span id="snapshotCollections" class="snapshot-value mono">-</span></div>
-          <div class="snapshot-row"><span class="snapshot-label">Token count</span><span id="snapshotTokenCount" class="snapshot-value mono">0</span></div>
-          <div class="snapshot-row"><span class="snapshot-label">Format</span><span id="snapshotFormat" class="snapshot-value mono">-</span></div>
-          <div class="snapshot-toggle-wrap"><button id="snapshotToggleBtn" class="snapshot-toggle" type="button">View raw JSON</button></div>
-          <div id="snapshotRawWrap" class="snapshot-raw hide"><pre id="snapshotPre" class="mono">No export yet.</pre></div>
-        </div>
-      </section>
-
-      <section id="tab-settings" class="tabp">
-        <div class="h">Status</div>
-        <div class="panel"><div class="pad row"><div><div id="settingsHost" class="settings-host">Not configured</div><div id="settingsMeta" class="settings-meta">Last published: never</div></div><span class="pill a">Live</span></div></div>
-        <div class="h">Connection</div>
-        <div class="field"><label for="relayUrlInput">API URL</label><input id="relayUrlInput" class="mono" type="text" placeholder="https://your-app.vercel.app/api" /></div>
-        <div class="h">Project</div>
-        <div class="field"><label for="projectIdInput">Project name</label><input id="projectIdInput" type="text" placeholder="project-alpha" /></div>
-        <div class="field"><label for="environmentInput">Branch / environment</label><input id="environmentInput" type="text" placeholder="dev" /></div>
-        <div class="field"><label for="publishKeyInput">Publish key</label><input id="publishKeyInput" class="mono" type="password" placeholder="Leave blank to use saved key" /></div>
-        <div style="margin-top:12px"><button id="saveRelayBtn" class="btn-save" type="button"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 4.5H16.7L20 7.8V19.5C20 20.3 19.3 21 18.5 21H5.5C4.7 21 4 20.3 4 19.5V6C4 5.2 4.7 4.5 5.5 4.5H5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 4.5V9.5H15V4.5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 16H16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Save settings</button></div>
-        <div class="h h-danger">Danger zone</div>
-        <div class="panel">
-          <div class="item"><div><div class="danger-title">Reset baseline</div><div class="danger-meta">Clears the publish change history</div></div><button id="resetBaselineBtn" class="btn-danger" type="button">Reset</button></div>
-          <div class="item"><div><div class="danger-title">Clear saved key</div><div class="danger-meta">Clears key field locally</div></div><button id="clearKeyBtn" class="btn-danger" type="button">Clear</button></div>
-        </div>
-      </section>
+    <div style="margin-top:10px;margin-bottom:16px">
+      <button id="importBtn" class="btn-import" type="button" disabled>Import to Figma</button>
     </div>
 
-    <div id="publishModal" class="overlay">
-      <div class="modal">
-        <div class="grab"></div>
-        <div class="mh"><div class="mt">Review changes before publishing</div><button id="closeModalBtn" class="modal-close" type="button" aria-label="Close review modal">×</button></div>
-        <div style="padding:0 12px 10px">
-          <div class="pills"><span id="modalAdded" class="pill a">+0 Added</span><span id="modalChanged" class="pill c">~0 Changed</span><span id="modalRemoved" class="pill r">-0 Removed</span></div>
-          <div id="modalChanges" class="changes" style="margin-top:8px"><div class="chg-empty">No pending changes.</div></div>
-          <div class="h" style="margin-top:12px">Publishing to</div>
-          <div class="pub-card">
-            <div class="pub-row"><span class="pub-label">Endpoint</span><span id="modalEndpoint" class="pub-value">-</span></div>
-            <div class="pub-row"><span class="pub-label">Project</span><span id="modalProject" class="pub-value">-</span></div>
-            <div class="pub-row"><span class="pub-label">Branch</span><span id="modalBranch" class="pub-value">-</span></div>
-          </div>
+    <div class="sec">What gets imported</div>
+    <div class="card">
+      <div class="import-row"><span class="import-label">Color tokens</span><span class="import-chip">Figma variables</span></div>
+      <div class="import-row"><span class="import-label">Spacing / radius</span><span class="import-chip">Number variables</span></div>
+      <div class="import-row"><span class="import-label">Typography</span><span class="import-chip">String variables</span></div>
+      <div class="import-row"><span class="import-label">Aliases / references</span><span class="import-chip">Variable aliases</span></div>
+    </div>
+  </section>
+
+  <!-- ─── CHANGES ─── -->
+  <section id="tab-changes" class="tabp" role="tabpanel">
+    <div class="changes-head" style="margin-top:2px">
+      <div class="sec" style="margin:0;flex:1">Since last publish</div>
+      <button id="refreshChangesBtn" class="btn-sm" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 1 1-2-5.3M20 2v5h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Refresh
+      </button>
+    </div>
+
+    <div class="pills">
+      <span id="pillAdded"   class="pill pill-g">+0 Added</span>
+      <span id="pillChanged" class="pill pill-y">~0 Changed</span>
+      <span id="pillRemoved" class="pill pill-r">−0 Removed</span>
+    </div>
+
+    <div id="changesList" class="changes-list" style="margin-bottom:16px">
+      <div class="chg-empty">
+        <div class="chg-empty-ico">
+          <svg viewBox="0 0 20 20" fill="none"><path d="M5.5 10.2l3.1 2.9 5.9-5.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
-        <div class="acts"><button id="cancelPublishBtn" class="btn-modal-secondary" type="button">Cancel</button><button id="confirmPublishBtn" class="btn-modal-primary" type="button"><svg viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4.99997 5.50005H20M7.5 14L12.5 9.00003L17.5 14" stroke="currentColor" stroke-width="1.2"/><path d="M12.5 9.00003V20" stroke="currentColor" stroke-width="1.2"/></svg>Confirm &amp; Publish</button></div>
+        <div class="chg-empty-t">All caught up</div>
+        <div class="chg-empty-s">No changes since last publish</div>
       </div>
     </div>
 
-    <script>
-      const tabs=[...document.querySelectorAll(".tab")],panels=[...document.querySelectorAll(".tabp")];
-      const el=(id)=>document.getElementById(id);
-      const state={latestExportPayload:null,latestExportText:"",selectedFile:null,downloadFormat:"json",fullscreen:false,snapshotRawOpen:false,changeLog:{summary:"No token changes detected.",lines:[],added:0,changed:0,removed:0}};
-      const refs={tokensFile:el("tokensFile"),dropzone:el("dropzone"),selectedFileRow:el("selectedFileRow"),selectedFileName:el("selectedFileName"),clearSelectedFileBtn:el("clearSelectedFileBtn"),importBtn:el("importBtn"),relayUrlInput:el("relayUrlInput"),projectIdInput:el("projectIdInput"),environmentInput:el("environmentInput"),publishKeyInput:el("publishKeyInput"),previewRows:el("previewRows"),syncInfo:el("syncInfo"),statusLine:el("statusLine"),snapshotPre:el("snapshotPre"),snapshotTimestamp:el("snapshotTimestamp"),snapshotCollections:el("snapshotCollections"),snapshotTokenCount:el("snapshotTokenCount"),snapshotFormat:el("snapshotFormat"),snapshotToggleBtn:el("snapshotToggleBtn"),snapshotRawWrap:el("snapshotRawWrap"),homePublishHint:el("homePublishHint"),changesBadge:el("changesBadge"),pillAdded:el("pillAdded"),pillChanged:el("pillChanged"),pillRemoved:el("pillRemoved"),changesList:el("changesList"),settingsHost:el("settingsHost"),settingsMeta:el("settingsMeta"),modal:el("publishModal"),modalAdded:el("modalAdded"),modalChanged:el("modalChanged"),modalRemoved:el("modalRemoved"),modalChanges:el("modalChanges"),modalEndpoint:el("modalEndpoint"),modalProject:el("modalProject"),modalBranch:el("modalBranch"),statColors:el("statColors"),statSpacing:el("statSpacing"),statTypography:el("statTypography"),statOther:el("statOther"),downloadTriggerBtn:el("downloadTriggerBtn"),downloadMenu:el("downloadMenu"),downloadCurrent:el("downloadCurrent"),fullscreenToggleBtn:el("fullscreenToggleBtn")};
+    <div class="sec">Snapshot</div>
+    <div class="snapshot">
+      <div class="snap-head">
+        <span class="snap-title">Last snapshot</span>
+        <span id="snapshotTimestamp" class="snap-time">—</span>
+      </div>
+      <div class="snap-row"><span class="snap-label">Collections</span><span id="snapshotCollections" class="snap-val">—</span></div>
+      <div class="snap-row"><span class="snap-label">Token count</span><span id="snapshotTokenCount" class="snap-val">0</span></div>
+      <div class="snap-row"><span class="snap-label">Format</span><span id="snapshotFormat" class="snap-val">—</span></div>
+      <div class="snap-tog-wrap">
+        <button id="snapshotToggleBtn" class="snap-tog" type="button">View raw JSON</button>
+      </div>
+      <div id="snapshotRawWrap" class="snap-raw hide">
+        <pre id="snapshotPre">No export yet.</pre>
+      </div>
+    </div>
+  </section>
 
-      function setTab(id){tabs.forEach(t=>t.classList.toggle("on",t.dataset.tab===id));panels.forEach(p=>p.classList.toggle("on",p.id===`tab-${id}`))}
-      tabs.forEach(t=>t.addEventListener("click",()=>setTab(t.dataset.tab)));
-      function setStatus(msg,err){refs.statusLine.textContent=msg;refs.statusLine.classList.toggle("err",!!err)}
-      function readRelayPayload(){return{relayUrl:refs.relayUrlInput.value.trim(),projectId:refs.projectIdInput.value.trim(),environment:refs.environmentInput.value.trim(),publishKey:refs.publishKeyInput.value.trim()}}
-      function post(msg){parent.postMessage({pluginMessage:msg},"*")}
-      function isObj(v){return typeof v==="object"&&v!==null&&!Array.isArray(v)}
-      function fmt(v){if(typeof v==="string")return v;if(typeof v==="number"||typeof v==="boolean")return String(v);if(v===null)return"null";try{return JSON.stringify(v)}catch{return String(v)}}
-      function isAliasValue(v){return typeof v==="string"&&/^\{[^}]+\}$/.test(v.trim())}
-      function categoryForType(t){const n=String(t||"").toLowerCase();if(n.includes("color"))return"colors";if(n.includes("spacing")||n.includes("radius")||n.includes("number")||n.includes("dimension")||n.includes("sizing")||n.includes("opacity"))return"spacing";if(n.includes("typography")||n.includes("font")||n.includes("string")||n.includes("text"))return"typography";return"other"}
-      function typeChipLabel(row){const t=String(row.type||"").toLowerCase(),n=String(row.token||"").toLowerCase();if(t.includes("radius")||n.includes("radius"))return"r";if(t.includes("spacing")||t.includes("dimension")||t.includes("number")||t.includes("sizing")||n.includes("spacing")||n.includes("size"))return"px";if(t.includes("opacity")||n.includes("opacity"))return"%";if(t.includes("typography")||t.includes("font")||t.includes("string")||t.includes("text")||n.includes("font")||n.includes("text"))return"t";return"•"}
-      function rows(payload){const out=[];if(!isObj(payload))return out;const root=isObj(payload.tokens)?payload.tokens:payload;const walk=(n,p)=>{if(!isObj(n))return;const hv=Object.prototype.hasOwnProperty.call(n,"value")||Object.prototype.hasOwnProperty.call(n,"$value");if(hv&&p.length>0){const t=typeof n.type==="string"?n.type:typeof n.$type==="string"?n.$type:"unknown";const rv=Object.prototype.hasOwnProperty.call(n,"value")?n.value:n.$value;out.push({token:`--${p.join("-")}`,type:t,value:rv})}for(const[k,v]of Object.entries(n)){if(k.startsWith("$")||k==="type"||k==="$type"||k==="value"||k==="$value"||k==="description")continue;walk(v,[...p,k])}};walk(root,[]);return out}
-      function toTokenSlug(input){const clean=String(input||"").trim().replace(/\s+/g,"-").replace(/[^a-zA-Z0-9_-]/g,"-").replace(/-+/g,"-").replace(/^[-_]+|[-_]+$/g,"").toLowerCase();return clean||"token"}
-      function rowTokenSlug(row){return toTokenSlug(String(row.token||"").replace(/^--/,""))}
-      function readAliasInner(value){if(!isAliasValue(value))return"";const inner=String(value).trim().slice(1,-1).trim();return inner}
-      function aliasToTokenSlug(aliasInner){return toTokenSlug(String(aliasInner||"").replace(/\./g,"-"))}
-      function isColorLike(type,value){if(typeof value!=="string")return false;const v=value.trim();const t=String(type||"").toLowerCase();if(t.includes("color"))return true;return /^(#([0-9a-f]{3,8})|rgb|rgba|hsl|hsla|oklch|oklab|lab|lch|transparent)/i.test(v)}
-      function quoted(value){return `'${String(value).replace(/\\/g,"\\\\").replace(/'/g,"\\'")}'`}
-      function cssValueForRow(row){const aliasInner=readAliasInner(row.value);if(aliasInner)return`var(--${aliasToTokenSlug(aliasInner)})`;if(typeof row.value==="string"){const v=row.value.trim();if(isColorLike(row.type,v))return v;if(v==="")return'""';if(/[\s;:{}]/.test(v))return`"${v.replace(/\\/g,"\\\\").replace(/"/g,'\\"')}"`;return v}if(typeof row.value==="number"||typeof row.value==="boolean")return String(row.value);if(row.value===null)return"null";return`"${JSON.stringify(row.value).replace(/\\/g,"\\\\").replace(/"/g,'\\"')}"`}
-      function scssValueForRow(row){const aliasInner=readAliasInner(row.value);if(aliasInner)return`$${aliasToTokenSlug(aliasInner)}`;if(typeof row.value==="string"){const v=row.value.trim();if(isColorLike(row.type,v))return v;return quoted(v)}if(typeof row.value==="number"||typeof row.value==="boolean")return String(row.value);if(row.value===null)return"null";return quoted(JSON.stringify(row.value))}
-      function tailwindValueForRow(row){const aliasInner=readAliasInner(row.value);if(aliasInner)return`var(--${aliasToTokenSlug(aliasInner)})`;if(typeof row.value==="number"||typeof row.value==="boolean")return row.value;if(row.value===null)return"null";if(typeof row.value==="string")return row.value.trim();return JSON.stringify(row.value)}
-      function buildCssVariables(payload){const list=rows(payload);if(!list.length)return"/* No tokens to export */\n";const lines=["/* Generated by Tokvista */",":root {"];list.forEach((row)=>{lines.push(`  --${rowTokenSlug(row)}: ${cssValueForRow(row)};`)});lines.push("}","");return lines.join("\n")}
-      function buildScssVariables(payload){const list=rows(payload);if(!list.length)return"// No tokens to export\n";const lines=["// Generated by Tokvista"];list.forEach((row)=>{lines.push(`$${rowTokenSlug(row)}: ${scssValueForRow(row)};`)});lines.push("");return lines.join("\n")}
-      function buildTailwindConfig(payload){const list=rows(payload);const colors={},spacing={},typography={},other={};list.forEach((row)=>{const key=rowTokenSlug(row),value=tailwindValueForRow(row),cat=categoryForType(row.type);if(cat==="colors"){colors[key]=value;return}if(cat==="spacing"){spacing[key]=value;return}if(cat==="typography"){typography[key]=value;return}other[key]=value});const extend={};if(Object.keys(colors).length)extend.colors=colors;if(Object.keys(spacing).length)extend.spacing=spacing;if(Object.keys(typography).length)extend.typography=typography;if(Object.keys(other).length)extend.tokens=other;const config={theme:{extend}};return`/** Generated by Tokvista */\nmodule.exports = ${JSON.stringify(config,null,2)};\n`}
-      function buildDownloadArtifact(format,payload,jsonText){if(format==="json")return{filename:"tokvista.tokens.json",mime:"application/json;charset=utf-8",content:jsonText};if(format==="css")return{filename:"tokvista.tokens.css",mime:"text/css;charset=utf-8",content:buildCssVariables(payload)};if(format==="scss")return{filename:"tokvista.tokens.scss",mime:"text/x-scss;charset=utf-8",content:buildScssVariables(payload)};return{filename:"tokvista.tailwind.config.js",mime:"application/javascript;charset=utf-8",content:buildTailwindConfig(payload)}}
-      function renderPreview(payload){const list=rows(payload),count={colors:0,spacing:0,typography:0,other:0};list.forEach((r)=>{count[categoryForType(r.type)]++});refs.statColors.textContent=String(count.colors);refs.statSpacing.textContent=String(count.spacing);refs.statTypography.textContent=String(count.typography);refs.statOther.textContent=String(count.other);refs.previewRows.innerHTML="";if(!list.length){refs.previewRows.innerHTML='<tr><td class="muted" colspan="3">No tokens available.</td></tr>';return}list.slice(0,6).forEach(r=>{const tr=document.createElement("tr"),swCell=document.createElement("td"),nameCell=document.createElement("td"),valueCell=document.createElement("td"),nameWrap=document.createElement("div"),name=document.createElement("span"),isColor=String(r.type).toLowerCase().includes("color"),rawValue=typeof r.value==="string"?r.value.trim():"",isAlias=isAliasValue(rawValue);if(isColor&&rawValue&&!isAlias){const sw=document.createElement("span");sw.className="sw";sw.style.background=rawValue;swCell.appendChild(sw)}else{const chip=document.createElement("span");chip.className="type-pill mono";chip.textContent=isColor&&isAlias?"ref":typeChipLabel(r);swCell.appendChild(chip)}nameWrap.className="tok";name.className="mono token-name";name.textContent=r.token;nameWrap.appendChild(name);nameCell.appendChild(nameWrap);valueCell.className="mono right";valueCell.style.fontWeight="700";if(isAliasValue(r.value)){const pill=document.createElement("span");pill.className="alias-pill mono";pill.textContent=String(r.value);valueCell.appendChild(pill)}else{valueCell.textContent=fmt(r.value)}tr.appendChild(swCell);tr.appendChild(nameCell);tr.appendChild(valueCell);refs.previewRows.appendChild(tr)})}
-      function parseLine(line){if(typeof line!=="string"||line.length<2)return{kind:"changed",token:String(line||""),oldValue:"",newValue:"",note:""};const p=line[0],kind=p==="+"?"added":p==="~"?"changed":p==="-"?"removed":"changed",body=(p==="+"||p==="~"||p==="-")?line.slice(1).trim():line.trim();if(kind!=="changed")return{kind,token:body,oldValue:"",newValue:"",note:""};const parts=body.split("\t");if(parts.length>=3)return{kind,token:parts[0].trim(),oldValue:parts[1].trim(),newValue:parts.slice(2).join("\t").trim(),note:""};if(/\(value changed\)$/i.test(body))return{kind,token:body.replace(/\s*\(value changed\)$/i,""),oldValue:"",newValue:"",note:"value changed"};return{kind,token:body,oldValue:"",newValue:"",note:"changed"}}
-      function renderChangeTarget(target,lines){target.innerHTML="";if(!lines.length){target.innerHTML='<div class="chg-empty"><span class="chg-empty-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 10.2L8.6 13.1L14.5 7.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div class="chg-empty-title">All caught up</div><div class="chg-empty-sub">No changes since last publish</div></div>';return}lines.forEach(line=>{const p=parseLine(line),r=document.createElement("div"),op=document.createElement("span"),main=document.createElement("div"),token=document.createElement("div");r.className=`chg ${p.kind}`;op.className="chg-op mono";op.textContent=p.kind==="added"?"+":p.kind==="removed"?"-":"~";main.className="chg-main";token.className="chg-token mono";token.textContent=p.token;main.appendChild(token);if(p.kind==="changed"){const diff=document.createElement("div");diff.className="chg-diff mono";if(p.oldValue&&p.newValue){const old=document.createElement("span"),arr=document.createElement("span"),next=document.createElement("span");old.className="chg-old";old.textContent=p.oldValue;arr.className="chg-arr";arr.textContent="->";next.className="chg-new";next.textContent=p.newValue;diff.appendChild(old);diff.appendChild(arr);diff.appendChild(next)}else{diff.className="chg-diff muted";diff.textContent=p.note||"value changed"}main.appendChild(diff)}r.appendChild(op);r.appendChild(main);target.appendChild(r)})}
-      function renderChangeLog(cl){const c=isObj(cl)?cl:{},a=Number(c.added||0),ch=Number(c.changed||0),r=Number(c.removed||0),lines=Array.isArray(c.lines)?c.lines.filter(x=>typeof x==="string"):[];refs.pillAdded.textContent=`+${a} Added`;refs.pillChanged.textContent=`~${ch} Changed`;refs.pillRemoved.textContent=`-${r} Removed`;refs.modalAdded.textContent=`+${a} Added`;refs.modalChanged.textContent=`~${ch} Changed`;refs.modalRemoved.textContent=`-${r} Removed`;const total=a+ch+r;refs.changesBadge.textContent=String(total);refs.homePublishHint.textContent=total?`${total} change${total===1?"":"s"} pending since last publish`:"No changes pending since last publish";renderChangeTarget(refs.changesList,lines);renderChangeTarget(refs.modalChanges,lines)}
-      function formatSnapshotTimestamp(raw){if(typeof raw!=="string"||!raw.trim())return"-";const d=new Date(raw);if(Number.isNaN(d.getTime()))return raw;return d.toLocaleString()}
-      function renderSnapshot(payload){const p=isObj(payload)?payload:null,meta=p&&isObj(p.meta)?p.meta:null,summary=p&&isObj(p.summary)?p.summary:null,collections=meta&&Array.isArray(meta.collections)?meta.collections:(p&&Array.isArray(p.collections)?p.collections:[]),count=summary&&typeof summary.exportedCount==="number"?summary.exportedCount:rows(p||{}).length,format=p&&typeof p.$format==="string"?p.$format:(p&&typeof p.format==="string"?p.format:"-"),exportedAt=p&&typeof p.$exportedAt==="string"?p.$exportedAt:(p&&typeof p.exportedAt==="string"?p.exportedAt:"");refs.snapshotTimestamp.textContent=formatSnapshotTimestamp(exportedAt);refs.snapshotCollections.textContent=collections.length?collections.join(", "):"-";refs.snapshotTokenCount.textContent=String(count);refs.snapshotFormat.textContent=format||"-";refs.snapshotPre.textContent=state.latestExportText||"No export yet."}
-      function updateSnapshotToggle(){refs.snapshotRawWrap.classList.toggle("hide",!state.snapshotRawOpen);refs.snapshotToggleBtn.textContent=state.snapshotRawOpen?"Hide raw JSON":"View raw JSON"}
-      function openModal(){refs.modalEndpoint.textContent=refs.relayUrlInput.value.trim()||"-";refs.modalProject.textContent=refs.projectIdInput.value.trim()||"-";refs.modalBranch.textContent=refs.environmentInput.value.trim()||"dev";refs.modal.classList.add("on")}
-      function closeModal(){refs.modal.classList.remove("on")}
-      function refresh(){refs.syncInfo.textContent="Syncing...";post({type:"export-tokens"});post({type:"preview-publish-changes"})}
-      function setFile(file){state.selectedFile=file||null;refs.selectedFileName.textContent=state.selectedFile?state.selectedFile.name:"";refs.selectedFileRow.classList.toggle("hide",!state.selectedFile);refs.importBtn.disabled=!state.selectedFile}
-      function getSelectedDownloadFormat(){return typeof state.downloadFormat==="string"?state.downloadFormat:"json"}
-      function getFormatLabel(v){if(v==="json")return"tokens.json (W3C design token format)";if(v==="css")return"CSS Variables (:root { --token: value })";if(v==="scss")return"SCSS Variables ($token: value)";return"Tailwind config (theme.extend)"}
-      function updateDownloadFormatUi(){const v=getSelectedDownloadFormat();refs.downloadCurrent.textContent=getFormatLabel(v);refs.downloadMenu.querySelectorAll(".download-option").forEach((btn)=>btn.classList.toggle("active",btn.dataset.value===v))}
-      const FULLSCREEN_ENTER_ICON='<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 6L16 15.8995" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 41.8995L16 32" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M42.0001 41.8995L32.1006 32" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M41.8995 6L32 15.8995" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 6H42V15" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M42 33V42H33" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 42H6V33" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 15V6H15" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-      const FULLSCREEN_EXIT_ICON='<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.29289 3.29289C3.68342 2.90237 4.31658 2.90237 4.70711 3.29289L8 6.58579V5C8 4.44772 8.44772 4 9 4C9.55228 4 10 4.44772 10 5V9C10 9.55228 9.55228 10 9 10H5C4.44772 10 4 9.55228 4 9C4 8.44772 4.44772 8 5 8H6.58579L3.29289 4.70711C2.90237 4.31658 2.90237 3.68342 3.29289 3.29289ZM19.2929 3.29289C19.6834 2.90237 20.3166 2.90237 20.7071 3.29289C21.0976 3.68342 21.0976 4.31658 20.7071 4.70711L17.4142 8H19C19.5523 8 20 8.44772 20 9C20 9.55228 19.5523 10 19 10H15C14.4477 10 14 9.55228 14 9V5C14 4.44772 14.4477 4 15 4C15.5523 4 16 4.44772 16 5V6.58579L19.2929 3.29289ZM4 15C4 14.4477 4.44772 14 5 14H9C9.55228 14 10 14.4477 10 15V19C10 19.5523 9.55228 20 9 20C8.44772 20 8 19.5523 8 19V17.4142L4.70711 20.7071C4.31658 21.0976 3.68342 21.0976 3.29289 20.7071C2.90237 20.3166 2.90237 19.6834 3.29289 19.2929L6.58579 16H5C4.44772 16 4 15.5523 4 15ZM14 15C14 14.4477 14.4477 14 15 14H19C19.5523 14 20 14.4477 20 15C20 15.5523 19.5523 16 19 16H17.4142L20.7071 19.2929C21.0976 19.6834 21.0976 20.3166 20.7071 20.7071C20.3166 21.0976 19.6834 21.0976 19.2929 20.7071L16 17.4142V19C16 19.5523 15.5523 20 15 20C14.4477 20 14 19.5523 14 19V15Z" fill="currentColor"/></svg>';
-      function updateFullscreenButton(){if(state.fullscreen){refs.fullscreenToggleBtn.innerHTML=FULLSCREEN_EXIT_ICON;refs.fullscreenToggleBtn.title="Exit fullscreen";refs.fullscreenToggleBtn.setAttribute("aria-label","Exit fullscreen");return}refs.fullscreenToggleBtn.innerHTML=FULLSCREEN_ENTER_ICON;refs.fullscreenToggleBtn.title="Enter fullscreen";refs.fullscreenToggleBtn.setAttribute("aria-label","Enter fullscreen")}
+  <!-- ─── SETTINGS ─── -->
+  <section id="tab-settings" class="tabp" role="tabpanel">
 
-      el("syncBtn").addEventListener("click",refresh);
-      el("saveRelayBtn").addEventListener("click",()=>post({type:"save-relay-settings",payload:readRelayPayload()}));
-      el("refreshChangesBtn").addEventListener("click",()=>post({type:"preview-publish-changes"}));
-      el("previewPublishBtn").addEventListener("click",()=>{setTab("changes");post({type:"preview-publish-changes"})});
-      el("openPublishBtn").addEventListener("click",openModal);el("cancelPublishBtn").addEventListener("click",closeModal);el("closeModalBtn").addEventListener("click",closeModal);
-      refs.modal.addEventListener("click",(e)=>{if(e.target===refs.modal)closeModal()});
-      el("confirmPublishBtn").addEventListener("click",()=>{closeModal();setStatus("Publishing to Tokvista...",false);post({type:"publish-tokvista",payload:readRelayPayload()})});
-      el("downloadTokensBtn").addEventListener("click",()=>{if(!state.latestExportPayload||!state.latestExportText){setStatus("No exported JSON available yet.",true);return}const format=getSelectedDownloadFormat();const artifact=buildDownloadArtifact(format,state.latestExportPayload,state.latestExportText);const blob=new Blob([artifact.content],{type:artifact.mime});const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=artifact.filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);setStatus(`Downloaded ${artifact.filename}`,false)});
-      refs.downloadTriggerBtn.addEventListener("click",()=>{refs.downloadMenu.classList.toggle("hide")});
-      refs.downloadMenu.querySelectorAll(".download-option").forEach((btn)=>{btn.addEventListener("click",()=>{state.downloadFormat=btn.dataset.value||"json";updateDownloadFormatUi()})});
-      document.addEventListener("click",(e)=>{if(!e.target.closest(".download-pop"))refs.downloadMenu.classList.add("hide")});
-      refs.fullscreenToggleBtn.addEventListener("click",()=>post({type:"toggle-fullscreen"}));
-      el("clearKeyBtn").addEventListener("click",()=>{refs.publishKeyInput.value="";setStatus("Key field cleared in UI.",false)});
-      el("resetBaselineBtn").addEventListener("click",()=>{state.changeLog={summary:"No token changes detected.",lines:[],added:0,changed:0,removed:0};renderChangeLog(state.changeLog);setStatus("Local preview baseline view cleared.",false)});
+    <div class="sec sec-first">Status</div>
+    <div class="card" style="margin-bottom:10px">
+      <div class="status-bar">
+        <div>
+          <div id="settingsHost" class="status-host">Not configured</div>
+          <div id="settingsMeta" class="status-meta">Last published: never</div>
+        </div>
+        <span class="pill pill-g">Live</span>
+      </div>
+    </div>
 
-      refs.dropzone.addEventListener("click",()=>refs.tokensFile.click());
-      refs.dropzone.addEventListener("keydown",(e)=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();refs.tokensFile.click()}});
-      refs.tokensFile.addEventListener("change",()=>setFile(refs.tokensFile.files&&refs.tokensFile.files[0]?refs.tokensFile.files[0]:null));
-      refs.dropzone.addEventListener("dragover",(e)=>{e.preventDefault();refs.dropzone.classList.add("drag")});
-      refs.dropzone.addEventListener("dragleave",()=>refs.dropzone.classList.remove("drag"));
-      refs.dropzone.addEventListener("drop",(e)=>{e.preventDefault();refs.dropzone.classList.remove("drag");const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(!f)return;if(!f.name.toLowerCase().endsWith(".json")){setStatus("Only .json files are supported.",true);return}setFile(f)});
-      refs.clearSelectedFileBtn.addEventListener("click",(e)=>{e.preventDefault();e.stopPropagation();refs.tokensFile.value="";setFile(null);setStatus("Selected file cleared.",false)});
-      refs.importBtn.addEventListener("click",()=>{const f=state.selectedFile;if(!f){setStatus("Select a tokens.json file first.",true);return}f.text().then(t=>{const j=JSON.parse(t);post({type:"import-tokens",payload:j});setStatus("Import sent to plugin runtime.",false)}).catch(err=>setStatus(`Invalid JSON: ${err}`,true))});
-      refs.snapshotToggleBtn.addEventListener("click",()=>{state.snapshotRawOpen=!state.snapshotRawOpen;updateSnapshotToggle()});
+    <div class="sec">Connection</div>
+    <div class="field">
+      <label for="relayUrlInput">API URL</label>
+      <input id="relayUrlInput" class="is-mono" type="text" placeholder="https://your-app.vercel.app/api"/>
+    </div>
 
-      window.onmessage=(event)=>{const msg=event.data.pluginMessage;if(!msg)return;
-        if(msg.type==="relay-settings"){const p=msg.payload||{};refs.relayUrlInput.value=p.relayUrl||"https://tokvista-plugin.vercel.app/api";refs.projectIdInput.value=p.projectId||"";refs.environmentInput.value=p.environment||"dev";refs.publishKeyInput.value="";refs.settingsHost.textContent=refs.relayUrlInput.value.replace(/^https?:\/\//i,"")||"Not configured";refs.settingsMeta.textContent=p.publishKeySaved?`Configured for ${refs.projectIdInput.value||"project"} / ${refs.environmentInput.value||"dev"}`:"Publish key not saved yet."}
-        if(msg.type==="relay-settings-saved"){setStatus("Publish settings saved.",false);refs.publishKeyInput.value="";refs.settingsHost.textContent=refs.relayUrlInput.value.replace(/^https?:\/\//i,"")||"Not configured";refs.settingsMeta.textContent=`Configured for ${refs.projectIdInput.value||"project"} / ${refs.environmentInput.value||"dev"}`}
-        if(msg.type==="publish-result"){const p=msg.payload||{};setStatus(p.versionId?`Published version ${p.versionId}`:(p.message||"Published successfully."),false);if(p.changeLog&&typeof p.changeLog==="object"){state.changeLog=p.changeLog;renderChangeLog(state.changeLog)}post({type:"preview-publish-changes"})}
-        if(msg.type==="publish-change-preview"){const p=msg.payload||{};if(typeof p.error==="string"&&p.error.trim()){setStatus(p.error,true);return}if(p.changeLog&&typeof p.changeLog==="object"){state.changeLog=p.changeLog;renderChangeLog(state.changeLog)}}
-        if(msg.type==="fullscreen-state"){const p=msg.payload||{};state.fullscreen=Boolean(p.enabled);updateFullscreenButton()}
-        if(msg.type==="export-result"){state.latestExportPayload=msg.payload||null;state.latestExportText=JSON.stringify(msg.payload,null,2);renderSnapshot(state.latestExportPayload);renderPreview(state.latestExportPayload);refs.syncInfo.textContent=`${rows(state.latestExportPayload).length} tokens - last synced ${new Date().toLocaleTimeString()}`;setStatus("Export complete.",false)}
-        if(msg.type==="import-result"){const p=msg.payload||{};setStatus(`Import complete: ${p.imported||0} applied (${p.created||0} created, ${p.updated||0} updated, ${p.replaced||0} replaced), ${p.skipped||0} skipped.`,false);refresh()}
-        if(msg.type==="error"){setStatus(`Error: ${msg.payload}`,true)}
-      };
+    <div class="sec">Project</div>
+    <div class="field">
+      <label for="projectIdInput">Project name</label>
+      <input id="projectIdInput" type="text" placeholder="project-alpha"/>
+    </div>
+    <div class="field">
+      <label for="environmentInput">Branch / environment</label>
+      <input id="environmentInput" type="text" placeholder="dev"/>
+    </div>
+    <div class="field">
+      <label for="publishKeyInput">Publish key</label>
+      <input id="publishKeyInput" class="is-mono" type="password" placeholder="Leave blank to use saved key"/>
+    </div>
 
-      updateDownloadFormatUi();
-      updateFullscreenButton();
-      updateSnapshotToggle();
-      renderSnapshot(null);
-      post({type:"load-relay-settings"});post({type:"preview-publish-changes"});post({type:"export-tokens"});
-    </script>
-  </body>
+    <div style="margin-top:12px;margin-bottom:16px">
+      <button id="saveRelayBtn" class="btn-save" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 4.5H16.7L20 7.8V19.5C20 20.3 19.3 21 18.5 21H5.5C4.7 21 4 20.3 4 19.5V6C4 5.2 4.7 4.5 5.5 4.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 4.5V9.5H15V4.5M8 16H16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Save settings
+      </button>
+    </div>
+
+    <div class="sec">Danger zone</div>
+    <div class="card">
+      <div class="danger-row">
+        <div>
+          <div class="danger-title">Reset baseline</div>
+          <div class="danger-meta">Clears the publish change history</div>
+        </div>
+        <button id="resetBaselineBtn" class="btn-danger" type="button">Reset</button>
+      </div>
+      <div class="danger-row">
+        <div>
+          <div class="danger-title">Clear saved key</div>
+          <div class="danger-meta">Removes stored publish key from this device</div>
+        </div>
+        <button id="clearKeyBtn" class="btn-danger" type="button">Clear</button>
+      </div>
+    </div>
+
+  </section>
+</div>
+
+<!-- ══════ STICKY PUBLISH FOOTER ══════ -->
+<div class="publish-footer" id="publishFooter">
+  <div class="publish-footer-row">
+    <div class="publish-footer-hint">
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5M12 16v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span id="homePublishHint">No changes pending since last publish</span>
+      <button id="previewPublishBtn" class="btn-warn" type="button">Review</button>
+    </div>
+    <button id="openPublishBtn" class="publish-fab has-tip" type="button" aria-label="Publish to Tokvista" data-tip="Publish to Tokvista">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4M8 8l4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 18v1.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div id="statusLine" class="status">Ready.</div>
+</div>
+<div id="publishModal" class="modal-wrap">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <span class="modal-title">Review changes before publishing</span>
+      <button id="closeModalBtn" class="modal-close" type="button">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div class="pills">
+        <span id="modalAdded"   class="pill pill-g">+0 Added</span>
+        <span id="modalChanged" class="pill pill-y">~0 Changed</span>
+        <span id="modalRemoved" class="pill pill-r">−0 Removed</span>
+      </div>
+      <div id="modalChanges" class="changes-list" style="margin-bottom:14px">
+        <div class="chg-empty" style="padding:18px">No pending changes.</div>
+      </div>
+      <div class="sec" style="margin-top:0">Publishing to</div>
+      <div class="pub-card">
+        <div class="pub-row"><span class="pub-label">Endpoint</span><span id="modalEndpoint" class="pub-val">—</span></div>
+        <div class="pub-row"><span class="pub-label">Project</span><span id="modalProject" class="pub-val">—</span></div>
+        <div class="pub-row"><span class="pub-label">Branch</span><span id="modalBranch" class="pub-val">—</span></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button id="cancelPublishBtn" class="btn-mc" type="button">Cancel</button>
+      <button id="confirmPublishBtn" class="btn-mp" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4M8 8l4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 18v1.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Confirm &amp; Publish
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════ UTILS ══════ */
+const $ = id => document.getElementById(id);
+const tabs   = [...document.querySelectorAll('.tab')];
+const panels = [...document.querySelectorAll('.tabp')];
+
+const state = {
+  latestExportPayload: null,
+  latestExportText: '',
+  selectedFile: null,
+  latestPreviewUrl: '',
+  latestReferenceUrl: '',
+  latestRawUrl: '',
+  latestVersionId: '',
+  previewResolvePending: false,
+  downloadFormat: 'json',
+  fullscreen: false,
+  snapshotRawOpen: false,
+  changeLog: { summary: '', lines: [], added: 0, changed: 0, removed: 0 }
+};
+let currentViewMode = 'visual';
+
+const refs = {
+  tokensFile: $('tokensFile'), dropzone: $('dropzone'),
+  selectedFileRow: $('selectedFileRow'), selectedFileName: $('selectedFileName'),
+  clearSelectedFileBtn: $('clearSelectedFileBtn'), importBtn: $('importBtn'),
+  relayUrlInput: $('relayUrlInput'), projectIdInput: $('projectIdInput'),
+  environmentInput: $('environmentInput'), publishKeyInput: $('publishKeyInput'),
+  previewRows: $('previewRows'), syncInfo: $('syncInfo'), statusLine: $('statusLine'),
+  snapshotPre: $('snapshotPre'), snapshotTimestamp: $('snapshotTimestamp'),
+  snapshotCollections: $('snapshotCollections'), snapshotTokenCount: $('snapshotTokenCount'),
+  snapshotFormat: $('snapshotFormat'), snapshotToggleBtn: $('snapshotToggleBtn'),
+  snapshotRawWrap: $('snapshotRawWrap'), homePublishHint: $('homePublishHint'),
+  changesBadge: $('changesBadge'), pillAdded: $('pillAdded'),
+  pillChanged: $('pillChanged'), pillRemoved: $('pillRemoved'),
+  changesList: $('changesList'), settingsHost: $('settingsHost'),
+  settingsMeta: $('settingsMeta'), modal: $('publishModal'),
+  modalAdded: $('modalAdded'), modalChanged: $('modalChanged'),
+  modalRemoved: $('modalRemoved'), modalChanges: $('modalChanges'),
+  modalEndpoint: $('modalEndpoint'), modalProject: $('modalProject'),
+  modalBranch: $('modalBranch'),
+  statColors: $('statColors'), statSpacing: $('statSpacing'),
+  statTypography: $('statTypography'), statOther: $('statOther'),
+  fullRefreshBtn: $('fullRefreshBtn'),
+  devPreviewBtn: $('devPreviewBtn'),
+  downloadTriggerBtn: $('downloadTriggerBtn'), downloadMenu: $('downloadMenu'),
+  downloadCurrent: $('downloadCurrent'), clearLoadedBtn: $('clearLoadedBtn'),
+  fullscreenToggleBtn: $('fullscreenToggleBtn'),
+};
+
+/* ── TABS ── */
+function setTab(id) {
+  tabs.forEach(t => t.classList.toggle('on', t.dataset.tab === id));
+  panels.forEach(p => p.classList.toggle('on', p.id === `tab-${id}`));
+  document.querySelector('.main')?.classList.toggle('home-scroll-lock', id === 'home');
+  const footer = document.getElementById('publishFooter');
+  if (footer) footer.classList.toggle('hide', id !== 'home');
+}
+tabs.forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
+
+/* ── HELPERS ── */
+function setStatus(msg, err) {
+  refs.statusLine.textContent = msg;
+  refs.statusLine.classList.toggle('err', !!err);
+}
+function readRelayPayload() {
+  return {
+    relayUrl:    refs.relayUrlInput.value.trim(),
+    projectId:   refs.projectIdInput.value.trim(),
+    environment: refs.environmentInput.value.trim(),
+    publishKey:  refs.publishKeyInput.value.trim(),
+  };
+}
+function post(msg)  { parent.postMessage({ pluginMessage: msg }, '*'); }
+function isObj(v)   { return typeof v === 'object' && v !== null && !Array.isArray(v); }
+function fmt(v) {
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if (v === null) return 'null';
+  try { return JSON.stringify(v); } catch { return String(v); }
+}
+function isAliasValue(v)     { return typeof v === 'string' && /^\{[^}]+\}$/.test(v.trim()); }
+function categoryForType(t)  {
+  const n = String(t || '').toLowerCase();
+  if (n.includes('color')) return 'colors';
+  if (n.includes('spacing') || n.includes('radius') || n.includes('number') || n.includes('dimension') || n.includes('sizing') || n.includes('opacity')) return 'spacing';
+  if (n.includes('typography') || n.includes('font') || n.includes('string') || n.includes('text')) return 'typography';
+  return 'other';
+}
+function typeChipLabel(row) {
+  const t = String(row.type || '').toLowerCase(), n = String(row.token || '').toLowerCase();
+  if (t.includes('radius') || n.includes('radius'))   return 'r';
+  if (t.includes('spacing') || t.includes('dimension') || t.includes('number') || t.includes('sizing') || n.includes('spacing') || n.includes('size')) return 'px';
+  if (t.includes('opacity') || n.includes('opacity'))  return '%';
+  if (t.includes('typography') || t.includes('font') || t.includes('string') || t.includes('text') || n.includes('font') || n.includes('text')) return 'T';
+  return '·';
+}
+function normalizeLinkValue(v) {
+  if (typeof v !== 'string') return '';
+  const trimmed = v.trim();
+  return trimmed;
+}
+function setPreviewLinkState(payload) {
+  const p = isObj(payload) ? payload : {};
+  const nextPreview = normalizeLinkValue(p.previewUrl);
+  const nextReference = normalizeLinkValue(p.referenceUrl);
+  const nextRaw = normalizeLinkValue(p.rawUrl);
+  const nextVersion = normalizeLinkValue(p.versionId);
+  if (nextPreview) state.latestPreviewUrl = nextPreview;
+  if (nextReference) state.latestReferenceUrl = nextReference;
+  if (nextRaw) state.latestRawUrl = nextRaw;
+  if (nextVersion) state.latestVersionId = nextVersion;
+  updatePreviewLinkUi();
+}
+function updatePreviewLinkUi() {
+  const hasPreview = Boolean(state.latestPreviewUrl);
+  refs.devPreviewBtn.disabled = false;
+  const tip = hasPreview ? 'Open and copy developer preview link' : 'Generate live developer preview link';
+  refs.devPreviewBtn.setAttribute('data-tip', tip);
+  refs.devPreviewBtn.setAttribute('aria-label', tip);
+}
+function openAndCopyPreview(url) {
+  post({ type: 'open-external-url', payload: { url } });
+  navigator.clipboard?.writeText(url)
+    .then(() => setStatus('Developer preview opened and link copied.', false))
+    .catch(() => setStatus('Developer preview opened.', false));
+}
+function openDeveloperPreview() {
+  const url = state.latestPreviewUrl;
+  if (url) {
+    openAndCopyPreview(url);
+    return;
+  }
+  state.previewResolvePending = true;
+  setStatus('Resolving live preview link…', false);
+  post({ type: 'resolve-preview-link' });
+}
+function rows(payload) {
+  const out = [];
+  if (!isObj(payload)) return out;
+  const root = isObj(payload.tokens) ? payload.tokens : payload;
+  const walk = (n, p) => {
+    if (!isObj(n)) return;
+    const hv = Object.prototype.hasOwnProperty.call(n, 'value') || Object.prototype.hasOwnProperty.call(n, '$value');
+    if (hv && p.length > 0) {
+      const t  = typeof n.type === 'string' ? n.type : typeof n.$type === 'string' ? n.$type : 'unknown';
+      const rv = Object.prototype.hasOwnProperty.call(n, 'value') ? n.value : n.$value;
+      out.push({ token: `--${p.join('-')}`, type: t, value: rv });
+    }
+    for (const [k, v] of Object.entries(n)) {
+      if (k.startsWith('$') || k === 'type' || k === '$type' || k === 'value' || k === '$value' || k === 'description') continue;
+      walk(v, [...p, k]);
+    }
+  };
+  walk(root, []);
+  return out;
+}
+function toSlug(input) {
+  return String(input || '').trim().replace(/\s+/g,'-').replace(/[^a-zA-Z0-9_-]/g,'-').replace(/-+/g,'-').replace(/^[-_]+|[-_]+$/g,'').toLowerCase() || 'token';
+}
+function rowSlug(row)  { return toSlug(String(row.token || '').replace(/^--/, '')); }
+function aliasSlug(ai) { return toSlug(String(ai || '').replace(/\./g, '-')); }
+function readAliasInner(v) {
+  if (!isAliasValue(v)) return '';
+  return String(v).trim().slice(1, -1).trim();
+}
+function isColorLike(type, value) {
+  if (typeof value !== 'string') return false;
+  const v = value.trim(), t = String(type || '').toLowerCase();
+  if (t.includes('color')) return true;
+  return /^(#([0-9a-f]{3,8})|rgb|rgba|hsl|hsla|oklch|oklab|lab|lch|transparent)/i.test(v);
+}
+function cssVal(row) {
+  const ai = readAliasInner(row.value);
+  if (ai) return `var(--${aliasSlug(ai)})`;
+  if (typeof row.value === 'string') {
+    const v = row.value.trim();
+    if (isColorLike(row.type, v)) return v;
+    if (v === '') return '""';
+    if (/[\s;:{}]/.test(v)) return `"${v.replace(/\\/g,'\\\\').replace(/"/g,'\\"')}"`;
+    return v;
+  }
+  if (typeof row.value === 'number' || typeof row.value === 'boolean') return String(row.value);
+  if (row.value === null) return 'null';
+  return `"${JSON.stringify(row.value).replace(/\\/g,'\\\\').replace(/"/g,'\\"')}"`;
+}
+function scssVal(row) {
+  const ai = readAliasInner(row.value);
+  if (ai) return `$${aliasSlug(ai)}`;
+  if (typeof row.value === 'string') {
+    const v = row.value.trim();
+    if (isColorLike(row.type, v)) return v;
+    return `'${v.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}'`;
+  }
+  if (typeof row.value === 'number' || typeof row.value === 'boolean') return String(row.value);
+  return 'null';
+}
+function twVal(row) {
+  const ai = readAliasInner(row.value);
+  if (ai) return `var(--${aliasSlug(ai)})`;
+  if (typeof row.value === 'number' || typeof row.value === 'boolean') return row.value;
+  if (row.value === null) return 'null';
+  if (typeof row.value === 'string') return row.value.trim();
+  return JSON.stringify(row.value);
+}
+function buildCss(payload) {
+  const list = rows(payload);
+  if (!list.length) return '/* No tokens */\n';
+  return ['/* Generated by Tokvista */', ':root {', ...list.map(r => `  --${rowSlug(r)}: ${cssVal(r)};`), '}', ''].join('\n');
+}
+function buildScss(payload) {
+  const list = rows(payload);
+  if (!list.length) return '// No tokens\n';
+  return ['// Generated by Tokvista', ...list.map(r => `$${rowSlug(r)}: ${scssVal(r)};`), ''].join('\n');
+}
+function buildTailwind(payload) {
+  const list = rows(payload), colors = {}, spacing = {}, typography = {}, other = {};
+  list.forEach(r => {
+    const k = rowSlug(r), v = twVal(r), c = categoryForType(r.type);
+    if (c === 'colors') colors[k] = v;
+    else if (c === 'spacing') spacing[k] = v;
+    else if (c === 'typography') typography[k] = v;
+    else other[k] = v;
+  });
+  const ex = {};
+  if (Object.keys(colors).length)     ex.colors = colors;
+  if (Object.keys(spacing).length)    ex.spacing = spacing;
+  if (Object.keys(typography).length) ex.typography = typography;
+  if (Object.keys(other).length)      ex.tokens = other;
+  return `/** Generated by Tokvista */\nmodule.exports = ${JSON.stringify({theme:{extend:ex}},null,2)};\n`;
+}
+function buildArtifact(format, payload, jsonText) {
+  if (format === 'json')     return { filename: 'tokvista.tokens.json',        mime: 'application/json;charset=utf-8',       content: jsonText };
+  if (format === 'css')      return { filename: 'tokvista.tokens.css',         mime: 'text/css;charset=utf-8',               content: buildCss(payload) };
+  if (format === 'scss')     return { filename: 'tokvista.tokens.scss',        mime: 'text/x-scss;charset=utf-8',            content: buildScss(payload) };
+  return                            { filename: 'tokvista.tailwind.config.js', mime: 'application/javascript;charset=utf-8', content: buildTailwind(payload) };
+}
+
+/* ── RENDER PREVIEW ── */
+function renderPreview(payload) {
+  const list = rows(payload), cnt = { colors: 0, spacing: 0, typography: 0, other: 0 };
+  list.forEach(r => { cnt[categoryForType(r.type)]++; });
+
+  const total = list.length;
+  const et = { colors: 'etColors', spacing: 'etSpacing', typography: 'etTypo', other: 'etOther' };
+  Object.entries(et).forEach(([k, id]) => { const el = document.getElementById(id); if (el) el.textContent = String(cnt[k]); });
+
+  if (refs.statColors)     refs.statColors.textContent     = String(cnt.colors);
+  if (refs.statSpacing)    refs.statSpacing.textContent    = String(cnt.spacing);
+  if (refs.statTypography) refs.statTypography.textContent = String(cnt.typography);
+  if (refs.statOther)      refs.statOther.textContent      = String(cnt.other);
+
+  // Render visual if it's visible
+  if (currentViewMode === 'visual') renderVisualPreview(payload);
+
+  refs.previewRows.innerHTML = '';
+  if (!list.length) {
+    refs.previewRows.innerHTML = '<tr><td colspan="3"><div class="explorer-empty">No tokens available.</div></td></tr>';
+    return;
+  }
+  list.slice(0, 10).forEach(r => {
+    const tr = document.createElement('tr');
+    const swCell = document.createElement('td'); swCell.style.cssText = 'width:28px;padding-left:14px';
+    const nmCell = document.createElement('td');
+    const vlCell = document.createElement('td'); vlCell.style.textAlign = 'right';
+    const rawValue = typeof r.value === 'string' ? r.value.trim() : '';
+    const isColor  = String(r.type).toLowerCase().includes('color');
+    const isAlias  = isAliasValue(rawValue);
+    if (isColor && rawValue && !isAlias) {
+      const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = rawValue; swCell.appendChild(sw);
+    } else {
+      const chip = document.createElement('span'); chip.className = 'type-chip';
+      chip.textContent = isColor && isAlias ? 'ref' : typeChipLabel(r); swCell.appendChild(chip);
+    }
+    const nm = document.createElement('span'); nm.className = 'tok-name'; nm.textContent = r.token; nmCell.appendChild(nm);
+    if (isAlias) {
+      const chip = document.createElement('span'); chip.className = 'alias-chip'; chip.textContent = String(r.value); vlCell.appendChild(chip);
+    } else {
+      const v = document.createElement('span'); v.className = 'tok-val'; v.textContent = fmt(r.value); vlCell.appendChild(v);
+    }
+    tr.append(swCell, nmCell, vlCell);
+    refs.previewRows.appendChild(tr);
+  });
+}
+
+/* ═══════════════════════════════════════════════════
+   RICH VISUAL PREVIEW ENGINE
+   Reads real token JSON → renders grouped swatches,
+   spacing bars, radius previews, type samples, etc.
+   ═══════════════════════════════════════════════════ */
+function resolveAlias(val, root, seen = new Set()) {
+  if (typeof val !== 'string') return null;
+  const m = val.match(/^\{([^}]+)\}$/);
+  if (!m) return null;
+  const ref = m[1];
+  if (seen.has(ref)) return null;
+  seen.add(ref);
+  const parts = ref.split('.');
+  const roots = isObj(root) ? [root, ...Object.values(root).filter(isObj)] : [root];
+  for (const r of roots) {
+    let node = r; let ok = true;
+    for (const p of parts) { if (isObj(node) && p in node) node = node[p]; else { ok = false; break; } }
+    if (ok && isObj(node)) {
+      const v = node.value ?? node.$value;
+      if (v !== undefined) {
+        if (typeof v === 'string' && /^\{[^}]+\}$/.test(v.trim())) {
+          return resolveAlias(v, root, seen);
+        }
+        return String(v);
+      }
+    }
+  }
+  return null;
+}
+function isColorVal(v) { return typeof v === 'string' && /^(#[0-9a-f]{3,8}|rgb|rgba|hsl|oklch)/i.test(v.trim()); }
+function inferVisualCategory(type, path, displayValue) {
+  const t = String(type || '').toLowerCase().replace(/\s/g, '');
+  const p = path.map(x => String(x).toLowerCase()).join('/');
+  if (t === 'color' || (!t && isColorVal(displayValue))) return 'color';
+  if (t === 'opacity' || /(^|\/)(opacity|alpha)(\/|$)/.test(p)) return 'opacity';
+  if (t === 'boxshadow' || t === 'shadow' || /(^|\/)(shadow|elevation)(\/|$)/.test(p)) return 'shadow';
+  if (t === 'fontsizes' || t === 'fontsize' || /font[-_]?size|(^|\/)text[-_]?size(\/|$)/.test(p)) return 'fontSize';
+  if (t === 'fontweights' || t === 'fontweight' || t === 'weight' || /font[-_]?weight|(^|\/)weight(\/|$)/.test(p)) return 'fontWeight';
+  if (t === 'fontfamilies' || t === 'fontfamily' || /font[-_]?family/.test(p)) return 'fontFamily';
+  if (t === 'lineheights' || t === 'lineheight' || /line[-_]?height|(^|\/)leading(\/|$)/.test(p)) return 'lineHeight';
+  if (t === 'letterspacing' || /letter[-_]?spacing|(^|\/)tracking(\/|$)/.test(p)) return 'letterSpacing';
+  if (t === 'spacing' || /(^|\/)(space|spacing|padding|margin|gap|gutter|inset)(\/|$)/.test(p)) return 'spacing';
+  if (t === 'borderradius' || /(^|\/)(radius|radii|corner)(\/|$)/.test(p)) return 'borderRadius';
+  if (t === 'borderwidth' || /border[-_]?width|stroke[-_]?width/.test(p)) return 'borderWidth';
+  if (t === 'sizing' || t === 'dimension' || t === 'number' || /(^|\/)(size|height|width|min-width|max-width|min-height|max-height)(\/|$)/.test(p)) return 'sizing';
+  return 'other';
+}
+function tokenRoot(payload) {
+  const r = isObj(payload?.tokens) ? payload.tokens : payload;
+  return isObj(r) ? r : {};
+}
+function visualSetEntries(root) {
+  const entries = Object.entries(root).filter(([, v]) => isObj(v));
+  if (!entries.length) return [{ key: '_root', value: root }];
+  if (entries.some(([key]) => key.includes('/'))) {
+    return entries.map(([key, value]) => ({ key, value, label: key.split('/')[0] || key }));
+  }
+  const setNameRx = /^(foundation|semantic|swmantic|components?|global)$/i;
+  const topLooksLikeSets = entries.some(([key]) => setNameRx.test(key));
+  if (topLooksLikeSets) {
+    return entries.map(([key, value]) => ({ key, value, label: key }));
+  }
+  if (entries.length === 1) {
+    const [parentKey, parentValue] = entries[0];
+    if (isObj(parentValue)) {
+      const nested = Object.entries(parentValue).filter(([, v]) => isObj(v));
+      const nestedLooksLikeSets = nested.some(([key]) => setNameRx.test(key) || key.includes('/'));
+      if (nestedLooksLikeSets) {
+        return nested.map(([key, value]) => ({ key: `${parentKey}/${key}`, value, label: key }));
+      }
+    }
+  }
+  return entries.map(([key, value]) => ({ key, value, label: key }));
+}
+
+let currentVisualFilter = 'all';
+function setVisualFilter(filter) {
+  currentVisualFilter = filter;
+  document.querySelectorAll('.vprev-filter-btn').forEach(b => {
+    b.classList.toggle('on', b.dataset.filter === filter);
+  });
+  if (state.latestExportPayload) renderVisualPreview(state.latestExportPayload);
+}
+
+function renderVisualPreview(payload) {
+  const container = document.getElementById('visualContent');
+  if (!container) return;
+  if (!payload) { container.innerHTML = '<div class="vprev-empty">Sync to load visual preview.</div>'; return; }
+
+  const root = tokenRoot(payload);
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+  const allSets = visualSetEntries(root);
+  const activeSets = currentVisualFilter === 'all'
+    ? allSets
+    : allSets.filter(set => set.key === currentVisualFilter);
+  if (!activeSets.length) {
+    container.innerHTML = '<div class="vprev-empty">No visual tokens detected in this layer.</div>';
+    return;
+  }
+
+  // Collect tokens from selected sets
+  const colorGroups = {}, spacingTokens = [], sizingTokens = [], radiusTokens = [],
+        borderWidthTokens = [], shadowTokens = [], opacityTokens = [],
+        fontSizeTokens = [], fontWeightTokens = [], fontFamilyTokens = [],
+        lineHeightTokens = [], letterSpacingTokens = [],
+        compGroups = {}, otherTokens = [];
+
+  function walk(node, path, setName) {
+    if (!isObj(node)) return;
+    const val  = node.value ?? node.$value;
+    const type = String(node.type ?? node.$type ?? '').toLowerCase().replace(/\s/g,'');
+    if (val !== undefined && path.length > 0) {
+      const isAlias = typeof val === 'string' && val.startsWith('{');
+      const resolved = isAlias ? resolveAlias(String(val), root) : null;
+      const display  = resolved ?? String(val);
+      const key = path[path.length - 1];
+      const full = path.join('-');
+
+      const cat = inferVisualCategory(type, path, display);
+      if (cat === 'color') {
+        const gParts = path.slice(0, -1).filter(p => !/^\d+$/.test(p));
+        const gName = gParts.length ? gParts.join(' › ') : (setName || 'base');
+        if (!colorGroups[gName]) colorGroups[gName] = [];
+        colorGroups[gName].push({ step: key, hex: isColorVal(display) ? display : null, isAlias, rawVal: String(val), full });
+      } else if (cat === 'spacing') {
+        spacingTokens.push({ key: full, val: display });
+      } else if (cat === 'sizing') {
+        sizingTokens.push({ key: full, val: display });
+      } else if (cat === 'borderRadius') {
+        radiusTokens.push({ key: full, val: display });
+      } else if (cat === 'borderWidth') {
+        borderWidthTokens.push({ key: full, val: display });
+      } else if (cat === 'shadow') {
+        shadowTokens.push({ key: full, val: display });
+      } else if (cat === 'opacity') {
+        opacityTokens.push({ key: full, val: display });
+      } else if (cat === 'fontSize') {
+        fontSizeTokens.push({ key: full, val: display });
+      } else if (cat === 'fontWeight') {
+        fontWeightTokens.push({ key: full, val: display });
+      } else if (cat === 'fontFamily') {
+        fontFamilyTokens.push({ key: full, val: display });
+      } else if (cat === 'lineHeight') {
+        lineHeightTokens.push({ key: full, val: display });
+      } else if (cat === 'letterSpacing') {
+        letterSpacingTokens.push({ key: full, val: display });
+      } else if (/component/i.test(setName || '')) {
+        const grp = path[0] || 'other';
+        if (!compGroups[grp]) compGroups[grp] = [];
+        compGroups[grp].push({ key: full, val: String(val), resolvedVal: display, isAlias, isColor: isColorVal(display), hex: isColorVal(display) ? display : null });
+      } else {
+        otherTokens.push({ key: full, val: display });
+      }
+      return;
+    }
+    for (const [k, v] of Object.entries(node)) {
+      if (k.startsWith('$') || ['type','$type','value','$value','description'].includes(k)) continue;
+      walk(v, [...path, k], setName);
+    }
+  }
+
+  for (const set of activeSets) {
+    if (isObj(set.value)) walk(set.value, [], set.label || set.key);
+  }
+
+  // Icon SVGs for section headers
+  const icons = {
+    color:    `<svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" fill="currentColor" opacity=".6"/><circle cx="6" cy="6" r="2" fill="currentColor"/></svg>`,
+    spacing:  `<svg viewBox="0 0 12 12" fill="none"><path d="M2 6h8M2 3v6M10 3v6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+    sizing:   `<svg viewBox="0 0 12 12" fill="none"><rect x="2" y="2" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M6 2v8" stroke="currentColor" stroke-width="1.2" stroke-dasharray="1.5 1.5"/></svg>`,
+    radius:   `<svg viewBox="0 0 12 12" fill="none"><path d="M2 9V5a3 3 0 0 1 3-3h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+    border:   `<svg viewBox="0 0 12 12" fill="none"><rect x="2" y="4" width="8" height="4" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>`,
+    shadow:   `<svg viewBox="0 0 12 12" fill="none"><rect x="2" y="2" width="7" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="5" width="7" height="5" rx="1" fill="currentColor" opacity=".2"/></svg>`,
+    opacity:  `<svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4" fill="currentColor" opacity=".3"/><path d="M6 2a4 4 0 0 1 0 8z" fill="currentColor"/></svg>`,
+    fontSize: `<svg viewBox="0 0 12 12" fill="none"><text x="1" y="9" font-size="9" fill="currentColor" font-weight="bold">Ag</text></svg>`,
+    fontWeight:`<svg viewBox="0 0 12 12" fill="none"><text x="1" y="9" font-size="9" fill="currentColor" font-weight="bold" style="font-weight:900">B</text></svg>`,
+    fontFamily:`<svg viewBox="0 0 12 12" fill="none"><text x="1" y="9" font-size="8" fill="currentColor" font-style="italic">f</text><text x="4" y="9" font-size="8" fill="currentColor">f</text></svg>`,
+    lineHeight:`<svg viewBox="0 0 12 12" fill="none"><path d="M2 3h8M2 6h6M2 9h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+    letterSp: `<svg viewBox="0 0 12 12" fill="none"><text x="0" y="9" font-size="7" fill="currentColor">A B</text></svg>`,
+    other:    `<svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="1.5" fill="currentColor"/><circle cx="2.5" cy="6" r="1.5" fill="currentColor"/><circle cx="9.5" cy="6" r="1.5" fill="currentColor"/></svg>`,
+  };
+
+  function secWrap(titleText, iconKey, count, bodyHtml, extraClass='') {
+    return `<div class="vprev-section collapsed${extraClass}" onclick="this.classList.toggle('collapsed')">
+      <div class="vprev-sec-head">
+        <span class="vprev-sec-title">
+          <span class="vprev-sec-icon">${icons[iconKey]||icons.other}</span>
+          ${esc(titleText)}
+        </span>
+        <span class="vprev-sec-right">
+          <span class="vprev-count">${count}</span>
+          <svg class="vprev-chevron" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+      <div class="vprev-sec-body">${bodyHtml}</div>
+    </div>`;
+  }
+  function nameListBody(tokens, limit = 40) {
+    let body = '<div class="other-list">';
+    tokens.slice(0, limit).forEach(t => {
+      body += `<div class="other-row"><span class="other-key">${esc(t.key)}</span></div>`;
+    });
+    body += '</div>';
+    return body;
+  }
+
+  let html = '';
+
+  // ── Colors ──
+  const cgKeys = Object.keys(colorGroups);
+  if (cgKeys.length) {
+    const totalColors = cgKeys.reduce((a, k) => a + colorGroups[k].length, 0);
+    let body = '';
+    for (const gName of cgKeys) {
+      body += `<div class="color-palette-group"><div class="color-group-name">${esc(gName)}</div><div class="color-strip">`;
+      for (const s of colorGroups[gName]) {
+        if (s.isAlias && !s.hex) {
+          body += `<div class="color-swatch is-alias" data-tip="${esc(s.rawVal)}"></div>`;
+        } else if (s.hex) {
+          body += `<div class="color-swatch" style="background:${esc(s.hex)}" data-tip="${esc(s.step)} · ${esc(s.hex)}"></div>`;
+        }
+      }
+      body += `</div></div>`;
+    }
+    html += secWrap('Colors', 'color', totalColors, body);
+  }
+
+  // Non-color categories: show names only (no visual previews)
+  if (spacingTokens.length) html += secWrap('Spacing', 'spacing', spacingTokens.length, nameListBody(spacingTokens, 40));
+  if (sizingTokens.length) html += secWrap('Sizing', 'sizing', sizingTokens.length, nameListBody(sizingTokens, 40));
+  if (radiusTokens.length) html += secWrap('Border Radius', 'radius', radiusTokens.length, nameListBody(radiusTokens, 40));
+  if (borderWidthTokens.length) html += secWrap('Border Width', 'border', borderWidthTokens.length, nameListBody(borderWidthTokens, 40));
+  if (shadowTokens.length) html += secWrap('Box Shadow', 'shadow', shadowTokens.length, nameListBody(shadowTokens, 40));
+  if (opacityTokens.length) html += secWrap('Opacity', 'opacity', opacityTokens.length, nameListBody(opacityTokens, 40));
+  if (fontSizeTokens.length) html += secWrap('Font Sizes', 'fontSize', fontSizeTokens.length, nameListBody(fontSizeTokens, 40));
+  if (fontWeightTokens.length) html += secWrap('Font Weight', 'fontWeight', fontWeightTokens.length, nameListBody(fontWeightTokens, 40));
+  if (fontFamilyTokens.length) html += secWrap('Font Family', 'fontFamily', fontFamilyTokens.length, nameListBody(fontFamilyTokens, 40));
+  if (lineHeightTokens.length) html += secWrap('Line Height', 'lineHeight', lineHeightTokens.length, nameListBody(lineHeightTokens, 40));
+  if (letterSpacingTokens.length) html += secWrap('Letter Spacing', 'letterSp', letterSpacingTokens.length, nameListBody(letterSpacingTokens, 40));
+
+  // ── Component tokens (when filtered) ──
+  const compKeys = Object.keys(compGroups);
+  if (compKeys.length && (currentVisualFilter !== 'all' || !cgKeys.length)) {
+    const compTotal = compKeys.reduce((a, k) => a + compGroups[k].length, 0);
+    const compNames = [];
+    for (const grp of compKeys.slice(0, 20)) {
+      compGroups[grp].slice(0, 15).forEach(t => compNames.push({ key: t.key }));
+    }
+    html += secWrap('Token Values', 'other', compTotal, nameListBody(compNames, 300));
+  }
+
+  // ── Remaining other tokens ──
+  if (otherTokens.length) {
+    html += secWrap('Other', 'other', otherTokens.length, nameListBody(otherTokens, 40));
+  }
+
+  if (!html) html = '<div class="vprev-empty">No visual tokens detected in this layer.</div>';
+  container.innerHTML = html;
+}
+
+/* ── CHANGE LOG ── */
+function parseLine(line) {
+  if (typeof line !== 'string' || line.length < 2) return { kind: 'changed', token: String(line || ''), oldValue: '', newValue: '', note: '' };
+  const p = line[0], kind = p === '+' ? 'added' : p === '~' ? 'changed' : p === '-' ? 'removed' : 'changed';
+  const body = (p === '+' || p === '~' || p === '-') ? line.slice(1).trim() : line.trim();
+  if (kind !== 'changed') return { kind, token: body, oldValue: '', newValue: '', note: '' };
+  const parts = body.split('\t');
+  if (parts.length >= 3) return { kind, token: parts[0].trim(), oldValue: parts[1].trim(), newValue: parts.slice(2).join('\t').trim(), note: '' };
+  if (/\(value changed\)$/i.test(body)) return { kind, token: body.replace(/\s*\(value changed\)$/i, ''), oldValue: '', newValue: '', note: 'value changed' };
+  return { kind, token: body, oldValue: '', newValue: '', note: 'changed' };
+}
+function renderChangeTo(target, lines) {
+  target.innerHTML = '';
+  if (!lines.length) {
+    target.innerHTML = '<div class="chg-empty"><div class="chg-empty-ico"><svg viewBox="0 0 20 20" fill="none"><path d="M5.5 10.2l3.1 2.9 5.9-5.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="chg-empty-t">All caught up</div><div class="chg-empty-s">No changes since last publish</div></div>';
+    return;
+  }
+  lines.forEach(line => {
+    const p  = parseLine(line);
+    const r  = document.createElement('div'); r.className = `chg ${p.kind}`;
+    const op = document.createElement('span'); op.className = 'chg-op';
+    op.textContent = p.kind === 'added' ? '+' : p.kind === 'removed' ? '−' : '~';
+    const body  = document.createElement('div'); body.className = 'chg-body';
+    const tok   = document.createElement('div'); tok.className  = 'chg-tok'; tok.textContent = p.token;
+    body.appendChild(tok);
+    if (p.kind === 'changed') {
+      const diff = document.createElement('div'); diff.className = 'chg-diff';
+      if (p.oldValue && p.newValue) {
+        const old = document.createElement('span'); old.className = 'chg-old'; old.textContent = p.oldValue;
+        const arr = document.createElement('span'); arr.className = 'chg-arr'; arr.textContent = '→';
+        const nxt = document.createElement('span'); nxt.className = 'chg-new'; nxt.textContent = p.newValue;
+        diff.append(old, arr, nxt);
+      } else { diff.style.color = 'var(--t3)'; diff.textContent = p.note || 'value changed'; }
+      body.appendChild(diff);
+    }
+    r.append(op, body); target.appendChild(r);
+  });
+}
+function renderChangeLog(cl) {
+  const c = isObj(cl) ? cl : {}, a = Number(c.added || 0), ch = Number(c.changed || 0), r = Number(c.removed || 0);
+  const lines = Array.isArray(c.lines) ? c.lines.filter(x => typeof x === 'string') : [];
+  refs.pillAdded.textContent   = `+${a} Added`;
+  refs.pillChanged.textContent = `~${ch} Changed`;
+  refs.pillRemoved.textContent = `−${r} Removed`;
+  refs.modalAdded.textContent   = `+${a} Added`;
+  refs.modalChanged.textContent = `~${ch} Changed`;
+  refs.modalRemoved.textContent = `−${r} Removed`;
+  const total = a + ch + r;
+  refs.changesBadge.textContent    = String(total);
+  refs.homePublishHint.textContent = total ? `${total} change${total === 1 ? '' : 's'} pending since last publish` : 'No changes pending since last publish';
+  renderChangeTo(refs.changesList,  lines);
+  renderChangeTo(refs.modalChanges, lines);
+}
+function fmtTimestamp(raw) {
+  if (typeof raw !== 'string' || !raw.trim()) return '—';
+  const d = new Date(raw); if (Number.isNaN(d.getTime())) return raw;
+  return d.toLocaleString();
+}
+function renderSnapshot(payload) {
+  const p  = isObj(payload) ? payload : null;
+  const meta     = p && isObj(p.meta) ? p.meta : null;
+  const summary  = p && isObj(p.summary) ? p.summary : null;
+  const colls    = meta && Array.isArray(meta.collections) ? meta.collections : (p && Array.isArray(p.collections) ? p.collections : []);
+  const count    = summary && typeof summary.exportedCount === 'number' ? summary.exportedCount : rows(p || {}).length;
+  const format   = p && typeof p.$format === 'string' ? p.$format : (p && typeof p.format === 'string' ? p.format : '—');
+  const exported = p && typeof p.$exportedAt === 'string' ? p.$exportedAt : (p && typeof p.exportedAt === 'string' ? p.exportedAt : '');
+  refs.snapshotTimestamp.textContent   = fmtTimestamp(exported);
+  refs.snapshotCollections.textContent = colls.length ? colls.join(', ') : '—';
+  refs.snapshotTokenCount.textContent  = String(count);
+  refs.snapshotFormat.textContent      = format || '—';
+  refs.snapshotPre.textContent         = state.latestExportText || 'No export yet.';
+}
+function updateSnapToggle() {
+  refs.snapshotRawWrap.classList.toggle('hide', !state.snapshotRawOpen);
+  refs.snapshotToggleBtn.textContent = state.snapshotRawOpen ? 'Hide raw JSON' : 'View raw JSON';
+}
+
+/* ── MODAL ── */
+function openModal() {
+  refs.modalEndpoint.textContent = refs.relayUrlInput.value.trim() || '—';
+  refs.modalProject.textContent  = refs.projectIdInput.value.trim() || '—';
+  refs.modalBranch.textContent   = refs.environmentInput.value.trim() || 'dev';
+  refs.modal.classList.add('on');
+}
+function closeModal() { refs.modal.classList.remove('on'); }
+
+/* ── SYNC ── */
+function refresh() {
+  refs.syncInfo.textContent = 'Syncing…';
+  post({ type: 'export-tokens' });
+  post({ type: 'preview-publish-changes' });
+}
+function fullRefresh() {
+  refs.syncInfo.textContent = 'Refreshing…';
+  post({ type: 'load-relay-settings' });
+  post({ type: 'export-tokens' });
+  post({ type: 'preview-publish-changes' });
+  setStatus('Refreshing plugin data…', false);
+}
+function clearLoadedData() {
+  if (!state.latestExportPayload && !state.latestExportText && !state.selectedFile) {
+    setStatus('Nothing to clear.', false);
+    return;
+  }
+  state.latestExportPayload = null;
+  state.latestExportText = '';
+  currentVisualFilter = 'all';
+  refs.downloadMenu.classList.add('hide');
+  refs.tokensFile.value = '';
+  setFile(null);
+  renderSnapshot(null);
+  renderPreview(null);
+  renderVisualPreview(null);
+  renderJsonView(null);
+  updateFilterBar({});
+  refs.syncInfo.textContent = 'Waiting for sync…';
+  setStatus('Cleared loaded variables from plugin view.', false);
+}
+
+/* ── FILE ── */
+function setFile(f) {
+  state.selectedFile = f || null;
+  refs.selectedFileName.textContent = state.selectedFile ? state.selectedFile.name : '';
+  refs.selectedFileRow.classList.toggle('hide', !state.selectedFile);
+  refs.importBtn.disabled = !state.selectedFile;
+}
+
+/* ── DOWNLOAD FORMAT ── */
+function fmtLabel(v) {
+  if (v === 'json')     return 'tokens.json — W3C format';
+  if (v === 'css')      return 'CSS Variables';
+  if (v === 'scss')     return 'SCSS Variables';
+  return 'Tailwind Config';
+}
+function updateDlUi() {
+  refs.downloadCurrent.textContent = fmtLabel(state.downloadFormat);
+  refs.downloadMenu.querySelectorAll('.dl-option').forEach(b => b.classList.toggle('on', b.dataset.value === state.downloadFormat));
+}
+
+/* ── FULLSCREEN ── */
+const FS_IN  = `<svg viewBox="0 0 48 48" fill="none"><path d="M6 6L16 16M6 42L16 32M42 42L32 32M42 6L32 16" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M33 6H42V15M42 33V42H33M15 42H6V33M6 15V6H15" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const FS_OUT = `<svg viewBox="0 0 24 24" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.29 3.29a1 1 0 0 1 1.41 0L8 6.59V5a1 1 0 1 1 2 0v4a1 1 0 0 1-1 1H5a1 1 0 1 1 0-2h1.59L3.29 4.7a1 1 0 0 1 0-1.41ZM19.29 3.29a1 1 0 0 1 1.41 1.41L17.41 8H19a1 1 0 1 1 0 2h-4a1 1 0 0 1-1-1V5a1 1 0 1 1 2 0v1.59l3.29-3.3ZM4 15a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0v-1.59l-3.29 3.3a1 1 0 0 1-1.42-1.42L6.59 16H5a1 1 0 0 1-1-1Zm10 0a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1 1 1 0 0 1-1 1h-1.59l3.3 3.29a1 1 0 0 1-1.42 1.41L16 17.41V19a1 1 0 1 1-2 0v-4Z" fill="currentColor"/></svg>`;
+function updateFsBtn() {
+  refs.fullscreenToggleBtn.innerHTML = state.fullscreen ? FS_OUT : FS_IN;
+  const tip = state.fullscreen ? 'Exit fullscreen' : 'Enter fullscreen';
+  refs.fullscreenToggleBtn.setAttribute('data-tip', tip);
+  refs.fullscreenToggleBtn.setAttribute('aria-label', tip);
+}
+
+/* ── EVENTS ── */
+$('syncBtn').addEventListener('click', refresh);
+$('fullRefreshBtn').addEventListener('click', fullRefresh);
+$('devPreviewBtn').addEventListener('click', openDeveloperPreview);
+$('saveRelayBtn').addEventListener('click', () => post({ type: 'save-relay-settings', payload: readRelayPayload() }));
+$('refreshChangesBtn').addEventListener('click', () => post({ type: 'preview-publish-changes' }));
+$('previewPublishBtn').addEventListener('click', () => { setTab('changes'); post({ type: 'preview-publish-changes' }); });
+$('openPublishBtn').addEventListener('click', openModal);
+$('cancelPublishBtn').addEventListener('click', closeModal);
+$('closeModalBtn').addEventListener('click', closeModal);
+refs.modal.addEventListener('click', e => { if (e.target === refs.modal) closeModal(); });
+$('confirmPublishBtn').addEventListener('click', () => {
+  closeModal();
+  setStatus('Publishing to Tokvista…', false);
+  post({ type: 'publish-tokvista', payload: readRelayPayload() });
+});
+$('downloadTokensBtn').addEventListener('click', () => {
+  if (!state.latestExportPayload || !state.latestExportText) { setStatus('No exported data yet.', true); return; }
+  const artifact = buildArtifact(state.downloadFormat, state.latestExportPayload, state.latestExportText);
+  const blob = new Blob([artifact.content], { type: artifact.mime });
+  const u = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = u; a.download = artifact.filename;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u);
+  refs.downloadMenu.classList.add('hide');
+  setStatus(`Downloaded ${artifact.filename}`, false);
+});
+refs.downloadTriggerBtn.addEventListener('click', () => refs.downloadMenu.classList.toggle('hide'));
+refs.downloadMenu.querySelectorAll('.dl-option').forEach(b => {
+  b.addEventListener('click', () => { state.downloadFormat = b.dataset.value || 'json'; updateDlUi(); });
+});
+document.addEventListener('click', e => { if (!e.target.closest('.dl-pop')) refs.downloadMenu.classList.add('hide'); });
+refs.clearLoadedBtn.addEventListener('click', clearLoadedData);
+refs.fullscreenToggleBtn.addEventListener('click', () => post({ type: 'toggle-fullscreen' }));
+$('clearKeyBtn').addEventListener('click', () => { refs.publishKeyInput.value = ''; setStatus('Key cleared.', false); });
+$('resetBaselineBtn').addEventListener('click', () => {
+  state.changeLog = { summary: '', lines: [], added: 0, changed: 0, removed: 0 };
+  renderChangeLog(state.changeLog); setStatus('Baseline reset.', false);
+});
+
+/* ── DROPZONE ── */
+refs.dropzone.addEventListener('click', () => refs.tokensFile.click());
+refs.dropzone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); refs.tokensFile.click(); } });
+refs.tokensFile.addEventListener('change', () => setFile(refs.tokensFile.files?.[0] ?? null));
+refs.dropzone.addEventListener('dragover',  e => { e.preventDefault(); refs.dropzone.classList.add('drag'); });
+refs.dropzone.addEventListener('dragleave', () => refs.dropzone.classList.remove('drag'));
+refs.dropzone.addEventListener('drop', e => {
+  e.preventDefault(); refs.dropzone.classList.remove('drag');
+  const f = e.dataTransfer?.files?.[0];
+  if (!f) return;
+  if (!f.name.toLowerCase().endsWith('.json')) { setStatus('Only .json files supported.', true); return; }
+  setFile(f);
+});
+refs.clearSelectedFileBtn.addEventListener('click', e => {
+  e.preventDefault(); e.stopPropagation();
+  refs.tokensFile.value = ''; setFile(null); setStatus('File cleared.', false);
+});
+refs.importBtn.addEventListener('click', () => {
+  const f = state.selectedFile;
+  if (!f) { setStatus('Select a file first.', true); return; }
+  f.text().then(t => {
+    const j = JSON.parse(t);
+    post({ type: 'import-tokens', payload: j });
+    setStatus('Import sent.', false);
+  }).catch(err => setStatus(`Invalid JSON: ${err}`, true));
+});
+
+/* ── SNAPSHOT TOGGLE ── */
+refs.snapshotToggleBtn.addEventListener('click', () => {
+  state.snapshotRawOpen = !state.snapshotRawOpen;
+  updateSnapToggle();
+});
+
+/* ── MESSAGES ── */
+window.onmessage = event => {
+  const msg = event.data.pluginMessage; if (!msg) return;
+  if (msg.type === 'relay-settings') {
+    const p = msg.payload || {};
+    refs.relayUrlInput.value    = p.relayUrl || 'https://tokvista-plugin.vercel.app/api';
+    refs.projectIdInput.value   = p.projectId || '';
+    refs.environmentInput.value = p.environment || 'dev';
+    refs.publishKeyInput.value  = '';
+    refs.settingsHost.textContent = refs.relayUrlInput.value.replace(/^https?:\/\//i, '') || 'Not configured';
+    refs.settingsMeta.textContent = p.publishKeySaved
+      ? `Configured for ${refs.projectIdInput.value || 'project'} / ${refs.environmentInput.value || 'dev'}`
+      : 'Publish key not saved yet.';
+  }
+  if (msg.type === 'relay-settings-saved') {
+    setStatus('Settings saved.', false);
+    refs.publishKeyInput.value = '';
+    refs.settingsHost.textContent = refs.relayUrlInput.value.replace(/^https?:\/\//i, '') || 'Not configured';
+    refs.settingsMeta.textContent = `Configured for ${refs.projectIdInput.value || 'project'} / ${refs.environmentInput.value || 'dev'}`;
+  }
+  if (msg.type === 'publish-result') {
+    const p = msg.payload || {};
+    setPreviewLinkState(p);
+    setStatus(p.versionId ? `Published version ${p.versionId}` : (p.message || 'Published.'), false);
+    if (p.changeLog && typeof p.changeLog === 'object') { state.changeLog = p.changeLog; renderChangeLog(state.changeLog); }
+    post({ type: 'preview-publish-changes' });
+  }
+  if (msg.type === 'developer-preview-link') {
+    setPreviewLinkState(msg.payload || {});
+    if (state.previewResolvePending) {
+      state.previewResolvePending = false;
+      if (state.latestPreviewUrl) {
+        openAndCopyPreview(state.latestPreviewUrl);
+      } else {
+        setStatus('Live preview link is not available yet.', true);
+      }
+    }
+  }
+  if (msg.type === 'publish-change-preview') {
+    const p = msg.payload || {};
+    if (p.changeLog && typeof p.changeLog === 'object') { state.changeLog = p.changeLog; renderChangeLog(state.changeLog); }
+    if (typeof p.error === 'string' && p.error.trim()) { setStatus(p.error, true); }
+  }
+  if (msg.type === 'fullscreen-state') { state.fullscreen = Boolean((msg.payload || {}).enabled); updateFsBtn(); }
+  if (msg.type === 'export-result') {
+    state.latestExportPayload = msg.payload || null;
+    state.latestExportText    = JSON.stringify(msg.payload, null, 2);
+    updatePreviewLinkUi();
+    updateFilterBar(state.latestExportPayload || {});
+    renderSnapshot(state.latestExportPayload);
+    renderPreview(state.latestExportPayload);
+    renderVisualPreview(state.latestExportPayload);
+    if (currentViewMode === 'json') renderJsonView(state.latestExportPayload);
+    refs.syncInfo.textContent = `${rows(state.latestExportPayload).length} tokens · synced ${new Date().toLocaleTimeString()}`;
+    setStatus('Sync complete.', false);
+  }
+  if (msg.type === 'import-result') {
+    const p = msg.payload || {};
+    setStatus(`Import complete: ${p.imported||0} applied (${p.created||0} created, ${p.updated||0} updated, ${p.replaced||0} replaced), ${p.skipped||0} skipped.`, false);
+    refresh();
+  }
+  if (msg.type === 'error') { setStatus(`Error: ${msg.payload}`, true); }
+};
+
+/* ── VIEW MODE ── */
+function setViewMode(mode) {
+  currentViewMode = mode;
+  // button active states
+  document.getElementById('vseg-visual')  ?.classList.toggle('on', mode === 'visual');
+  document.getElementById('vseg-preview') ?.classList.toggle('on', mode === 'table');
+  document.getElementById('vseg-json')    ?.classList.toggle('on', mode === 'json');
+  // panel visibility
+  document.getElementById('viewVisualPanel') ?.classList.toggle('hide', mode !== 'visual');
+  document.getElementById('viewPreviewPanel')?.classList.toggle('hide', mode !== 'table');
+  document.getElementById('viewJsonPanel')   ?.classList.toggle('hide', mode !== 'json');
+  if (mode === 'json'   && state.latestExportPayload) renderJsonView(state.latestExportPayload);
+  if (mode === 'visual' && state.latestExportPayload) renderVisualPreview(state.latestExportPayload);
+}
+
+/* ── JSON COPY ── */
+function copyJson() {
+  const text = state.latestExportText || '';
+  navigator.clipboard?.writeText(text).then(() => {
+    const btn = document.getElementById('jtCopyBtn');
+    if (!btn) return;
+    btn.textContent = 'copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+/* ── JSON TERMINAL RENDERER ── */
+function syntaxHighlightJson(json) {
+  return json
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"([^"\\]*(\\.[^"\\]*)*)"\s*:/g, '<span class="j-k">"$1"</span>:')
+    .replace(/:\s*"([^"\\]*(\\.[^"\\]*)*)"/g, (m, v) => `: <span class="j-s">"${v}"</span>`)
+    .replace(/:\s*(-?\d+\.?\d*)/g, ': <span class="j-n">$1</span>')
+    .replace(/:\s*(true|false|null)/g, ': <span class="j-b">$1</span>')
+    .replace(/([{}[\],])/g, '<span class="j-br">$1</span>');
+}
+
+function renderJsonView(payload) {
+  const gutter = document.getElementById('jsonGutter');
+  const pre = document.getElementById('jsonCodePre');
+  if (!payload || !state.latestExportText) {
+    pre.innerHTML = '<span class="j-b">// Sync to load JSON.</span>';
+    gutter.textContent = '1';
+    return;
+  }
+  const jsonText = state.latestExportText;
+  const lines = jsonText.split('\n');
+  gutter.innerHTML = lines.map((_, i) => i + 1).join('\n');
+  pre.innerHTML = syntaxHighlightJson(jsonText);
+}
+
+/* ── INIT ── */
+updateDlUi();
+updateFsBtn();
+updatePreviewLinkUi();
+updateSnapToggle();
+renderSnapshot(null);
+post({ type: 'load-relay-settings' });
+post({ type: 'preview-publish-changes' });
+post({ type: 'export-tokens' });
+
+/* ── DYNAMIC FILTER BAR ── */
+function updateFilterBar(payload) {
+  const bar = document.getElementById('vprevFilterBar');
+  if (!bar) return;
+  const root = tokenRoot(payload);
+  const sets = visualSetEntries(root).filter(set => set.key !== '_root');
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const palette = ['#6b9fe8', '#4ec994', '#d4a84b', '#9c9487', '#e06c6c', '#9d7cf0', '#58b7a1'];
+
+  if (!sets.length) {
+    currentVisualFilter = 'all';
+    bar.innerHTML = `<button class="vprev-filter-btn on" data-filter="all">All</button>`;
+    bar.querySelector('.vprev-filter-btn')?.addEventListener('click', () => setVisualFilter('all'));
+    return;
+  }
+
+  if (currentVisualFilter !== 'all' && !sets.some(set => set.key === currentVisualFilter)) {
+    currentVisualFilter = 'all';
+  }
+
+  let buttonsHtml = `<button class="vprev-filter-btn${currentVisualFilter === 'all' ? ' on' : ''}" data-filter="all">All</button>`;
+  sets.forEach((set, idx) => {
+    const label = set.label || set.key;
+    buttonsHtml += `<button class="vprev-filter-btn${currentVisualFilter === set.key ? ' on' : ''}" data-filter="${esc(set.key)}"><span class="vprev-filter-dot" style="background:${palette[idx % palette.length]}"></span>${esc(label)}</button>`;
+  });
+  bar.innerHTML = buttonsHtml;
+  bar.querySelectorAll('.vprev-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => setVisualFilter(btn.dataset.filter || 'all'));
+  });
+}
+</script>
+</body>
 </html>

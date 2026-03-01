@@ -10,6 +10,43 @@ const {
   sendJson
 } = require("./_shared");
 
+function encodePathForRaw(path) {
+  return String(path)
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+}
+
+function buildRawUrl(owner, repo, commitSha, path) {
+  if (!owner || !repo || !commitSha || !path) {
+    return undefined;
+  }
+  return `https://raw.githubusercontent.com/${encodeURIComponent(owner)}/${encodeURIComponent(
+    repo
+  )}/${encodeURIComponent(commitSha)}/${encodePathForRaw(path)}`;
+}
+
+function buildBranchRawUrl(owner, repo, branch, path) {
+  if (!owner || !repo || !branch || !path) {
+    return undefined;
+  }
+  return `https://raw.githubusercontent.com/${encodeURIComponent(owner)}/${encodeURIComponent(
+    repo
+  )}/${encodeURIComponent(branch)}/${encodePathForRaw(path)}`;
+}
+
+function buildPreviewUrl(rawUrl) {
+  if (!rawUrl) {
+    return undefined;
+  }
+  const base = (process.env.TOKVISTA_PREVIEW_BASE_URL || "https://tokvista-demo.vercel.app/").trim();
+  if (!base) {
+    return undefined;
+  }
+  const normalizedBase = base.endsWith("/") ? base : `${base}/`;
+  return `${normalizedBase}?source=${encodeURIComponent(rawUrl)}`;
+}
+
 module.exports = async function handler(req, res) {
   if (handleOptions(req, res)) {
     return;
@@ -91,23 +128,37 @@ module.exports = async function handler(req, res) {
       content
     });
     if (!githubResult.changed) {
+      const rawUrl = buildBranchRawUrl(owner, repo, branch, path);
+      const previewUrl = buildPreviewUrl(rawUrl);
       sendJson(res, 200, {
         message: "No changes to publish.",
+        rawUrl,
+        previewUrl,
         changed: false
       });
       return;
     }
     const githubPayload = githubResult.payload;
+    const commitSha =
+      githubPayload && githubPayload.commit && typeof githubPayload.commit.sha === "string"
+        ? githubPayload.commit.sha
+        : undefined;
 
     const referenceUrl =
       githubPayload && githubPayload.commit && typeof githubPayload.commit.html_url === "string"
         ? githubPayload.commit.html_url
         : undefined;
+    const rawUrl = buildRawUrl(owner, repo, commitSha, path);
+    // Keep preview links stable across publishes by pointing to branch path.
+    const previewRawUrl = buildBranchRawUrl(owner, repo, branch, path);
+    const previewUrl = buildPreviewUrl(previewRawUrl);
 
     sendJson(res, 200, {
       versionId,
       message: "Published successfully.",
       referenceUrl,
+      rawUrl,
+      previewUrl,
       changed: true
     });
   } catch (error) {
