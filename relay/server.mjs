@@ -299,6 +299,15 @@ function setNoStoreHeaders(res) {
   res.setHeader("Expires", "0");
 }
 
+function normalizeCommitMessage(input, fallback) {
+  const base = typeof input === "string" ? input : "";
+  const singleLine = base.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!singleLine) {
+    return fallback;
+  }
+  return singleLine.slice(0, 120);
+}
+
 async function handlePublish(req, res) {
   let body;
   try {
@@ -313,6 +322,7 @@ async function handlePublish(req, res) {
   const environment = typeof body.environment === "string" && body.environment.trim()
     ? body.environment.trim()
     : "dev";
+  const userCommitMessage = typeof body.commitMessage === "string" ? body.commitMessage : "";
   const source = typeof body.source === "string" ? body.source : "unknown";
   const fileKey = typeof body.fileKey === "string" ? body.fileKey : null;
   const payload = body.payload;
@@ -344,6 +354,10 @@ async function handlePublish(req, res) {
   const repo = projectConfig.repo;
   const branch = projectConfig.branch || "main";
   const path = getTargetPath(projectConfig, environment);
+  const commitMessage = normalizeCommitMessage(
+    userCommitMessage,
+    `chore(tokens): ${projectId} ${environment} ${versionId}`
+  );
 
   try {
     let referenceUrl;
@@ -366,7 +380,6 @@ async function handlePublish(req, res) {
         });
         return;
       }
-      const commitMessage = `chore(tokens): ${projectId} ${environment} ${versionId}`;
       const githubResult = await putContent({
         owner,
         repo,
@@ -382,6 +395,7 @@ async function handlePublish(req, res) {
         const previewUrl = buildPreviewUrl(buildLiveSourceUrl(req, projectId, environment) || rawUrl);
         sendJson(res, 200, {
           message: "No changes to publish.",
+          commitMessage,
           rawUrl,
           previewUrl,
           snapshotPreviewUrl,
@@ -411,6 +425,7 @@ async function handlePublish(req, res) {
         fileKey,
         createdAt: new Date().toISOString(),
         payload,
+        commitMessage,
         referenceUrl,
         rawUrl,
         previewUrl,
@@ -420,6 +435,7 @@ async function handlePublish(req, res) {
       sendJson(res, 200, {
         versionId,
         message: "Published successfully.",
+        commitMessage,
         referenceUrl,
         rawUrl,
         previewUrl,
@@ -436,7 +452,8 @@ async function handlePublish(req, res) {
       source,
       fileKey,
       createdAt: new Date().toISOString(),
-      payload
+      payload,
+      commitMessage
     });
 
     sendJson(res, 200, {

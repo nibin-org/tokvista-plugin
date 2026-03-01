@@ -68,6 +68,15 @@ function buildLiveSourceUrl(req, projectId, environment) {
   )}`;
 }
 
+function normalizeCommitMessage(input, fallback) {
+  const base = typeof input === "string" ? input : "";
+  const singleLine = base.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!singleLine) {
+    return fallback;
+  }
+  return singleLine.slice(0, 120);
+}
+
 module.exports = async function handler(req, res) {
   if (handleOptions(req, res)) {
     return;
@@ -91,6 +100,7 @@ module.exports = async function handler(req, res) {
   const environment = typeof body.environment === "string" && body.environment.trim()
     ? body.environment.trim()
     : "dev";
+  const userCommitMessage = typeof body.commitMessage === "string" ? body.commitMessage : "";
   const payload = body.payload;
 
   if (!projectId || !publishKey) {
@@ -136,7 +146,10 @@ module.exports = async function handler(req, res) {
 
   const versionId = createVersionId();
   const content = JSON.stringify(payload, null, 2);
-  const commitMessage = `chore(tokens): ${projectId} ${environment} ${versionId}`;
+  const commitMessage = normalizeCommitMessage(
+    userCommitMessage,
+    `chore(tokens): ${projectId} ${environment} ${versionId}`
+  );
 
   try {
     const githubResult = await putContent({
@@ -154,6 +167,7 @@ module.exports = async function handler(req, res) {
       const previewUrl = buildPreviewUrl(buildLiveSourceUrl(req, projectId, environment) || rawUrl);
       sendJson(res, 200, {
         message: "No changes to publish.",
+        commitMessage,
         rawUrl,
         previewUrl,
         snapshotPreviewUrl,
@@ -180,6 +194,7 @@ module.exports = async function handler(req, res) {
     sendJson(res, 200, {
       versionId,
       message: "Published successfully.",
+      commitMessage,
       referenceUrl,
       rawUrl,
       previewUrl,

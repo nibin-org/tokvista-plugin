@@ -71,6 +71,7 @@ type RelaySettings = {
 type RelayPublishResult = {
   versionId: string;
   message: string;
+  commitMessage?: string;
   referenceUrl?: string;
   rawUrl?: string;
   previewUrl?: string;
@@ -217,6 +218,17 @@ function normalizeRelayUrl(relayUrlInput: string): string {
 
 function truncateRelayMessage(message: string): string {
   return message.length > 240 ? `${message.slice(0, 240)}...` : message;
+}
+
+function extractCommitMessage(input: unknown): string | undefined {
+  if (!isObjectLike(input) || typeof input.commitMessage !== "string") {
+    return undefined;
+  }
+  const singleLine = input.commitMessage.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!singleLine) {
+    return undefined;
+  }
+  return singleLine.slice(0, 120);
 }
 
 function buildRelayHttpErrorMessage(statusCode: number, backendMessage: string, endpoint: string): string {
@@ -827,7 +839,8 @@ async function fetchPreviewLinkFromRelay(
 
 async function publishToRelay(
   settings: RelaySettings,
-  exportPayload: ObjectLike
+  exportPayload: ObjectLike,
+  requestedCommitMessage?: string
 ): Promise<RelayPublishResult> {
   const endpoint = `${settings.relayUrl}/publish-tokens`;
   const publishPayload = stripVolatilePublishFields(exportPayload);
@@ -842,6 +855,7 @@ async function publishToRelay(
         projectId: settings.projectId,
         publishKey: settings.publishKey,
         environment: settings.environment,
+        commitMessage: requestedCommitMessage,
         source: "figma",
         fileKey: figma.fileKey || null,
         payload: publishPayload
@@ -876,6 +890,7 @@ async function publishToRelay(
 
   const versionId = typeof data.versionId === "string" ? data.versionId : "";
   const message = typeof data.message === "string" ? data.message : "Published successfully.";
+  const commitMessage = typeof data.commitMessage === "string" ? data.commitMessage : undefined;
   const referenceUrl = typeof data.referenceUrl === "string" ? data.referenceUrl : undefined;
   let rawUrl = typeof data.rawUrl === "string" ? data.rawUrl : undefined;
   let previewUrl = typeof data.previewUrl === "string" ? data.previewUrl : undefined;
@@ -899,6 +914,7 @@ async function publishToRelay(
   return {
     versionId,
     message,
+    commitMessage,
     referenceUrl,
     rawUrl,
     previewUrl,
@@ -1884,13 +1900,14 @@ figma.ui.onmessage = async (msg: UiMessage) => {
   if (msg.type === "publish-tokvista") {
     try {
       const saved = await saveRelaySettings(msg.payload);
+      const commitMessage = extractCommitMessage(msg.payload);
       const exported = await exportTokens({
         modeName: saved.environment
       });
       const publishPayload = stripVolatilePublishFields(exported);
       const previousPayload = await getLastPublishedPayload();
       let changeLog = buildPublishChangeLog(previousPayload, publishPayload);
-      const publishResult = await publishToRelay(saved, exported);
+      const publishResult = await publishToRelay(saved, exported, commitMessage);
       if (publishResult.changed === false && changeLog.summary !== "No token changes detected.") {
         changeLog = {
           summary: "No token changes detected.",
@@ -1942,6 +1959,7 @@ figma.ui.onmessage = async (msg: UiMessage) => {
         payload: {
           versionId: publishResult.versionId,
           message: publishResult.message,
+          commitMessage: publishResult.commitMessage,
           referenceUrl: publishResult.referenceUrl,
           rawUrl: publishResult.rawUrl,
           previewUrl: publishResult.previewUrl,

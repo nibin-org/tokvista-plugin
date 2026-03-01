@@ -484,7 +484,7 @@
 
     .lgroup-inline-head {
       display: flex; align-items: center; gap: 9px;
-      padding: 8px 14px; cursor: pointer; user-select: none;
+      padding: 8px 14px; cursor: pointer; -webkit-user-select: none; user-select: none;
       transition: background 0.1s;
     }
     .lgroup-inline-head:hover { background: var(--raised); }
@@ -565,11 +565,6 @@
     }
     .layers-add-row:hover { background: var(--raised); color: var(--a); }
     .layers-add-row svg { width: 11px; height: 11px; }
-
-    /* ── PREVIEW ZONE inside the unified card ── */
-    .explorer-preview {
-      /* no extra background, flows inside the card */
-    }
 
     /* ── VIEW SEGMENT BAR ── */
     .preview-seg-bar {
@@ -663,7 +658,7 @@
     .json-gutter {
       padding: 12px 8px 12px 10px;
       font-family: var(--mono); font-size: 11px; color: var(--t4);
-      line-height: 1.75; text-align: right; user-select: none;
+      line-height: 1.75; text-align: right; -webkit-user-select: none; user-select: none;
       flex-shrink: 0; border-right: 1px solid #1e1c18;
       background: rgba(0,0,0,0.2); min-width: 28px;
     }
@@ -1062,7 +1057,11 @@
     .modal-wrap.on { display: flex; }
 
     .modal {
-      width: 100%; max-height: 88vh; overflow: auto;
+      width: 100%;
+      max-height: 88vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
       background: #1c1a17;
       border-top: 1px solid var(--border-hi);
       border-radius: 14px 14px 0 0;
@@ -1082,6 +1081,7 @@
       display: flex; align-items: center; justify-content: space-between;
       padding: 13px 16px 11px;
       border-bottom: 1px solid var(--border);
+      flex: 0 0 auto;
     }
     .modal-title { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
 
@@ -1093,7 +1093,12 @@
     }
     .modal-close:hover { background: var(--overlay); color: var(--t1); }
 
-    .modal-body { padding: 14px 16px 10px; }
+    .modal-body {
+      padding: 14px 16px 10px;
+      overflow: auto;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
 
     .pub-card {
       border: 1px solid var(--border); border-radius: var(--rs);
@@ -1116,6 +1121,7 @@
       display: grid; grid-template-columns: 1fr 1fr;
       gap: 8px; padding: 10px 16px 14px;
       border-top: 1px solid var(--border);
+      flex: 0 0 auto;
     }
 
     .btn-mc {
@@ -1136,6 +1142,22 @@
     }
     .btn-mp:hover { opacity: 0.86; }
     .btn-mp svg { width: 14px; height: 14px; display: block; }
+    .btn-full-center { width: 100%; justify-content: center; }
+    .th-icon-col { width: 28px; padding-left: 14px; }
+    .th-value-right { text-align: right; }
+    .tab-import-padded { padding-bottom: 16px; }
+    .mt-2 { margin-top: 2px; }
+    .mt-0 { margin-top: 0; }
+    .mt-12 { margin-top: 12px; }
+    .mb-0 { margin-bottom: 0; }
+    .mb-10 { margin-bottom: 10px; }
+    .mb-14 { margin-bottom: 14px; }
+    .mb-16 { margin-bottom: 16px; }
+    .my-10-16 { margin-top: 10px; margin-bottom: 16px; }
+    .my-12-16 { margin-top: 12px; margin-bottom: 16px; }
+    .sec-flex-fill { margin: 0; flex: 1; }
+    .chg-empty-pad { padding: 18px; }
+    .history-pills { margin: 0 0 8px; }
 
     .history-list {
       display: flex;
@@ -1257,6 +1279,13 @@
     .vprev-filter-dot {
       width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
     }
+    .vprev-filter-dot.c0 { background: #6b9fe8; }
+    .vprev-filter-dot.c1 { background: #4ec994; }
+    .vprev-filter-dot.c2 { background: #d4a84b; }
+    .vprev-filter-dot.c3 { background: #9c9487; }
+    .vprev-filter-dot.c4 { background: #e06c6c; }
+    .vprev-filter-dot.c5 { background: #9d7cf0; }
+    .vprev-filter-dot.c6 { background: #58b7a1; }
 
     /* ── Color section ── */
     .vprev-section {
@@ -1267,7 +1296,7 @@
 
     .vprev-sec-head {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 8px 14px; cursor: pointer; user-select: none;
+      padding: 8px 14px; cursor: pointer; -webkit-user-select: none; user-select: none;
       transition: background 0.1s;
     }
     .vprev-sec-head:hover { background: var(--raised); }
@@ -1576,8 +1605,8 @@
 
   </div>
 
-  <nav class="nav-tabs" role="tablist">
-    <div class="nav-tabs-left">
+  <nav class="nav-tabs" aria-label="Primary navigation">
+    <div class="nav-tabs-left" role="tablist" aria-label="Primary tabs">
       <button class="tab on has-tip" data-tab="home" type="button" role="tab" aria-label="Home" data-tip="Home" data-tip-pos="bottom">
         <svg viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3L21 10.5V20a1 1 0 0 1-1 1H15V15H9v6H4a1 1 0 0 1-1-1V10.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
       </button>
@@ -1621,7 +1650,7 @@
           <button class="dl-option"    data-value="scss"     type="button">SCSS Variables — $token: value</button>
           <button class="dl-option"    data-value="tailwind" type="button">Tailwind Config — theme.extend</button>
           <div class="dl-action">
-            <button id="downloadTokensBtn" class="btn" type="button" style="width:100%;justify-content:center">
+            <button id="downloadTokensBtn" class="btn btn-full-center" type="button">
               <svg viewBox="0 0 24 24" fill="none"><path d="M3 12.3v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7.9 12.3 12 16.3 16.1 12.3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/><line x1="12" y1="2.7" x2="12" y2="14.2" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg>
               Download
             </button>
@@ -1700,9 +1729,9 @@
           <table class="explorer-table">
             <thead>
               <tr>
-                <th style="width:28px;padding-left:14px"></th>
+                <th class="th-icon-col"></th>
                 <th>Token</th>
-                <th style="text-align:right">Value</th>
+                <th class="th-value-right">Value</th>
               </tr>
             </thead>
             <tbody id="previewRows">
@@ -1736,7 +1765,7 @@
   </section>
 
   <!-- ─── IMPORT ─── -->
-  <section id="tab-import" class="tabp" role="tabpanel" style="padding-bottom:16px">
+  <section id="tab-import" class="tabp tab-import-padded" role="tabpanel">
     <div class="sec sec-first">Import tokens.json</div>
 
     <input id="tokensFile" class="hide" type="file" accept="application/json"/>
@@ -1750,7 +1779,7 @@
       </div>
     </div>
 
-    <div style="margin-top:10px;margin-bottom:16px">
+    <div class="my-10-16">
       <button id="importBtn" class="btn-import" type="button" disabled>Import to Figma</button>
     </div>
 
@@ -1765,8 +1794,8 @@
 
   <!-- ─── CHANGES ─── -->
   <section id="tab-changes" class="tabp" role="tabpanel">
-    <div class="changes-head" style="margin-top:2px">
-      <div class="sec" style="margin:0;flex:1">Since last publish</div>
+    <div class="changes-head mt-2">
+      <div class="sec sec-flex-fill">Since last publish</div>
       <button id="refreshChangesBtn" class="btn-sm" type="button">
         <svg viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 1 1-2-5.3M20 2v5h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Refresh
@@ -1779,7 +1808,7 @@
       <span id="pillRemoved" class="pill pill-r">−0 Removed</span>
     </div>
 
-    <div id="changesList" class="changes-list" style="margin-bottom:16px">
+    <div id="changesList" class="changes-list mb-16">
       <div class="chg-empty">
         <div class="chg-empty-ico">
           <svg viewBox="0 0 20 20" fill="none"><path d="M5.5 10.2l3.1 2.9 5.9-5.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1811,7 +1840,7 @@
   <section id="tab-settings" class="tabp" role="tabpanel">
 
     <div class="sec sec-first">Status</div>
-    <div class="card" style="margin-bottom:10px">
+    <div class="card mb-10">
       <div class="status-bar">
         <div>
           <div id="settingsHost" class="status-host">Not configured</div>
@@ -1841,7 +1870,7 @@
       <input id="publishKeyInput" class="is-mono" type="password" placeholder="Leave blank to use saved key"/>
     </div>
 
-    <div style="margin-top:12px;margin-bottom:16px">
+    <div class="my-12-16">
       <button id="saveRelayBtn" class="btn-save" type="button">
         <svg viewBox="0 0 24 24" fill="none"><path d="M5 4.5H16.7L20 7.8V19.5C20 20.3 19.3 21 18.5 21H5.5C4.7 21 4 20.3 4 19.5V6C4 5.2 4.7 4.5 5.5 4.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 4.5V9.5H15V4.5M8 16H16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Save settings
@@ -1896,14 +1925,18 @@
         <span id="modalChanged" class="pill pill-y">~0 Changed</span>
         <span id="modalRemoved" class="pill pill-r">−0 Removed</span>
       </div>
-      <div id="modalChanges" class="changes-list" style="margin-bottom:14px">
-        <div class="chg-empty" style="padding:18px">No pending changes.</div>
+      <div id="modalChanges" class="changes-list mb-14">
+        <div class="chg-empty chg-empty-pad">No pending changes.</div>
       </div>
-      <div class="sec" style="margin-top:0">Publishing to</div>
+      <div class="sec mt-0">Publishing to</div>
       <div class="pub-card">
         <div class="pub-row"><span class="pub-label">Endpoint</span><span id="modalEndpoint" class="pub-val">—</span></div>
         <div class="pub-row"><span class="pub-label">Project</span><span id="modalProject" class="pub-val">—</span></div>
         <div class="pub-row"><span class="pub-label">Branch</span><span id="modalBranch" class="pub-val">—</span></div>
+      </div>
+      <div class="sec mt-12">Commit message (optional)</div>
+      <div class="field mb-0">
+        <input id="modalCommitMessageInput" type="text" maxlength="120" placeholder="feat(tokens): update typography scale"/>
       </div>
     </div>
     <div class="modal-foot">
@@ -1923,7 +1956,7 @@
       <button id="closeHistoryModalBtn" class="modal-close" type="button">&#215;</button>
     </div>
     <div class="modal-body">
-      <div class="sec" style="margin-top:0">Published links and change logs</div>
+      <div class="sec mt-0">Published links and change logs</div>
       <div id="historyList" class="history-list">
         <div class="history-empty">No publish history yet.</div>
       </div>
@@ -1980,7 +2013,7 @@ const refs = {
   modalAdded: $('modalAdded'), modalChanged: $('modalChanged'),
   modalRemoved: $('modalRemoved'), modalChanges: $('modalChanges'),
   modalEndpoint: $('modalEndpoint'), modalProject: $('modalProject'),
-  modalBranch: $('modalBranch'),
+  modalBranch: $('modalBranch'), modalCommitMessageInput: $('modalCommitMessageInput'),
   statColors: $('statColors'), statSpacing: $('statSpacing'),
   statTypography: $('statTypography'), statOther: $('statOther'),
   fullRefreshBtn: $('fullRefreshBtn'),
@@ -2014,6 +2047,14 @@ function readRelayPayload() {
     environment: refs.environmentInput.value.trim(),
     publishKey:  refs.publishKeyInput.value.trim(),
   };
+}
+function readPublishPayload() {
+  const base = readRelayPayload();
+  const commitMessage = refs.modalCommitMessageInput?.value?.trim() || '';
+  if (commitMessage) {
+    return { ...base, commitMessage };
+  }
+  return base;
 }
 function post(msg)  { parent.postMessage({ pluginMessage: msg }, '*'); }
 function isObj(v)   { return typeof v === 'object' && v !== null && !Array.isArray(v); }
@@ -2169,7 +2210,7 @@ function renderPublishHistory(items) {
     const body = document.createElement('div');
     body.className = 'history-body';
     body.innerHTML = `
-      <div class="pills" style="margin:0 0 8px">
+      <div class="pills history-pills">
         <span class="pill pill-g">+${added} Added</span>
         <span class="pill pill-y">~${changed} Changed</span>
         <span class="pill pill-r">−${removed} Removed</span>
@@ -2452,6 +2493,36 @@ function setVisualFilter(filter) {
   if (state.latestExportPayload) renderVisualPreview(state.latestExportPayload);
 }
 
+let dynamicSwatchStyleEl = null;
+let dynamicSwatchClassCounter = 0;
+const dynamicSwatchClassMap = new Map();
+function ensureDynamicSwatchStyle() {
+  if (dynamicSwatchStyleEl) return dynamicSwatchStyleEl;
+  dynamicSwatchStyleEl = document.getElementById('dynamicSwatchStyles');
+  if (!dynamicSwatchStyleEl) {
+    dynamicSwatchStyleEl = document.createElement('style');
+    dynamicSwatchStyleEl.id = 'dynamicSwatchStyles';
+    document.head.appendChild(dynamicSwatchStyleEl);
+  }
+  return dynamicSwatchStyleEl;
+}
+function sanitizeCssColor(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '#000000';
+  if (!/^[#a-zA-Z0-9(),.%\s/+:-]+$/.test(raw)) return '#000000';
+  return raw;
+}
+function getDynamicColorClass(colorValue) {
+  const normalized = sanitizeCssColor(colorValue).toLowerCase();
+  const existing = dynamicSwatchClassMap.get(normalized);
+  if (existing) return existing;
+  const cls = `swatch-c-${dynamicSwatchClassCounter++}`;
+  dynamicSwatchClassMap.set(normalized, cls);
+  const styleEl = ensureDynamicSwatchStyle();
+  styleEl.textContent += `.color-swatch.${cls}{background:${normalized};}\n`;
+  return cls;
+}
+
 function renderVisualPreview(payload) {
   const container = document.getElementById('visualContent');
   if (!container) return;
@@ -2544,7 +2615,7 @@ function renderVisualPreview(payload) {
     shadow:   `<svg viewBox="0 0 12 12" fill="none"><rect x="2" y="2" width="7" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="5" width="7" height="5" rx="1" fill="currentColor" opacity=".2"/></svg>`,
     opacity:  `<svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4" fill="currentColor" opacity=".3"/><path d="M6 2a4 4 0 0 1 0 8z" fill="currentColor"/></svg>`,
     fontSize: `<svg viewBox="0 0 12 12" fill="none"><text x="1" y="9" font-size="9" fill="currentColor" font-weight="bold">Ag</text></svg>`,
-    fontWeight:`<svg viewBox="0 0 12 12" fill="none"><text x="1" y="9" font-size="9" fill="currentColor" font-weight="bold" style="font-weight:900">B</text></svg>`,
+    fontWeight:`<svg viewBox="0 0 12 12" fill="none"><text x="1" y="9" font-size="9" fill="currentColor" font-weight="900">B</text></svg>`,
     fontFamily:`<svg viewBox="0 0 12 12" fill="none"><text x="1" y="9" font-size="8" fill="currentColor" font-style="italic">f</text><text x="4" y="9" font-size="8" fill="currentColor">f</text></svg>`,
     lineHeight:`<svg viewBox="0 0 12 12" fill="none"><path d="M2 3h8M2 6h6M2 9h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
     letterSp: `<svg viewBox="0 0 12 12" fill="none"><text x="0" y="9" font-size="7" fill="currentColor">A B</text></svg>`,
@@ -2588,7 +2659,8 @@ function renderVisualPreview(payload) {
         if (s.isAlias && !s.hex) {
           body += `<div class="color-swatch is-alias" data-tip="${esc(s.rawVal)}"></div>`;
         } else if (s.hex) {
-          body += `<div class="color-swatch" style="background:${esc(s.hex)}" data-tip="${esc(s.step)} · ${esc(s.hex)}"></div>`;
+          const swatchClass = getDynamicColorClass(s.hex);
+          body += `<div class="color-swatch ${swatchClass}" data-tip="${esc(s.step)} · ${esc(s.hex)}"></div>`;
         }
       }
       body += `</div></div>`;
@@ -2797,7 +2869,7 @@ refs.historyModal.addEventListener('click', e => { if (e.target === refs.history
 $('confirmPublishBtn').addEventListener('click', () => {
   closeModal();
   setStatus('Publishing to Tokvista…', false);
-  post({ type: 'publish-tokvista', payload: readRelayPayload() });
+  post({ type: 'publish-tokvista', payload: readPublishPayload() });
 });
 $('downloadTokensBtn').addEventListener('click', () => {
   if (!state.latestExportPayload || !state.latestExportText) { setStatus('No exported data yet.', true); return; }
@@ -2878,6 +2950,7 @@ window.onmessage = event => {
   if (msg.type === 'publish-result') {
     const p = msg.payload || {};
     setPreviewLinkState(p);
+    if (refs.modalCommitMessageInput) refs.modalCommitMessageInput.value = '';
     const snapshotLink = normalizeLinkValue(p.snapshotPreviewUrl) || buildPreviewFromRaw(normalizeLinkValue(p.rawUrl));
     if (p.versionId && snapshotLink) {
       setStatus(`Published version ${p.versionId}. Snapshot QA link: ${snapshotLink}`, false);
@@ -2999,7 +3072,7 @@ function updateFilterBar(payload) {
   const root = tokenRoot(payload);
   const sets = visualSetEntries(root).filter(set => set.key !== '_root');
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  const palette = ['#6b9fe8', '#4ec994', '#d4a84b', '#9c9487', '#e06c6c', '#9d7cf0', '#58b7a1'];
+  const dotClassCount = 7;
 
   if (!sets.length) {
     currentVisualFilter = 'all';
@@ -3015,7 +3088,8 @@ function updateFilterBar(payload) {
   let buttonsHtml = `<button class="vprev-filter-btn${currentVisualFilter === 'all' ? ' on' : ''}" data-filter="all">All</button>`;
   sets.forEach((set, idx) => {
     const label = set.label || set.key;
-    buttonsHtml += `<button class="vprev-filter-btn${currentVisualFilter === set.key ? ' on' : ''}" data-filter="${esc(set.key)}"><span class="vprev-filter-dot" style="background:${palette[idx % palette.length]}"></span>${esc(label)}</button>`;
+    const dotClass = `c${idx % dotClassCount}`;
+    buttonsHtml += `<button class="vprev-filter-btn${currentVisualFilter === set.key ? ' on' : ''}" data-filter="${esc(set.key)}"><span class="vprev-filter-dot ${dotClass}"></span>${esc(label)}</button>`;
   });
   bar.innerHTML = buttonsHtml;
   bar.querySelectorAll('.vprev-filter-btn').forEach(btn => {
