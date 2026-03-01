@@ -18,6 +18,7 @@ const COMPLEX_JSON_PLUGIN_KEY = "tokvista_complex_json";
 const RELAY_SETTINGS_KEY = "tokvista_relay_settings";
 const LAST_PUBLISHED_PAYLOAD_KEY = "tokvista_last_published_payload";
 const LAST_PUBLISHED_LINKS_KEY = "tokvista_last_published_links";
+const PUBLISH_HISTORY_KEY = "tokvista_publish_history";
 const DEFAULT_RELAY_URL = "https://tokvista-plugin.vercel.app/api";
 const DEFAULT_RELAY_ENVIRONMENT = "dev";
 const DEFAULT_TOKVISTA_PREVIEW_BASE_URL = "https://tokvista-demo.vercel.app/";
@@ -26,6 +27,7 @@ type UiMessage =
   | { type: "import-tokens"; payload: unknown }
   | { type: "export-tokens" }
   | { type: "load-relay-settings" }
+  | { type: "load-publish-history" }
   | { type: "preview-publish-changes" }
   | { type: "resolve-preview-link" }
   | { type: "toggle-fullscreen" }
@@ -72,6 +74,7 @@ type RelayPublishResult = {
   referenceUrl?: string;
   rawUrl?: string;
   previewUrl?: string;
+  snapshotPreviewUrl?: string;
   changed?: boolean;
 };
 
@@ -80,6 +83,22 @@ type PublishedLinks = {
   referenceUrl?: string;
   rawUrl?: string;
   previewUrl?: string;
+  snapshotPreviewUrl?: string;
+};
+
+type PublishHistoryEntry = {
+  id: string;
+  publishedAt: string;
+  summary: string;
+  added: number;
+  changed: number;
+  removed: number;
+  lines: string[];
+  versionId?: string;
+  referenceUrl?: string;
+  rawUrl?: string;
+  previewUrl?: string;
+  snapshotPreviewUrl?: string;
 };
 
 type PublishChangeLog = {
@@ -96,6 +115,7 @@ type ExportTokensOptions = {
 };
 
 const MAX_CHANGE_LOG_LINES = 40;
+const MAX_PUBLISH_HISTORY_ITEMS = 80;
 let isFullscreen = false;
 
 function isObjectLike(value: unknown): value is ObjectLike {
@@ -596,12 +616,101 @@ function normalizePublishedLinks(input: unknown): PublishedLinks | null {
     versionId: normalizeUrlField(input.versionId),
     referenceUrl: normalizeUrlField(input.referenceUrl),
     rawUrl: normalizeUrlField(input.rawUrl),
-    previewUrl: normalizeUrlField(input.previewUrl)
+    previewUrl: normalizeUrlField(input.previewUrl),
+    snapshotPreviewUrl: normalizeUrlField(input.snapshotPreviewUrl)
   };
-  if (!normalized.versionId && !normalized.referenceUrl && !normalized.rawUrl && !normalized.previewUrl) {
+  if (
+    !normalized.versionId &&
+    !normalized.referenceUrl &&
+    !normalized.rawUrl &&
+    !normalized.previewUrl &&
+    !normalized.snapshotPreviewUrl
+  ) {
     return null;
   }
   return normalized;
+}
+
+function toNonNegativeInteger(input: unknown): number {
+  if (typeof input === "number" && Number.isFinite(input)) {
+    return Math.max(0, Math.floor(input));
+  }
+  return 0;
+}
+
+function normalizePublishHistoryEntry(input: unknown): PublishHistoryEntry | null {
+  if (!isObjectLike(input)) {
+    return null;
+  }
+  const publishedAt =
+    typeof input.publishedAt === "string" && input.publishedAt.trim()
+      ? input.publishedAt.trim()
+      : new Date().toISOString();
+  const versionId = normalizeUrlField(input.versionId);
+  const idRaw =
+    typeof input.id === "string" && input.id.trim()
+      ? input.id.trim()
+      : `${publishedAt}:${versionId || "unversioned"}`;
+  const summary =
+    typeof input.summary === "string" && input.summary.trim() ? input.summary.trim() : "Publish record";
+  const linesRaw = Array.isArray(input.lines) ? input.lines : [];
+  const lines = linesRaw
+    .filter((line): line is string => typeof line === "string" && Boolean(line.trim()))
+    .slice(0, MAX_CHANGE_LOG_LINES);
+  const normalized: PublishHistoryEntry = {
+    id: idRaw,
+    publishedAt,
+    summary,
+    added: toNonNegativeInteger(input.added),
+    changed: toNonNegativeInteger(input.changed),
+    removed: toNonNegativeInteger(input.removed),
+    lines,
+    versionId,
+    referenceUrl: normalizeUrlField(input.referenceUrl),
+    rawUrl: normalizeUrlField(input.rawUrl),
+    previewUrl: normalizeUrlField(input.previewUrl),
+    snapshotPreviewUrl: normalizeUrlField(input.snapshotPreviewUrl)
+  };
+  return normalized;
+}
+
+function normalizePublishHistory(input: unknown): PublishHistoryEntry[] {
+  if (!Array.isArray(input)) {
+    return [];
+  }
+  const out: PublishHistoryEntry[] = [];
+  for (const item of input) {
+    const normalized = normalizePublishHistoryEntry(item);
+    if (normalized) {
+      out.push(normalized);
+    }
+  }
+  return out.slice(0, MAX_PUBLISH_HISTORY_ITEMS);
+}
+
+async function getStoredPublishHistory(): Promise<PublishHistoryEntry[]> {
+  const raw = await figma.clientStorage.getAsync(PUBLISH_HISTORY_KEY);
+  return normalizePublishHistory(raw);
+}
+
+async function setStoredPublishHistory(history: PublishHistoryEntry[]): Promise<void> {
+  const normalized = normalizePublishHistory(history);
+  await figma.clientStorage.setAsync(PUBLISH_HISTORY_KEY, normalized);
+}
+
+function postPublishHistoryToUi(history: PublishHistoryEntry[]): void {
+  figma.ui.postMessage({
+    type: "publish-history",
+    payload: history
+  });
+}
+
+async function appendPublishHistoryEntry(entry: PublishHistoryEntry): Promise<PublishHistoryEntry[]> {
+  const existing = await getStoredPublishHistory();
+  const deduped = existing.filter((item) => item.id !== entry.id);
+  const next = [entry, ...deduped].slice(0, MAX_PUBLISH_HISTORY_ITEMS);
+  await setStoredPublishHistory(next);
+  return next;
 }
 
 async function getStoredPublishedLinks(): Promise<PublishedLinks | null> {
@@ -627,13 +736,21 @@ function postPublishedLinksToUi(links: PublishedLinks | null): void {
 
 async function loadAndPostPublishedLinks(): Promise<void> {
   let links = await getStoredPublishedLinks();
+  if (links && !links.snapshotPreviewUrl && links.rawUrl) {
+    links = {
+      ...links,
+      snapshotPreviewUrl: buildPreviewUrlFromRawUrl(links.rawUrl)
+    };
+    await setStoredPublishedLinks(links);
+  }
   if (links && !links.previewUrl && links.referenceUrl) {
     const resolved = await resolvePreviewLinksFromReference(links.referenceUrl);
     if (resolved.previewUrl || resolved.rawUrl) {
       links = {
         ...links,
         rawUrl: links.rawUrl || resolved.rawUrl,
-        previewUrl: links.previewUrl || resolved.previewUrl
+        previewUrl: links.previewUrl || resolved.previewUrl,
+        snapshotPreviewUrl: links.snapshotPreviewUrl || resolved.previewUrl
       };
       await setStoredPublishedLinks(links);
     }
@@ -646,7 +763,11 @@ async function loadAndPostPublishedLinks(): Promise<void> {
         links = normalizePublishedLinks({
           ...(links || {}),
           rawUrl: links?.rawUrl || resolved.rawUrl,
-          previewUrl: links?.previewUrl || resolved.previewUrl
+          previewUrl: links?.previewUrl || resolved.previewUrl,
+          snapshotPreviewUrl:
+            links?.snapshotPreviewUrl ||
+            (links?.rawUrl ? buildPreviewUrlFromRawUrl(links.rawUrl) : undefined) ||
+            (resolved.rawUrl ? buildPreviewUrlFromRawUrl(resolved.rawUrl) : undefined)
         });
         if (links) {
           await setStoredPublishedLinks(links);
@@ -657,9 +778,14 @@ async function loadAndPostPublishedLinks(): Promise<void> {
   postPublishedLinksToUi(links);
 }
 
+async function loadAndPostPublishHistory(): Promise<void> {
+  const history = await getStoredPublishHistory();
+  postPublishHistoryToUi(history);
+}
+
 async function fetchPreviewLinkFromRelay(
   settings: RelaySettings
-): Promise<{ rawUrl?: string; previewUrl?: string }> {
+): Promise<{ rawUrl?: string; previewUrl?: string; snapshotPreviewUrl?: string }> {
   if (!settings.projectId || !settings.publishKey || !settings.relayUrl) {
     return {};
   }
@@ -691,7 +817,8 @@ async function fetchPreviewLinkFromRelay(
     }
     return {
       rawUrl: typeof data.rawUrl === "string" ? data.rawUrl : undefined,
-      previewUrl: typeof data.previewUrl === "string" ? data.previewUrl : undefined
+      previewUrl: typeof data.previewUrl === "string" ? data.previewUrl : undefined,
+      snapshotPreviewUrl: typeof data.snapshotPreviewUrl === "string" ? data.snapshotPreviewUrl : undefined
     };
   } catch {
     return {};
@@ -752,15 +879,21 @@ async function publishToRelay(
   const referenceUrl = typeof data.referenceUrl === "string" ? data.referenceUrl : undefined;
   let rawUrl = typeof data.rawUrl === "string" ? data.rawUrl : undefined;
   let previewUrl = typeof data.previewUrl === "string" ? data.previewUrl : undefined;
+  let snapshotPreviewUrl = typeof data.snapshotPreviewUrl === "string" ? data.snapshotPreviewUrl : undefined;
   if ((!rawUrl || !previewUrl) && referenceUrl) {
     const resolved = await resolvePreviewLinksFromReference(referenceUrl);
     rawUrl = rawUrl || resolved.rawUrl;
     previewUrl = previewUrl || resolved.previewUrl;
+    snapshotPreviewUrl = snapshotPreviewUrl || resolved.previewUrl;
   }
   if (!previewUrl) {
     const resolved = await fetchPreviewLinkFromRelay(settings);
     rawUrl = rawUrl || resolved.rawUrl;
     previewUrl = previewUrl || resolved.previewUrl;
+    snapshotPreviewUrl = snapshotPreviewUrl || resolved.snapshotPreviewUrl;
+  }
+  if (!snapshotPreviewUrl && rawUrl) {
+    snapshotPreviewUrl = buildPreviewUrlFromRawUrl(rawUrl);
   }
   const changed = typeof data.changed === "boolean" ? data.changed : undefined;
   return {
@@ -769,6 +902,7 @@ async function publishToRelay(
     referenceUrl,
     rawUrl,
     previewUrl,
+    snapshotPreviewUrl,
     changed
   };
 }
@@ -1604,6 +1738,7 @@ function postFullscreenState(): void {
 async function initializeUiState(): Promise<void> {
   await loadAndPostRelaySettings();
   await loadAndPostPublishedLinks();
+  await loadAndPostPublishHistory();
   await postPublishChangePreview();
   postFullscreenState();
 }
@@ -1654,10 +1789,16 @@ figma.ui.onmessage = async (msg: UiMessage) => {
     try {
       await loadAndPostRelaySettings();
       await loadAndPostPublishedLinks();
+      await loadAndPostPublishHistory();
     } catch (error) {
       const message = toErrorMessage(error);
       figma.ui.postMessage({ type: "error", payload: message });
     }
+    return;
+  }
+
+  if (msg.type === "load-publish-history") {
+    await loadAndPostPublishHistory();
     return;
   }
 
@@ -1692,7 +1833,11 @@ figma.ui.onmessage = async (msg: UiMessage) => {
       const merged = normalizePublishedLinks({
         ...(existingLinks || {}),
         rawUrl: existingLinks?.rawUrl || resolved.rawUrl,
-        previewUrl: existingLinks?.previewUrl || resolved.previewUrl
+        previewUrl: existingLinks?.previewUrl || resolved.previewUrl,
+        snapshotPreviewUrl:
+          existingLinks?.snapshotPreviewUrl ||
+          resolved.snapshotPreviewUrl ||
+          (resolved.rawUrl ? buildPreviewUrlFromRawUrl(resolved.rawUrl) : undefined)
       });
       if (merged) {
         await setStoredPublishedLinks(merged);
@@ -1761,12 +1906,37 @@ figma.ui.onmessage = async (msg: UiMessage) => {
         versionId: publishResult.versionId || existingLinks?.versionId,
         referenceUrl: publishResult.referenceUrl || existingLinks?.referenceUrl,
         rawUrl: publishResult.rawUrl || existingLinks?.rawUrl,
-        previewUrl: publishResult.previewUrl || existingLinks?.previewUrl
+        previewUrl: publishResult.previewUrl || existingLinks?.previewUrl,
+        snapshotPreviewUrl:
+          publishResult.snapshotPreviewUrl ||
+          existingLinks?.snapshotPreviewUrl ||
+          (publishResult.rawUrl ? buildPreviewUrlFromRawUrl(publishResult.rawUrl) : undefined)
       });
       if (mergedLinks) {
         await setStoredPublishedLinks(mergedLinks);
       }
       postPublishedLinksToUi(mergedLinks);
+      const historyEntry = normalizePublishHistoryEntry({
+        id: `${publishResult.versionId || new Date().toISOString()}:${saved.projectId}:${saved.environment}`,
+        publishedAt: new Date().toISOString(),
+        summary: changeLog.summary,
+        added: changeLog.added,
+        changed: changeLog.changed,
+        removed: changeLog.removed,
+        lines: changeLog.lines,
+        versionId: publishResult.versionId || mergedLinks?.versionId,
+        referenceUrl: publishResult.referenceUrl || mergedLinks?.referenceUrl,
+        rawUrl: publishResult.rawUrl || mergedLinks?.rawUrl,
+        previewUrl: publishResult.previewUrl || mergedLinks?.previewUrl,
+        snapshotPreviewUrl:
+          publishResult.snapshotPreviewUrl ||
+          mergedLinks?.snapshotPreviewUrl ||
+          (publishResult.rawUrl ? buildPreviewUrlFromRawUrl(publishResult.rawUrl) : undefined)
+      });
+      if (historyEntry) {
+        const history = await appendPublishHistoryEntry(historyEntry);
+        postPublishHistoryToUi(history);
+      }
       figma.ui.postMessage({
         type: "publish-result",
         payload: {
@@ -1775,6 +1945,7 @@ figma.ui.onmessage = async (msg: UiMessage) => {
           referenceUrl: publishResult.referenceUrl,
           rawUrl: publishResult.rawUrl,
           previewUrl: publishResult.previewUrl,
+          snapshotPreviewUrl: publishResult.snapshotPreviewUrl,
           changed: publishResult.changed,
           changeLog
         }

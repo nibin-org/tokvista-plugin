@@ -141,6 +141,32 @@
       border-color: var(--border-hi);
     }
     .icon-btn svg { width: 15px; height: 15px; display: block; }
+    .preview-live-wrap {
+      position: relative;
+      display: inline-flex;
+    }
+    .preview-live-badge {
+      position: absolute;
+      top: -7px;
+      right: -8px;
+      height: 14px;
+      min-width: 26px;
+      padding: 0 5px;
+      border-radius: 999px;
+      border: 1px solid rgba(87, 227, 154, 0.55);
+      background: rgba(17, 46, 31, 0.95);
+      color: #7ef3bc;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.45);
+    }
+    .preview-live-badge.on { display: inline-flex; }
     .has-tip { position: relative; }
     .has-tip::after,
     .has-tip::before {
@@ -1111,6 +1137,92 @@
     .btn-mp:hover { opacity: 0.86; }
     .btn-mp svg { width: 14px; height: 14px; display: block; }
 
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .history-empty {
+      border: 1px dashed var(--border);
+      border-radius: var(--rs);
+      padding: 12px;
+      color: var(--t3);
+      font-size: 13px;
+      text-align: center;
+      background: rgba(0,0,0,0.15);
+    }
+    .history-card {
+      border: 1px solid var(--border);
+      border-radius: var(--rs);
+      overflow: hidden;
+      background: rgba(0,0,0,0.2);
+    }
+    .history-head {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .history-ver {
+      color: var(--t1);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+    .history-time {
+      color: var(--t4);
+      font-size: 11px;
+      font-family: var(--mono);
+    }
+    .history-body { padding: 10px 12px; }
+    .history-summary {
+      color: var(--t2);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .history-links {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .history-link-btn {
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border-hi);
+      background: var(--raised);
+      color: var(--t2);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font);
+    }
+    .history-link-btn:hover {
+      color: var(--t1);
+      border-color: var(--a-brd);
+    }
+    .history-lines {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 4px;
+    }
+    .history-lines li {
+      color: var(--t3);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.35;
+      padding-left: 8px;
+      border-left: 1px solid var(--border);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .hide { display: none !important; }
 
     /* preview-bar / view-seg already defined above in explorer styles */
@@ -1485,8 +1597,14 @@
       <button id="fullRefreshBtn" class="icon-btn has-tip" type="button" data-tip="Full refresh" data-tip-pos="bottom" aria-label="Full refresh">
         <svg viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 1 1-2-5.3M20 2v5h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <button id="devPreviewBtn" class="icon-btn has-tip" type="button" data-tip="Generate developer preview link" data-tip-pos="bottom" aria-label="Developer preview link">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M10 14L21 3M21 3h-6M21 3v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 14.5V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="preview-live-wrap">
+        <button id="devPreviewBtn" class="icon-btn has-tip" type="button" data-tip="Generate developer preview link" data-tip-pos="bottom" aria-label="Developer preview link">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M10 14L21 3M21 3h-6M21 3v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 14.5V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <span id="previewLiveBadge" class="preview-live-badge">Live</span>
+      </div>
+      <button id="snapshotPreviewBtn" class="icon-btn has-tip" type="button" data-tip="Open publish history" data-tip-pos="bottom" aria-label="Open publish history">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.8"/></svg>
       </button>
       <!-- Download -->
       <div class="dl-pop">
@@ -1797,6 +1915,25 @@
     </div>
   </div>
 </div>
+<div id="historyModal" class="modal-wrap">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <span class="modal-title">Snapshot History</span>
+      <button id="closeHistoryModalBtn" class="modal-close" type="button">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div class="sec" style="margin-top:0">Published links and change logs</div>
+      <div id="historyList" class="history-list">
+        <div class="history-empty">No publish history yet.</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button id="historyRefreshBtn" class="btn-mc" type="button">Refresh</button>
+      <button id="historyCloseBtn" class="btn-mp" type="button">Done</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ══════ UTILS ══════ */
@@ -1809,9 +1946,11 @@ const state = {
   latestExportText: '',
   selectedFile: null,
   latestPreviewUrl: '',
+  latestSnapshotPreviewUrl: '',
   latestReferenceUrl: '',
   latestRawUrl: '',
   latestVersionId: '',
+  publishHistory: [],
   previewResolvePending: false,
   downloadFormat: 'json',
   fullscreen: false,
@@ -1835,6 +1974,9 @@ const refs = {
   pillChanged: $('pillChanged'), pillRemoved: $('pillRemoved'),
   changesList: $('changesList'), settingsHost: $('settingsHost'),
   settingsMeta: $('settingsMeta'), modal: $('publishModal'),
+  historyModal: $('historyModal'), historyList: $('historyList'),
+  closeHistoryModalBtn: $('closeHistoryModalBtn'),
+  historyRefreshBtn: $('historyRefreshBtn'), historyCloseBtn: $('historyCloseBtn'),
   modalAdded: $('modalAdded'), modalChanged: $('modalChanged'),
   modalRemoved: $('modalRemoved'), modalChanges: $('modalChanges'),
   modalEndpoint: $('modalEndpoint'), modalProject: $('modalProject'),
@@ -1843,6 +1985,8 @@ const refs = {
   statTypography: $('statTypography'), statOther: $('statOther'),
   fullRefreshBtn: $('fullRefreshBtn'),
   devPreviewBtn: $('devPreviewBtn'),
+  snapshotPreviewBtn: $('snapshotPreviewBtn'),
+  previewLiveBadge: $('previewLiveBadge'),
   downloadTriggerBtn: $('downloadTriggerBtn'), downloadMenu: $('downloadMenu'),
   downloadCurrent: $('downloadCurrent'), clearLoadedBtn: $('clearLoadedBtn'),
   fullscreenToggleBtn: $('fullscreenToggleBtn'),
@@ -1900,24 +2044,50 @@ function normalizeLinkValue(v) {
   const trimmed = v.trim();
   return trimmed;
 }
+function escapeHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 function setPreviewLinkState(payload) {
   const p = isObj(payload) ? payload : {};
   const nextPreview = normalizeLinkValue(p.previewUrl);
+  const nextSnapshotPreview = normalizeLinkValue(p.snapshotPreviewUrl);
   const nextReference = normalizeLinkValue(p.referenceUrl);
   const nextRaw = normalizeLinkValue(p.rawUrl);
   const nextVersion = normalizeLinkValue(p.versionId);
   if (nextPreview) state.latestPreviewUrl = nextPreview;
+  if (nextSnapshotPreview) state.latestSnapshotPreviewUrl = nextSnapshotPreview;
   if (nextReference) state.latestReferenceUrl = nextReference;
   if (nextRaw) state.latestRawUrl = nextRaw;
   if (nextVersion) state.latestVersionId = nextVersion;
   updatePreviewLinkUi();
 }
+function buildPreviewFromRaw(rawUrl) {
+  if (typeof rawUrl !== 'string' || !rawUrl.trim()) return '';
+  if (!state.latestPreviewUrl) return '';
+  try {
+    const live = new URL(state.latestPreviewUrl);
+    live.searchParams.set('source', rawUrl.trim());
+    return live.toString();
+  } catch {
+    return '';
+  }
+}
 function updatePreviewLinkUi() {
   const hasPreview = Boolean(state.latestPreviewUrl);
   refs.devPreviewBtn.disabled = false;
+  refs.snapshotPreviewBtn.disabled = false;
   const tip = hasPreview ? 'Open and copy developer preview link' : 'Generate live developer preview link';
+  const historyCount = Array.isArray(state.publishHistory) ? state.publishHistory.length : 0;
+  const snapshotTip = historyCount ? `Open publish history (${historyCount})` : 'Open publish history';
   refs.devPreviewBtn.setAttribute('data-tip', tip);
   refs.devPreviewBtn.setAttribute('aria-label', tip);
+  refs.snapshotPreviewBtn.setAttribute('data-tip', snapshotTip);
+  refs.snapshotPreviewBtn.setAttribute('aria-label', snapshotTip);
+  refs.previewLiveBadge?.classList.toggle('on', hasPreview);
 }
 function withSourceCacheBust(previewUrl) {
   if (typeof previewUrl !== 'string' || !previewUrl.trim()) return previewUrl;
@@ -1940,6 +2110,12 @@ function openAndCopyPreview(url) {
     .then(() => setStatus('Developer preview opened and link copied.', false))
     .catch(() => setStatus('Developer preview opened.', false));
 }
+function openAndCopySnapshot(url) {
+  post({ type: 'open-external-url', payload: { url } });
+  navigator.clipboard?.writeText(url)
+    .then(() => setStatus(`Snapshot link copied: ${url}`, false))
+    .catch(() => setStatus('Snapshot link opened.', false));
+}
 function openDeveloperPreview() {
   const url = state.latestPreviewUrl;
   if (url) {
@@ -1949,6 +2125,100 @@ function openDeveloperPreview() {
   state.previewResolvePending = true;
   setStatus('Resolving live preview link…', false);
   post({ type: 'resolve-preview-link' });
+}
+function openSnapshotPreview() {
+  refs.historyModal?.classList.add('on');
+  post({ type: 'load-publish-history' });
+}
+function closeHistoryModal() {
+  refs.historyModal?.classList.remove('on');
+}
+function renderPublishHistory(items) {
+  const history = Array.isArray(items) ? items : [];
+  state.publishHistory = history;
+  updatePreviewLinkUi();
+  if (!refs.historyList) return;
+  refs.historyList.innerHTML = '';
+  if (!history.length) {
+    refs.historyList.innerHTML = '<div class="history-empty">No publish history yet.</div>';
+    return;
+  }
+
+  history.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'history-card';
+    const publishedAt = fmtTimestamp(item.publishedAt || '');
+    const versionId = item.versionId || 'unversioned';
+    const added = Number(item.added || 0);
+    const changed = Number(item.changed || 0);
+    const removed = Number(item.removed || 0);
+    const summary = typeof item.summary === 'string' && item.summary.trim() ? item.summary.trim() : 'Publish record';
+    const liveUrl = normalizeLinkValue(item.previewUrl);
+    const snapshotUrl = normalizeLinkValue(item.snapshotPreviewUrl) || buildPreviewFromRaw(normalizeLinkValue(item.rawUrl));
+    const commitUrl = normalizeLinkValue(item.referenceUrl);
+    const lines = Array.isArray(item.lines) ? item.lines.filter(x => typeof x === 'string').slice(0, 6) : [];
+
+    const head = document.createElement('div');
+    head.className = 'history-head';
+    head.innerHTML = `
+      <span class="history-ver">${escapeHtml(versionId)}</span>
+      <span class="history-time">${escapeHtml(publishedAt)}</span>
+    `;
+    card.appendChild(head);
+
+    const body = document.createElement('div');
+    body.className = 'history-body';
+    body.innerHTML = `
+      <div class="pills" style="margin:0 0 8px">
+        <span class="pill pill-g">+${added} Added</span>
+        <span class="pill pill-y">~${changed} Changed</span>
+        <span class="pill pill-r">−${removed} Removed</span>
+      </div>
+      <div class="history-summary">${escapeHtml(summary)}</div>
+    `;
+
+    const links = document.createElement('div');
+    links.className = 'history-links';
+    if (liveUrl) {
+      const b = document.createElement('button');
+      b.className = 'history-link-btn';
+      b.type = 'button';
+      b.textContent = 'Open Live';
+      b.addEventListener('click', () => openAndCopyPreview(liveUrl));
+      links.appendChild(b);
+    }
+    if (snapshotUrl) {
+      const b = document.createElement('button');
+      b.className = 'history-link-btn';
+      b.type = 'button';
+      b.textContent = 'Open Snapshot';
+      b.addEventListener('click', () => openAndCopySnapshot(snapshotUrl));
+      links.appendChild(b);
+    }
+    if (commitUrl) {
+      const b = document.createElement('button');
+      b.className = 'history-link-btn';
+      b.type = 'button';
+      b.textContent = 'Open Commit';
+      b.addEventListener('click', () => post({ type: 'open-external-url', payload: { url: commitUrl } }));
+      links.appendChild(b);
+    }
+    body.appendChild(links);
+
+    if (lines.length) {
+      const ul = document.createElement('ul');
+      ul.className = 'history-lines';
+      lines.forEach(line => {
+        const li = document.createElement('li');
+        li.textContent = line;
+        ul.appendChild(li);
+      });
+      body.appendChild(ul);
+    }
+
+    card.appendChild(body);
+    refs.historyList.appendChild(card);
+  });
 }
 function rows(payload) {
   const out = [];
@@ -2512,6 +2782,7 @@ function updateFsBtn() {
 $('syncBtn').addEventListener('click', refresh);
 $('fullRefreshBtn').addEventListener('click', fullRefresh);
 $('devPreviewBtn').addEventListener('click', openDeveloperPreview);
+$('snapshotPreviewBtn').addEventListener('click', openSnapshotPreview);
 $('saveRelayBtn').addEventListener('click', () => post({ type: 'save-relay-settings', payload: readRelayPayload() }));
 $('refreshChangesBtn').addEventListener('click', () => post({ type: 'preview-publish-changes' }));
 $('previewPublishBtn').addEventListener('click', () => { setTab('changes'); post({ type: 'preview-publish-changes' }); });
@@ -2519,6 +2790,10 @@ $('openPublishBtn').addEventListener('click', openModal);
 $('cancelPublishBtn').addEventListener('click', closeModal);
 $('closeModalBtn').addEventListener('click', closeModal);
 refs.modal.addEventListener('click', e => { if (e.target === refs.modal) closeModal(); });
+refs.closeHistoryModalBtn.addEventListener('click', closeHistoryModal);
+refs.historyCloseBtn.addEventListener('click', closeHistoryModal);
+refs.historyRefreshBtn.addEventListener('click', () => post({ type: 'load-publish-history' }));
+refs.historyModal.addEventListener('click', e => { if (e.target === refs.historyModal) closeHistoryModal(); });
 $('confirmPublishBtn').addEventListener('click', () => {
   closeModal();
   setStatus('Publishing to Tokvista…', false);
@@ -2603,7 +2878,14 @@ window.onmessage = event => {
   if (msg.type === 'publish-result') {
     const p = msg.payload || {};
     setPreviewLinkState(p);
-    setStatus(p.versionId ? `Published version ${p.versionId}` : (p.message || 'Published.'), false);
+    const snapshotLink = normalizeLinkValue(p.snapshotPreviewUrl) || buildPreviewFromRaw(normalizeLinkValue(p.rawUrl));
+    if (p.versionId && snapshotLink) {
+      setStatus(`Published version ${p.versionId}. Snapshot QA link: ${snapshotLink}`, false);
+    } else if (p.versionId) {
+      setStatus(`Published version ${p.versionId}`, false);
+    } else {
+      setStatus(p.message || 'Published.', false);
+    }
     if (p.changeLog && typeof p.changeLog === 'object') { state.changeLog = p.changeLog; renderChangeLog(state.changeLog); }
     post({ type: 'preview-publish-changes' });
   }
@@ -2617,6 +2899,9 @@ window.onmessage = event => {
         setStatus('Live preview link is not available yet.', true);
       }
     }
+  }
+  if (msg.type === 'publish-history') {
+    renderPublishHistory(msg.payload || []);
   }
   if (msg.type === 'publish-change-preview') {
     const p = msg.payload || {};
@@ -2703,6 +2988,7 @@ updatePreviewLinkUi();
 updateSnapToggle();
 renderSnapshot(null);
 post({ type: 'load-relay-settings' });
+post({ type: 'load-publish-history' });
 post({ type: 'preview-publish-changes' });
 post({ type: 'export-tokens' });
 

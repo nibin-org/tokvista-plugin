@@ -150,11 +150,13 @@ module.exports = async function handler(req, res) {
     });
     if (!githubResult.changed) {
       const rawUrl = buildBranchRawUrl(owner, repo, branch, path);
+      const snapshotPreviewUrl = buildPreviewUrl(rawUrl);
       const previewUrl = buildPreviewUrl(buildLiveSourceUrl(req, projectId, environment) || rawUrl);
       sendJson(res, 200, {
         message: "No changes to publish.",
         rawUrl,
         previewUrl,
+        snapshotPreviewUrl,
         changed: false
       });
       return;
@@ -173,6 +175,7 @@ module.exports = async function handler(req, res) {
     const previewSource =
       buildLiveSourceUrl(req, projectId, environment) || rawUrl || buildBranchRawUrl(owner, repo, branch, path);
     const previewUrl = buildPreviewUrl(previewSource);
+    const snapshotPreviewUrl = buildPreviewUrl(rawUrl || buildBranchRawUrl(owner, repo, branch, path));
 
     sendJson(res, 200, {
       versionId,
@@ -180,6 +183,7 @@ module.exports = async function handler(req, res) {
       referenceUrl,
       rawUrl,
       previewUrl,
+      snapshotPreviewUrl,
       changed: true
     });
   } catch (error) {

@@ -111,6 +111,7 @@ module.exports = async function handler(req, res) {
   }
 
   const rawUrl = buildBranchRawUrl(owner, repo, branch, path);
+  const snapshotPreviewUrl = buildPreviewUrl(rawUrl);
   const previewUrl = buildPreviewUrl(buildLiveSourceUrl(req, projectId, environment) || rawUrl);
   sendJson(res, 200, {
     projectId,
@@ -118,6 +119,7 @@ module.exports = async function handler(req, res) {
     branch,
     path,
     rawUrl,
-    previewUrl
+    previewUrl,
+    snapshotPreviewUrl
   });
 };
