@@ -609,7 +609,64 @@ async function loadAndPostPublishedLinks(): Promise<void> {
       await setStoredPublishedLinks(links);
     }
   }
+  if (!links || !links.previewUrl) {
+    const settings = await getStoredRelaySettings();
+    if (settings && settings.projectId && settings.publishKey) {
+      const resolved = await fetchPreviewLinkFromRelay(settings);
+      if (resolved.previewUrl || resolved.rawUrl) {
+        links = normalizePublishedLinks({
+          ...(links || {}),
+          rawUrl: links?.rawUrl || resolved.rawUrl,
+          previewUrl: links?.previewUrl || resolved.previewUrl
+        });
+        if (links) {
+          await setStoredPublishedLinks(links);
+        }
+      }
+    }
+  }
   postPublishedLinksToUi(links);
+}
+
+async function fetchPreviewLinkFromRelay(
+  settings: RelaySettings
+): Promise<{ rawUrl?: string; previewUrl?: string }> {
+  if (!settings.projectId || !settings.publishKey || !settings.relayUrl) {
+    return {};
+  }
+  const endpoint = `${settings.relayUrl}/preview-link`;
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        projectId: settings.projectId,
+        publishKey: settings.publishKey,
+        environment: settings.environment
+      })
+    });
+    if (!response.ok) {
+      return {};
+    }
+    const rawText = await response.text();
+    if (!rawText) {
+      return {};
+    }
+    let data: ObjectLike = {};
+    try {
+      data = JSON.parse(rawText) as ObjectLike;
+    } catch {
+      data = {};
+    }
+    return {
+      rawUrl: typeof data.rawUrl === "string" ? data.rawUrl : undefined,
+      previewUrl: typeof data.previewUrl === "string" ? data.previewUrl : undefined
+    };
+  } catch {
+    return {};
+  }
 }
 
 async function publishToRelay(
@@ -668,6 +725,11 @@ async function publishToRelay(
   let previewUrl = typeof data.previewUrl === "string" ? data.previewUrl : undefined;
   if ((!rawUrl || !previewUrl) && referenceUrl) {
     const resolved = await resolvePreviewLinksFromReference(referenceUrl);
+    rawUrl = rawUrl || resolved.rawUrl;
+    previewUrl = previewUrl || resolved.previewUrl;
+  }
+  if (!previewUrl) {
+    const resolved = await fetchPreviewLinkFromRelay(settings);
     rawUrl = rawUrl || resolved.rawUrl;
     previewUrl = previewUrl || resolved.previewUrl;
   }

@@ -1899,20 +1899,6 @@ function normalizeLinkValue(v) {
   const trimmed = v.trim();
   return trimmed;
 }
-function base64UrlEncodeUtf8(text) {
-  const b64 = btoa(unescape(encodeURIComponent(text)));
-  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-}
-function buildInlinePreviewUrl(payload) {
-  if (!payload || !isObj(payload)) return '';
-  try {
-    const json = JSON.stringify(payload);
-    const encoded = base64UrlEncodeUtf8(json);
-    return `https://tokvista-demo.vercel.app/#data=${encoded}`;
-  } catch {
-    return '';
-  }
-}
 function setPreviewLinkState(payload) {
   const p = isObj(payload) ? payload : {};
   const nextPreview = normalizeLinkValue(p.previewUrl);
@@ -1926,16 +1912,16 @@ function setPreviewLinkState(payload) {
   updatePreviewLinkUi();
 }
 function updatePreviewLinkUi() {
-  const hasPreview = Boolean(state.latestPreviewUrl) || Boolean(state.latestExportPayload);
+  const hasPreview = Boolean(state.latestPreviewUrl);
   refs.devPreviewBtn.disabled = !hasPreview;
-  const tip = hasPreview ? 'Open and copy developer preview link' : 'Sync tokens to generate developer preview link';
+  const tip = hasPreview ? 'Open and copy developer preview link' : 'Publish to generate live developer preview link';
   refs.devPreviewBtn.setAttribute('data-tip', tip);
   refs.devPreviewBtn.setAttribute('aria-label', tip);
 }
 function openDeveloperPreview() {
-  const url = state.latestPreviewUrl || buildInlinePreviewUrl(state.latestExportPayload);
+  const url = state.latestPreviewUrl;
   if (!url) {
-    setStatus('Sync once to generate a developer preview link.', true);
+    setStatus('Publish once to generate a live developer preview link.', true);
     return;
   }
   post({ type: 'open-external-url', payload: { url } });

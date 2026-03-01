@@ -421,6 +421,61 @@ async function handlePublish(req, res) {
   }
 }
 
+async function handlePreviewLink(req, res) {
+  let body;
+  try {
+    body = await readJsonBody(req);
+  } catch {
+    sendJson(res, 400, { error: "Invalid JSON body." });
+    return;
+  }
+
+  const projectId = typeof body.projectId === "string" ? body.projectId.trim() : "";
+  const publishKey = typeof body.publishKey === "string" ? body.publishKey.trim() : "";
+  const environment = typeof body.environment === "string" && body.environment.trim()
+    ? body.environment.trim()
+    : "dev";
+
+  if (!projectId || !publishKey) {
+    sendJson(res, 400, { error: "projectId and publishKey are required." });
+    return;
+  }
+
+  const projectConfig = getProjectConfig(projectId);
+  if (!projectConfig) {
+    sendJson(res, 404, { error: "Unknown projectId." });
+    return;
+  }
+  if (projectConfig.publishKey !== publishKey) {
+    sendJson(res, 401, { error: "Unauthorized publish key." });
+    return;
+  }
+  if (typeof projectConfig.localPath === "string" && projectConfig.localPath.trim()) {
+    sendJson(res, 400, { error: "preview-link is not supported in localPath mode." });
+    return;
+  }
+
+  const owner = projectConfig.owner;
+  const repo = projectConfig.repo;
+  const branch = projectConfig.branch || "main";
+  const path = getTargetPath(projectConfig, environment);
+  if (!owner || !repo || !path) {
+    sendJson(res, 500, { error: "Project target is incomplete. Configure owner/repo/path." });
+    return;
+  }
+
+  const rawUrl = buildBranchRawUrl(owner, repo, branch, path);
+  const previewUrl = buildPreviewUrl(rawUrl);
+  sendJson(res, 200, {
+    projectId,
+    environment,
+    branch,
+    path,
+    rawUrl,
+    previewUrl
+  });
+}
+
 const server = createServer(async (req, res) => {
   if (req.method === "OPTIONS") {
     setCorsHeaders(res);
@@ -469,6 +524,11 @@ const server = createServer(async (req, res) => {
 
   if (req.method === "POST" && req.url === "/publish-tokens") {
     await handlePublish(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/preview-link") {
+    await handlePreviewLink(req, res);
     return;
   }
 
