@@ -149,9 +149,7 @@ module.exports = async function handler(req, res) {
         ? githubPayload.commit.html_url
         : undefined;
     const rawUrl = buildRawUrl(owner, repo, commitSha, path);
-    // Keep preview links stable across publishes by pointing to branch path.
-    const previewRawUrl = buildBranchRawUrl(owner, repo, branch, path);
-    const previewUrl = buildPreviewUrl(previewRawUrl);
+    const previewUrl = buildPreviewUrl(rawUrl || buildBranchRawUrl(owner, repo, branch, path));
 
     sendJson(res, 200, {
       versionId,

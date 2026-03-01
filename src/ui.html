@@ -1919,9 +1919,24 @@ function updatePreviewLinkUi() {
   refs.devPreviewBtn.setAttribute('data-tip', tip);
   refs.devPreviewBtn.setAttribute('aria-label', tip);
 }
+function withSourceCacheBust(previewUrl) {
+  if (typeof previewUrl !== 'string' || !previewUrl.trim()) return previewUrl;
+  try {
+    const u = new URL(previewUrl);
+    const src = u.searchParams.get('source');
+    if (!src) return previewUrl;
+    const srcUrl = new URL(src);
+    srcUrl.searchParams.set('__tokvista_cb', String(Date.now()));
+    u.searchParams.set('source', srcUrl.toString());
+    return u.toString();
+  } catch {
+    return previewUrl;
+  }
+}
 function openAndCopyPreview(url) {
-  post({ type: 'open-external-url', payload: { url } });
-  navigator.clipboard?.writeText(url)
+  const finalUrl = withSourceCacheBust(url);
+  post({ type: 'open-external-url', payload: { url: finalUrl } });
+  navigator.clipboard?.writeText(finalUrl)
     .then(() => setStatus('Developer preview opened and link copied.', false))
     .catch(() => setStatus('Developer preview opened.', false));
 }

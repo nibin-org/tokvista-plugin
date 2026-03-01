@@ -92,6 +92,7 @@ type PublishChangeLog = {
 
 type ExportTokensOptions = {
   allowEmpty?: boolean;
+  modeName?: string;
 };
 
 const MAX_CHANGE_LOG_LINES = 40;
@@ -407,10 +408,37 @@ function createEmptyExportPayload(collections: string[] = []): ObjectLike {
   };
 }
 
+function normalizeModeLabel(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function resolveModeIdForCollection(collection: VariableCollection, preferredModeName?: string): string {
+  if (!preferredModeName) {
+    return collection.defaultModeId;
+  }
+  const normalizedPreferred = normalizeModeLabel(preferredModeName);
+  if (!normalizedPreferred) {
+    return collection.defaultModeId;
+  }
+  const byName = collection.modes.find((mode) => normalizeModeLabel(mode.name) === normalizedPreferred);
+  if (byName) {
+    return byName.modeId;
+  }
+  const byId = collection.modes.find((mode) => normalizeModeLabel(mode.modeId) === normalizedPreferred);
+  if (byId) {
+    return byId.modeId;
+  }
+  return collection.defaultModeId;
+}
+
 async function postPublishChangePreview(): Promise<void> {
   try {
+    const settings = await getStoredRelaySettings();
     const previousPayload = await getLastPublishedPayload();
-    const exported = await exportTokens({ allowEmpty: true });
+    const exported = await exportTokens({
+      allowEmpty: true,
+      modeName: settings?.environment
+    });
     const publishPayload = stripVolatilePublishFields(exported);
     const changeLog = buildPublishChangeLog(previousPayload, publishPayload);
     figma.ui.postMessage({
@@ -1456,7 +1484,8 @@ async function exportTokens(options: ExportTokensOptions = {}): Promise<ObjectLi
       continue;
     }
     exportedCollectionNames.add(collection.name);
-    const value = variable.valuesByMode[collection.defaultModeId];
+    const modeId = resolveModeIdForCollection(collection, options.modeName);
+    const value = variable.valuesByMode[modeId] ?? variable.valuesByMode[collection.defaultModeId];
     const segments = [collection.name, ...variable.name.split("/").filter(Boolean)];
 
     if (segments.length < 2) {
@@ -1517,7 +1546,7 @@ async function exportTokens(options: ExportTokensOptions = {}): Promise<ObjectLi
     if (options.allowEmpty) {
       return createEmptyExportPayload([...exportedCollectionNames]);
     }
-    throw new Error("No exportable local variables found in default modes.");
+    throw new Error("No exportable local variables found in selected mode.");
   }
 
   return {
@@ -1603,7 +1632,11 @@ figma.ui.onmessage = async (msg: UiMessage) => {
 
   if (msg.type === "export-tokens") {
     try {
-      const payload = await exportTokens({ allowEmpty: true });
+      const settings = await getStoredRelaySettings();
+      const payload = await exportTokens({
+        allowEmpty: true,
+        modeName: settings?.environment
+      });
       figma.ui.postMessage({
         type: "export-result",
         payload
@@ -1706,7 +1739,9 @@ figma.ui.onmessage = async (msg: UiMessage) => {
   if (msg.type === "publish-tokvista") {
     try {
       const saved = await saveRelaySettings(msg.payload);
-      const exported = await exportTokens();
+      const exported = await exportTokens({
+        modeName: saved.environment
+      });
       const publishPayload = stripVolatilePublishFields(exported);
       const previousPayload = await getLastPublishedPayload();
       let changeLog = buildPublishChangeLog(previousPayload, publishPayload);
