@@ -25,6 +25,7 @@ const DEFAULT_TOKVISTA_PREVIEW_BASE_URL = "https://tokvista-demo.vercel.app/";
 
 type UiMessage =
   | { type: "import-tokens"; payload: unknown }
+  | { type: "import-tokens-from-url"; payload: { url: string } }
   | { type: "export-tokens" }
   | { type: "load-relay-settings" }
   | { type: "load-publish-history" }
@@ -1737,6 +1738,45 @@ function toErrorMessage(error: unknown): string {
   return String(error);
 }
 
+function normalizeHttpUrl(value: unknown): string {
+  if (typeof value !== "string") {
+    return "";
+  }
+  const trimmed = value.trim().replace(/^['"]|['"]$/g, "");
+  if (!trimmed) {
+    return "";
+  }
+  if (/\s/.test(trimmed)) {
+    return "";
+  }
+  if (!/^https?:\/\/\S+$/i.test(trimmed)) {
+    return "";
+  }
+  return trimmed;
+}
+
+async function importTokensFromUrl(urlValue: unknown): Promise<ImportResult> {
+  const url = normalizeHttpUrl(urlValue);
+  if (!url) {
+    throw new Error("Invalid URL. Use a valid http/https tokens.json URL.");
+  }
+  const response = await fetch(url, { method: "GET" });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch tokens from URL (${response.status}).`);
+  }
+  const text = await response.text();
+  if (!text.trim()) {
+    throw new Error("URL returned an empty response.");
+  }
+  let payload: unknown;
+  try {
+    payload = JSON.parse(text);
+  } catch {
+    throw new Error("URL did not return valid JSON.");
+  }
+  return importTokens(payload);
+}
+
 async function loadAndPostRelaySettings(): Promise<void> {
   const settings = await getStoredRelaySettings();
   postRelaySettingsToUi(settings);
@@ -1809,6 +1849,27 @@ figma.ui.onmessage = async (msg: UiMessage) => {
     } catch (error) {
       const message = toErrorMessage(error);
       figma.ui.postMessage({ type: "error", payload: message });
+    }
+    return;
+  }
+
+  if (msg.type === "import-tokens-from-url") {
+    try {
+      const importUrl =
+        isObjectLike(msg.payload) && typeof msg.payload.url === "string" ? msg.payload.url : "";
+      const result = await importTokensFromUrl(importUrl);
+      await postPublishChangePreview();
+      figma.ui.postMessage({
+        type: "import-result",
+        payload: result
+      });
+      figma.notify(
+        `Import complete: ${result.imported} applied (${result.created} created, ${result.updated} updated, ${result.replaced} replaced), ${result.skipped} skipped in "${result.collection}".`
+      );
+    } catch (error) {
+      const message = toErrorMessage(error);
+      figma.ui.postMessage({ type: "error", payload: message });
+      figma.notify(`Import failed: ${message}`);
     }
     return;
   }

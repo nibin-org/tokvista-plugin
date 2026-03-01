@@ -7,7 +7,10 @@
   "editorType": ["figma"],
   "documentAccess": "dynamic-page",
   "networkAccess": {
-    "allowedDomains": ["https://tokvista-plugin.vercel.app"],
-    "reasoning": "Tokvista plugin publishes token exports to a project relay API."
+    "allowedDomains": [
+      "https://tokvista-plugin.vercel.app",
+      "https://raw.githubusercontent.com"
+    ],
+    "reasoning": "Tokvista plugin publishes token exports to relay API and imports tokens.json from GitHub raw links."
   }
 }
