@@ -1485,7 +1485,7 @@
       <button id="fullRefreshBtn" class="icon-btn has-tip" type="button" data-tip="Full refresh" data-tip-pos="bottom" aria-label="Full refresh">
         <svg viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 1 1-2-5.3M20 2v5h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <button id="devPreviewBtn" class="icon-btn has-tip" type="button" data-tip="Generate developer preview link" data-tip-pos="bottom" aria-label="Developer preview link" disabled>
+      <button id="devPreviewBtn" class="icon-btn has-tip" type="button" data-tip="Generate developer preview link" data-tip-pos="bottom" aria-label="Developer preview link">
         <svg viewBox="0 0 24 24" fill="none"><path d="M10 14L21 3M21 3h-6M21 3v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 14.5V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <!-- Download -->
@@ -1812,6 +1812,7 @@ const state = {
   latestReferenceUrl: '',
   latestRawUrl: '',
   latestVersionId: '',
+  previewResolvePending: false,
   downloadFormat: 'json',
   fullscreen: false,
   snapshotRawOpen: false,
@@ -1913,21 +1914,26 @@ function setPreviewLinkState(payload) {
 }
 function updatePreviewLinkUi() {
   const hasPreview = Boolean(state.latestPreviewUrl);
-  refs.devPreviewBtn.disabled = !hasPreview;
-  const tip = hasPreview ? 'Open and copy developer preview link' : 'Publish to generate live developer preview link';
+  refs.devPreviewBtn.disabled = false;
+  const tip = hasPreview ? 'Open and copy developer preview link' : 'Generate live developer preview link';
   refs.devPreviewBtn.setAttribute('data-tip', tip);
   refs.devPreviewBtn.setAttribute('aria-label', tip);
 }
-function openDeveloperPreview() {
-  const url = state.latestPreviewUrl;
-  if (!url) {
-    setStatus('Publish once to generate a live developer preview link.', true);
-    return;
-  }
+function openAndCopyPreview(url) {
   post({ type: 'open-external-url', payload: { url } });
   navigator.clipboard?.writeText(url)
     .then(() => setStatus('Developer preview opened and link copied.', false))
     .catch(() => setStatus('Developer preview opened.', false));
+}
+function openDeveloperPreview() {
+  const url = state.latestPreviewUrl;
+  if (url) {
+    openAndCopyPreview(url);
+    return;
+  }
+  state.previewResolvePending = true;
+  setStatus('Resolving live preview link…', false);
+  post({ type: 'resolve-preview-link' });
 }
 function rows(payload) {
   const out = [];
@@ -2588,6 +2594,14 @@ window.onmessage = event => {
   }
   if (msg.type === 'developer-preview-link') {
     setPreviewLinkState(msg.payload || {});
+    if (state.previewResolvePending) {
+      state.previewResolvePending = false;
+      if (state.latestPreviewUrl) {
+        openAndCopyPreview(state.latestPreviewUrl);
+      } else {
+        setStatus('Live preview link is not available yet.', true);
+      }
+    }
   }
   if (msg.type === 'publish-change-preview') {
     const p = msg.payload || {};

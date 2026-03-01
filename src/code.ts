@@ -27,6 +27,7 @@ type UiMessage =
   | { type: "export-tokens" }
   | { type: "load-relay-settings" }
   | { type: "preview-publish-changes" }
+  | { type: "resolve-preview-link" }
   | { type: "toggle-fullscreen" }
   | { type: "save-relay-settings"; payload: unknown }
   | { type: "publish-tokvista"; payload: unknown }
@@ -1629,6 +1630,44 @@ figma.ui.onmessage = async (msg: UiMessage) => {
 
   if (msg.type === "preview-publish-changes") {
     await postPublishChangePreview();
+    return;
+  }
+
+  if (msg.type === "resolve-preview-link") {
+    try {
+      const existingLinks = await getStoredPublishedLinks();
+      if (existingLinks?.previewUrl) {
+        postPublishedLinksToUi(existingLinks);
+        return;
+      }
+      const settings = await getStoredRelaySettings();
+      if (!settings || !settings.projectId || !settings.publishKey) {
+        figma.ui.postMessage({
+          type: "error",
+          payload: "Preview link unavailable. Configure Project ID and Publish key in Settings."
+        });
+        return;
+      }
+      const resolved = await fetchPreviewLinkFromRelay(settings);
+      if (!resolved.previewUrl && !resolved.rawUrl) {
+        figma.ui.postMessage({
+          type: "error",
+          payload: "Preview link unavailable from relay. Redeploy backend with /preview-link support."
+        });
+        return;
+      }
+      const merged = normalizePublishedLinks({
+        ...(existingLinks || {}),
+        rawUrl: existingLinks?.rawUrl || resolved.rawUrl,
+        previewUrl: existingLinks?.previewUrl || resolved.previewUrl
+      });
+      if (merged) {
+        await setStoredPublishedLinks(merged);
+      }
+      postPublishedLinksToUi(merged);
+    } catch (error) {
+      figma.ui.postMessage({ type: "error", payload: toErrorMessage(error) });
+    }
     return;
   }
 
