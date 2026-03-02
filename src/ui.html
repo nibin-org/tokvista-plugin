@@ -1016,6 +1016,116 @@
       height: 12px;
       display: block;
     }
+    .sync-profiles-wrap {
+      border-top: 1px solid var(--border);
+      padding: 10px 12px 12px;
+    }
+    .sync-profiles-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .sync-profiles-title {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--t3);
+      font-weight: 700;
+    }
+    .btn-new-profile {
+      height: 26px;
+      padding: 0 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--t2);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font);
+      transition: all 0.12s;
+    }
+    .btn-new-profile:hover {
+      background: var(--raised);
+      color: var(--t1);
+      border-color: var(--border-hi);
+    }
+    .sync-profile-list {
+      display: grid;
+      gap: 6px;
+    }
+    .sync-profile-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 9px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.18);
+    }
+    .sync-profile-row.is-active {
+      border-color: var(--gn-brd);
+      background: rgba(69,196,144,0.1);
+    }
+    .sync-profile-main {
+      min-width: 0;
+      flex: 1;
+    }
+    .sync-profile-name {
+      font-size: 13px;
+      color: var(--t1);
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sync-profile-sub {
+      margin-top: 1px;
+      font-size: 12px;
+      color: var(--t3);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sync-profile-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .btn-sync-mini {
+      height: 24px;
+      padding: 0 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--t2);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      transition: all 0.12s;
+    }
+    .btn-sync-mini:hover {
+      background: var(--raised);
+      color: var(--t1);
+      border-color: var(--border-hi);
+    }
+    .btn-sync-mini.danger {
+      border-color: var(--rd-brd);
+      color: var(--red);
+    }
+    .btn-sync-mini.danger:hover {
+      background: rgba(224,108,108,0.12);
+      border-color: var(--rd-brd);
+    }
+    .sync-profile-empty {
+      font-size: 12px;
+      color: var(--t4);
+      padding: 6px 2px;
+    }
     .relay-adv-toggle {
       width: 100%;
       display: flex;
@@ -2124,6 +2234,15 @@
           Change
         </button>
       </div>
+      <div class="sync-profiles-wrap">
+        <div class="sync-profiles-head">
+          <div class="sync-profiles-title">Saved Sync Options</div>
+          <button id="newSyncProfileBtn" class="btn-new-profile" type="button">New</button>
+        </div>
+        <div id="syncProfilesList" class="sync-profile-list">
+          <div class="sync-profile-empty">No sync profiles yet.</div>
+        </div>
+      </div>
     </div>
 
     <div id="relaySettingsGroup">
@@ -2329,6 +2448,9 @@ const state = {
   latestExportText: '',
   selectedFile: null,
   syncProvider: 'relay',
+  syncProfiles: [],
+  activeProfileId: '',
+  draftNewProfile: false,
   relayAdvancedOpen: false,
   publishKeySaved: false,
   githubTokenSaved: false,
@@ -2357,6 +2479,7 @@ const refs = {
   providerLabel: $('providerLabel'), providerMeta: $('providerMeta'),
   providerBadge: $('providerBadge'),
   openProviderModalBtn: $('openProviderModalBtn'),
+  newSyncProfileBtn: $('newSyncProfileBtn'), syncProfilesList: $('syncProfilesList'),
   providerModal: $('providerModal'), closeProviderModalBtn: $('closeProviderModalBtn'),
   providerDoneBtn: $('providerDoneBtn'),
   relaySettingsGroup: $('relaySettingsGroup'), githubSettingsGroup: $('githubSettingsGroup'),
@@ -2477,6 +2600,101 @@ function normalizeProvider(provider) {
 function providerTitle(provider) {
   return provider === 'github' ? 'GitHub' : 'Relay URL';
 }
+function renderSyncProfiles() {
+  const list = Array.isArray(state.syncProfiles) ? state.syncProfiles : [];
+  if (!refs.syncProfilesList) return;
+  if (!list.length) {
+    refs.syncProfilesList.innerHTML = '<div class="sync-profile-empty">No sync profiles yet.</div>';
+    return;
+  }
+  refs.syncProfilesList.innerHTML = list.map(profile => {
+    const id = String(profile.id || '');
+    const name = escapeHtml(profile.name || profile.label || 'Sync profile');
+    const provider = String(profile.provider || '').toLowerCase() === 'relay' ? 'Relay' : 'GitHub';
+    const sub = escapeHtml(profile.label || provider);
+    const isActive = id && id === state.activeProfileId && !state.draftNewProfile;
+    const activeChip = isActive ? '<span class="pill pill-g provider-badge">Active</span>' : '';
+    const useBtn = isActive
+      ? ''
+      : `<button class="btn-sync-mini" type="button" data-profile-action="use" data-profile-id="${escapeHtml(id)}">Use</button>`;
+    return `<div class="sync-profile-row${isActive ? ' is-active' : ''}">
+      <div class="sync-profile-main">
+        <div class="sync-profile-name">${name}</div>
+        <div class="sync-profile-sub">${provider} · ${sub}</div>
+      </div>
+      <div class="sync-profile-actions">
+        ${activeChip}
+        ${useBtn}
+        <button class="btn-sync-mini danger" type="button" data-profile-action="delete" data-profile-id="${escapeHtml(id)}">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function readSyncProfilesFromPayload(payload) {
+  if (!payload || !Array.isArray(payload.profiles)) return [];
+  return payload.profiles
+    .map(profile => {
+      if (!profile || typeof profile !== 'object') return null;
+      const id = typeof profile.id === 'string' ? profile.id.trim() : '';
+      if (!id) return null;
+      return {
+        id,
+        name: typeof profile.name === 'string' ? profile.name : '',
+        provider: typeof profile.provider === 'string' ? profile.provider : 'github',
+        label: typeof profile.label === 'string' ? profile.label : '',
+        isActive: !!profile.isActive
+      };
+    })
+    .filter(Boolean);
+}
+function applySyncPayload(payload) {
+  const p = payload || {};
+  const provider = normalizeProvider(p.provider || 'github');
+  const profiles = readSyncProfilesFromPayload(p);
+  const payloadActiveId = typeof p.activeProfileId === 'string' ? p.activeProfileId.trim() : '';
+  const fallbackActiveId = profiles.find(profile => profile.isActive)?.id || (profiles[0]?.id || '');
+  state.syncProfiles = profiles;
+  state.activeProfileId = payloadActiveId || fallbackActiveId;
+  state.draftNewProfile = false;
+  applyProviderUi(provider);
+  refs.relayUrlInput.value    = p.relayUrl || 'https://tokvista-plugin.vercel.app/api';
+  refs.projectIdInput.value   = p.projectId || '';
+  refs.environmentInput.value = p.environment || 'dev';
+  refs.githubRepoInput.value = p.githubRepo || '';
+  refs.githubBranchInput.value = p.githubBranch || 'main';
+  refs.githubPathInput.value = p.githubPath || 'tokens.json';
+  refs.publishKeyInput.value  = '';
+  refs.githubTokenInput.value = '';
+  state.publishKeySaved = !!p.publishKeySaved;
+  state.githubTokenSaved = !!p.githubTokenSaved;
+  state.githubTokenMaskLength = Number.isFinite(Number(p.githubTokenLength))
+    ? Math.max(1, Number(p.githubTokenLength))
+    : 16;
+  state.rememberGithubToken = !!p.rememberGithubToken;
+  renderSyncProfiles();
+  updateSettingsSummary();
+}
+function beginNewSyncProfile() {
+  state.draftNewProfile = true;
+  state.activeProfileId = '';
+  state.syncProvider = 'github';
+  applyProviderUi('github');
+  refs.relayUrlInput.value = '';
+  refs.projectIdInput.value = '';
+  refs.publishKeyInput.value = '';
+  refs.githubTokenInput.value = '';
+  refs.githubRepoInput.value = '';
+  refs.githubBranchInput.value = 'main';
+  refs.githubPathInput.value = 'tokens.json';
+  state.publishKeySaved = false;
+  state.githubTokenSaved = false;
+  state.githubTokenMaskLength = 16;
+  state.rememberGithubToken = false;
+  refs.rememberGithubTokenInput.checked = false;
+  renderSyncProfiles();
+  updateSettingsSummary();
+  setStatus('New sync profile draft ready. Configure and save.', false);
+}
 function setRelayAdvancedOpen(open) {
   const next = !!open;
   state.relayAdvancedOpen = next;
@@ -2566,6 +2784,7 @@ function applyProviderUi(provider) {
 }
 function readSyncPayload() {
   return {
+    profileId: state.draftNewProfile ? '' : (state.activeProfileId || ''),
     provider: normalizeProvider(state.syncProvider),
     relayUrl:    refs.relayUrlInput.value.trim(),
     projectId:   refs.projectIdInput.value.trim(),
@@ -3403,6 +3622,26 @@ $('fullRefreshBtn').addEventListener('click', fullRefresh);
 $('devPreviewBtn').addEventListener('click', openDeveloperPreview);
 $('snapshotPreviewBtn').addEventListener('click', openSnapshotPreview);
 $('saveRelayBtn').addEventListener('click', () => post({ type: 'save-relay-settings', payload: readSyncPayload() }));
+refs.newSyncProfileBtn?.addEventListener('click', beginNewSyncProfile);
+refs.syncProfilesList?.addEventListener('click', e => {
+  const target = e.target.closest('[data-profile-action]');
+  if (!target) return;
+  const profileId = (target.dataset.profileId || '').trim();
+  if (!profileId) return;
+  const action = target.dataset.profileAction || '';
+  if (action === 'use') {
+    post({ type: 'set-active-sync-profile', payload: { profileId } });
+    setStatus('Switching active sync profile…', false);
+    return;
+  }
+  if (action === 'delete') {
+    const profile = (state.syncProfiles || []).find(item => item.id === profileId);
+    const profileName = profile?.name || profile?.label || 'this sync profile';
+    if (!window.confirm(`Delete "${profileName}"?`)) return;
+    post({ type: 'delete-sync-profile', payload: { profileId } });
+    setStatus('Deleting sync profile…', false);
+  }
+});
 $('refreshChangesBtn').addEventListener('click', () => post({ type: 'preview-publish-changes' }));
 $('previewPublishBtn').addEventListener('click', () => { setTab('changes'); post({ type: 'preview-publish-changes' }); });
 $('openPublishBtn').addEventListener('click', openModal);
@@ -3550,38 +3789,11 @@ refs.snapshotToggleBtn.addEventListener('click', () => {
 window.onmessage = event => {
   const msg = event.data.pluginMessage; if (!msg) return;
   if (msg.type === 'relay-settings') {
-    const p = msg.payload || {};
-    const provider = normalizeProvider(p.provider || 'github');
-    applyProviderUi(provider);
-    refs.relayUrlInput.value    = p.relayUrl || 'https://tokvista-plugin.vercel.app/api';
-    refs.projectIdInput.value   = p.projectId || '';
-    refs.environmentInput.value = p.environment || 'dev';
-    refs.githubRepoInput.value = p.githubRepo || '';
-    refs.githubBranchInput.value = p.githubBranch || 'main';
-    refs.githubPathInput.value = p.githubPath || 'tokens.json';
-    refs.publishKeyInput.value  = '';
-    refs.githubTokenInput.value = '';
-    state.publishKeySaved = !!p.publishKeySaved;
-    state.githubTokenSaved = !!p.githubTokenSaved;
-    state.githubTokenMaskLength = Number.isFinite(Number(p.githubTokenLength))
-      ? Math.max(1, Number(p.githubTokenLength))
-      : 16;
-    state.rememberGithubToken = !!p.rememberGithubToken;
-    updateSettingsSummary();
+    applySyncPayload(msg.payload || {});
   }
   if (msg.type === 'relay-settings-saved') {
     setStatus('Settings saved.', false);
-    refs.publishKeyInput.value = '';
-    refs.githubTokenInput.value = '';
-    const provider = normalizeProvider((msg.payload || {}).provider || state.syncProvider || 'github');
-    applyProviderUi(provider);
-    state.publishKeySaved = !!(msg.payload || {}).publishKeySaved;
-    state.githubTokenSaved = !!(msg.payload || {}).githubTokenSaved;
-    state.githubTokenMaskLength = Number.isFinite(Number((msg.payload || {}).githubTokenLength))
-      ? Math.max(1, Number((msg.payload || {}).githubTokenLength))
-      : 16;
-    state.rememberGithubToken = !!(msg.payload || {}).rememberGithubToken;
-    updateSettingsSummary();
+    applySyncPayload(msg.payload || {});
   }
   if (msg.type === 'publish-result') {
     const p = msg.payload || {};
@@ -3698,6 +3910,7 @@ updateSnapToggle();
 updateImportFromUrlState();
 applyProviderUi('github');
 updateSettingsSummary();
+renderSyncProfiles();
 renderSnapshot(null);
 post({ type: 'load-relay-settings' });
 post({ type: 'load-publish-history' });

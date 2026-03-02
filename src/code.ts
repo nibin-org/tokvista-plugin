@@ -35,6 +35,8 @@ type UiMessage =
   | { type: "resolve-preview-link" }
   | { type: "toggle-fullscreen" }
   | { type: "save-relay-settings"; payload: unknown }
+  | { type: "set-active-sync-profile"; payload: unknown }
+  | { type: "delete-sync-profile"; payload: unknown }
   | { type: "publish-tokvista"; payload: unknown }
   | { type: "open-external-url"; payload: { url: string } };
 
@@ -75,6 +77,19 @@ type RelaySettings = {
   githubRepo: string;
   githubBranch: string;
   githubPath: string;
+};
+
+type RelaySettingsProfile = RelaySettings & {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type RelaySettingsStore = {
+  version: 2;
+  activeProfileId: string;
+  profiles: RelaySettingsProfile[];
 };
 
 type RelayPublishResult = {
@@ -258,6 +273,125 @@ function normalizeRelaySettings(input: unknown, existingSettings: RelaySettings 
     githubBranch: normalizedGitHubBranch,
     githubPath: normalizedGitHubPath
   };
+}
+
+function createSyncProfileId(): string {
+  const random = Math.random().toString(36).slice(2, 8);
+  return `sync_${Date.now().toString(36)}_${random}`;
+}
+
+function deriveSyncProfileName(settings: RelaySettings): string {
+  if (settings.provider === "github") {
+    return settings.githubRepo || "GitHub profile";
+  }
+  if (settings.projectId) {
+    return settings.projectId;
+  }
+  if (settings.relayUrl) {
+    return settings.relayUrl.replace(/^https?:\/\//i, "");
+  }
+  return "Relay profile";
+}
+
+function normalizeProfileName(input: unknown, fallback: string): string {
+  if (typeof input !== "string") {
+    return fallback;
+  }
+  const trimmed = input.trim();
+  return trimmed || fallback;
+}
+
+function defaultRelaySettings(): RelaySettings {
+  return {
+    provider: "github",
+    relayUrl: DEFAULT_RELAY_URL,
+    projectId: "",
+    publishKey: "",
+    environment: DEFAULT_RELAY_ENVIRONMENT,
+    githubToken: "",
+    rememberGithubToken: false,
+    githubRepo: "",
+    githubBranch: DEFAULT_GITHUB_BRANCH,
+    githubPath: DEFAULT_GITHUB_PATH
+  };
+}
+
+function createProfileFromSettings(
+  settings: RelaySettings,
+  profileId?: string,
+  profileName?: string,
+  createdAt?: string
+): RelaySettingsProfile {
+  const now = new Date().toISOString();
+  return {
+    ...settings,
+    id: profileId && profileId.trim() ? profileId.trim() : createSyncProfileId(),
+    name: normalizeProfileName(profileName, deriveSyncProfileName(settings)),
+    createdAt: createdAt && createdAt.trim() ? createdAt : now,
+    updatedAt: now
+  };
+}
+
+function normalizeStoredProfile(input: unknown): RelaySettingsProfile | null {
+  if (!isObjectLike(input)) {
+    return null;
+  }
+  try {
+    const settings = normalizeRelaySettings(input, null);
+    const id = typeof input.id === "string" ? input.id : "";
+    const name = typeof input.name === "string" ? input.name : "";
+    const createdAt = typeof input.createdAt === "string" ? input.createdAt : "";
+    const updatedAt = typeof input.updatedAt === "string" ? input.updatedAt : "";
+    return {
+      ...createProfileFromSettings(settings, id, name, createdAt),
+      updatedAt: updatedAt && updatedAt.trim() ? updatedAt : new Date().toISOString()
+    };
+  } catch {
+    return null;
+  }
+}
+
+function buildDefaultRelaySettingsStore(): RelaySettingsStore {
+  const profile = createProfileFromSettings(defaultRelaySettings());
+  return {
+    version: 2,
+    activeProfileId: profile.id,
+    profiles: [profile]
+  };
+}
+
+function normalizeRelaySettingsStore(input: unknown): RelaySettingsStore {
+  if (isObjectLike(input) && Array.isArray(input.profiles)) {
+    const profiles = input.profiles
+      .map((profile) => normalizeStoredProfile(profile))
+      .filter((profile): profile is RelaySettingsProfile => Boolean(profile));
+    if (!profiles.length) {
+      return buildDefaultRelaySettingsStore();
+    }
+    const activeRaw = typeof input.activeProfileId === "string" ? input.activeProfileId.trim() : "";
+    const activeProfileId = profiles.some((profile) => profile.id === activeRaw) ? activeRaw : profiles[0].id;
+    return {
+      version: 2,
+      activeProfileId,
+      profiles
+    };
+  }
+
+  try {
+    const legacy = normalizeRelaySettings(input, null);
+    const migrated = createProfileFromSettings(legacy);
+    return {
+      version: 2,
+      activeProfileId: migrated.id,
+      profiles: [migrated]
+    };
+  } catch {
+    return buildDefaultRelaySettingsStore();
+  }
+}
+
+function resolveActiveProfile(store: RelaySettingsStore): RelaySettingsProfile {
+  return store.profiles.find((profile) => profile.id === store.activeProfileId) || store.profiles[0];
 }
 
 function normalizeRelayUrl(relayUrlInput: string): string {
@@ -541,62 +675,136 @@ async function postPublishChangePreview(): Promise<void> {
   }
 }
 
-async function getStoredRelaySettings(): Promise<RelaySettings | null> {
+async function getStoredRelaySettingsStore(): Promise<RelaySettingsStore> {
   const raw = await figma.clientStorage.getAsync(RELAY_SETTINGS_KEY);
-  if (!isObjectLike(raw)) {
-    return null;
-  }
-  try {
-    return normalizeRelaySettings(raw, null);
-  } catch {
-    return null;
-  }
+  return normalizeRelaySettingsStore(raw);
 }
 
-async function saveRelaySettings(input: unknown): Promise<RelaySettings> {
-  const existing = await getStoredRelaySettings();
-  const normalized = normalizeRelaySettings(input, existing);
-  const storedSettings =
-    normalized.provider === "github" && !normalized.rememberGithubToken
+async function setStoredRelaySettingsStore(store: RelaySettingsStore): Promise<void> {
+  await figma.clientStorage.setAsync(RELAY_SETTINGS_KEY, store);
+}
+
+async function getStoredRelaySettings(): Promise<RelaySettingsProfile | null> {
+  const store = await getStoredRelaySettingsStore();
+  if (!store.profiles.length) {
+    return null;
+  }
+  return resolveActiveProfile(store);
+}
+
+function normalizeProfileId(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+async function saveRelaySettings(input: unknown): Promise<RelaySettingsProfile> {
+  const store = await getStoredRelaySettingsStore();
+  const payload = isObjectLike(input) ? input : {};
+  const hasProfileIdField = Object.prototype.hasOwnProperty.call(payload, "profileId");
+  const requestedProfileId = normalizeProfileId(payload.profileId);
+  const shouldCreateNewProfile = hasProfileIdField && !requestedProfileId;
+  const existingProfile = shouldCreateNewProfile
+    ? null
+    : requestedProfileId
+      ? store.profiles.find((profile) => profile.id === requestedProfileId) || null
+      : resolveActiveProfile(store);
+  const normalized = normalizeRelaySettings(payload, existingProfile);
+  const profileId = shouldCreateNewProfile
+    ? createSyncProfileId()
+    : requestedProfileId || existingProfile?.id || createSyncProfileId();
+  const nextProfile = createProfileFromSettings(
+    normalized,
+    profileId,
+    normalizeProfileName(payload.profileName, existingProfile?.name || deriveSyncProfileName(normalized)),
+    existingProfile?.createdAt
+  );
+  const storedProfile =
+    nextProfile.provider === "github" && !nextProfile.rememberGithubToken
       ? {
-          ...normalized,
+          ...nextProfile,
           githubToken: ""
         }
-      : normalized;
-  await figma.clientStorage.setAsync(RELAY_SETTINGS_KEY, storedSettings);
-  return normalized;
+      : nextProfile;
+  const nextProfiles = store.profiles.filter((profile) => profile.id !== profileId);
+  nextProfiles.unshift(storedProfile);
+  const nextStore: RelaySettingsStore = {
+    version: 2,
+    activeProfileId: profileId,
+    profiles: nextProfiles
+  };
+  await setStoredRelaySettingsStore(nextStore);
+  return nextProfile;
 }
 
-function postRelaySettingsToUi(settings: RelaySettings | null): void {
+async function setActiveRelaySettingsProfile(input: unknown): Promise<RelaySettingsStore> {
+  const profileId = normalizeProfileId(isObjectLike(input) ? input.profileId : "");
+  const store = await getStoredRelaySettingsStore();
+  if (store.profiles.some((profile) => profile.id === profileId)) {
+    const nextStore: RelaySettingsStore = {
+      version: 2,
+      activeProfileId: profileId,
+      profiles: store.profiles
+    };
+    await setStoredRelaySettingsStore(nextStore);
+    return nextStore;
+  }
+  return store;
+}
+
+async function deleteRelaySettingsProfile(input: unknown): Promise<RelaySettingsStore> {
+  const profileId = normalizeProfileId(isObjectLike(input) ? input.profileId : "");
+  const store = await getStoredRelaySettingsStore();
+  const remaining = store.profiles.filter((profile) => profile.id !== profileId);
+  if (!remaining.length) {
+    const fallback = buildDefaultRelaySettingsStore();
+    await setStoredRelaySettingsStore(fallback);
+    return fallback;
+  }
+  const nextStore: RelaySettingsStore = {
+    version: 2,
+    activeProfileId:
+      store.activeProfileId === profileId
+        ? remaining[0].id
+        : remaining.some((profile) => profile.id === store.activeProfileId)
+          ? store.activeProfileId
+          : remaining[0].id,
+    profiles: remaining
+  };
+  await setStoredRelaySettingsStore(nextStore);
+  return nextStore;
+}
+
+function buildRelaySettingsUiPayload(store: RelaySettingsStore): ObjectLike {
+  const active = resolveActiveProfile(store);
+  const profiles = store.profiles.map((profile) => ({
+    id: profile.id,
+    name: profile.name || deriveSyncProfileName(profile),
+    provider: profile.provider,
+    label: profile.provider === "github" ? profile.githubRepo || "GitHub profile" : profile.projectId || "Relay profile",
+    isActive: profile.id === store.activeProfileId
+  }));
+  return {
+    activeProfileId: store.activeProfileId,
+    profiles,
+    provider: active.provider,
+    profileId: active.id,
+    profileName: active.name,
+    relayUrl: active.relayUrl,
+    projectId: active.projectId,
+    environment: active.environment,
+    publishKeySaved: Boolean(active.publishKey),
+    rememberGithubToken: active.rememberGithubToken,
+    githubRepo: active.githubRepo,
+    githubBranch: active.githubBranch,
+    githubPath: active.githubPath,
+    githubTokenSaved: Boolean(active.githubToken),
+    githubTokenLength: active.githubToken ? active.githubToken.length : 0
+  };
+}
+
+function postRelaySettingsToUi(store: RelaySettingsStore): void {
   figma.ui.postMessage({
     type: "relay-settings",
-    payload: settings
-      ? {
-          provider: settings.provider,
-          relayUrl: settings.relayUrl,
-          projectId: settings.projectId,
-          environment: settings.environment,
-          publishKeySaved: Boolean(settings.publishKey),
-          rememberGithubToken: settings.rememberGithubToken,
-          githubRepo: settings.githubRepo,
-          githubBranch: settings.githubBranch,
-          githubPath: settings.githubPath,
-          githubTokenSaved: Boolean(settings.githubToken),
-          githubTokenLength: settings.githubToken ? settings.githubToken.length : 0
-        }
-      : {
-          provider: "github",
-          relayUrl: DEFAULT_RELAY_URL,
-          projectId: "",
-          environment: DEFAULT_RELAY_ENVIRONMENT,
-          publishKeySaved: false,
-          rememberGithubToken: false,
-          githubRepo: "",
-          githubBranch: DEFAULT_GITHUB_BRANCH,
-          githubPath: DEFAULT_GITHUB_PATH,
-          githubTokenSaved: false,
-          githubTokenLength: 0
-        }
+    payload: buildRelaySettingsUiPayload(store)
   });
 }
 
@@ -2187,8 +2395,8 @@ async function importTokensFromUrl(urlValue: unknown): Promise<ImportResult> {
 }
 
 async function loadAndPostRelaySettings(): Promise<void> {
-  const settings = await getStoredRelaySettings();
-  postRelaySettingsToUi(settings);
+  const store = await getStoredRelaySettingsStore();
+  postRelaySettingsToUi(store);
 }
 
 function postFullscreenState(): void {
@@ -2378,43 +2586,51 @@ figma.ui.onmessage = async (msg: UiMessage) => {
   if (msg.type === "save-relay-settings") {
     try {
       await saveRelaySettings(msg.payload);
-      const stored = await getStoredRelaySettings();
-      postRelaySettingsToUi(stored);
+      const store = await getStoredRelaySettingsStore();
+      postRelaySettingsToUi(store);
       figma.ui.postMessage({
         type: "relay-settings-saved",
-        payload: stored
-          ? {
-              provider: stored.provider,
-              relayUrl: stored.relayUrl,
-              projectId: stored.projectId,
-              environment: stored.environment,
-              publishKeySaved: Boolean(stored.publishKey),
-              rememberGithubToken: stored.rememberGithubToken,
-              githubRepo: stored.githubRepo,
-              githubBranch: stored.githubBranch,
-              githubPath: stored.githubPath,
-              githubTokenSaved: Boolean(stored.githubToken),
-              githubTokenLength: stored.githubToken ? stored.githubToken.length : 0
-            }
-          : {
-              provider: "github",
-              relayUrl: DEFAULT_RELAY_URL,
-              projectId: "",
-              environment: DEFAULT_RELAY_ENVIRONMENT,
-              publishKeySaved: false,
-              rememberGithubToken: false,
-              githubRepo: "",
-              githubBranch: DEFAULT_GITHUB_BRANCH,
-              githubPath: DEFAULT_GITHUB_PATH,
-              githubTokenSaved: false,
-              githubTokenLength: 0
-            }
+        payload: buildRelaySettingsUiPayload(store)
       });
       figma.notify("Tokvista publish settings saved.");
     } catch (error) {
       const message = toErrorMessage(error);
       figma.ui.postMessage({ type: "error", payload: message });
       figma.notify(`Save failed: ${message}`);
+    }
+    return;
+  }
+
+  if (msg.type === "set-active-sync-profile") {
+    try {
+      const store = await setActiveRelaySettingsProfile(msg.payload);
+      postRelaySettingsToUi(store);
+      figma.ui.postMessage({
+        type: "relay-settings-saved",
+        payload: buildRelaySettingsUiPayload(store)
+      });
+      figma.notify("Active sync profile updated.");
+    } catch (error) {
+      const message = toErrorMessage(error);
+      figma.ui.postMessage({ type: "error", payload: message });
+      figma.notify(`Update failed: ${message}`);
+    }
+    return;
+  }
+
+  if (msg.type === "delete-sync-profile") {
+    try {
+      const store = await deleteRelaySettingsProfile(msg.payload);
+      postRelaySettingsToUi(store);
+      figma.ui.postMessage({
+        type: "relay-settings-saved",
+        payload: buildRelaySettingsUiPayload(store)
+      });
+      figma.notify("Sync profile deleted.");
+    } catch (error) {
+      const message = toErrorMessage(error);
+      figma.ui.postMessage({ type: "error", payload: message });
+      figma.notify(`Delete failed: ${message}`);
     }
     return;
   }
