@@ -22,6 +22,8 @@ const PUBLISH_HISTORY_KEY = "tokvista_publish_history";
 const DEFAULT_RELAY_URL = "https://tokvista-plugin.vercel.app/api";
 const DEFAULT_RELAY_ENVIRONMENT = "dev";
 const DEFAULT_TOKVISTA_PREVIEW_BASE_URL = "https://tokvista-demo.vercel.app/";
+const DEFAULT_GITHUB_BRANCH = "main";
+const DEFAULT_GITHUB_PATH = "tokens.json";
 
 type UiMessage =
   | { type: "import-tokens"; payload: unknown }
@@ -63,10 +65,16 @@ type ImportResult = {
 };
 
 type RelaySettings = {
+  provider: "relay" | "github";
   relayUrl: string;
   projectId: string;
   publishKey: string;
   environment: string;
+  githubToken: string;
+  rememberGithubToken: boolean;
+  githubRepo: string;
+  githubBranch: string;
+  githubPath: string;
 };
 
 type RelayPublishResult = {
@@ -179,33 +187,76 @@ function parseTokens(payload: unknown): ParsedToken[] {
   return collectTokens(tokensRoot);
 }
 
-function normalizeRelaySettings(input: unknown, existingPublishKey: string): RelaySettings {
+function normalizeSyncProvider(input: unknown): "relay" | "github" {
+  return input === "github" ? "github" : "relay";
+}
+
+function normalizeRelaySettings(input: unknown, existingSettings: RelaySettings | null): RelaySettings {
   if (!isObjectLike(input)) {
     throw new Error("Invalid publish settings payload.");
   }
 
+  const provider = normalizeSyncProvider(input.provider);
   const relayUrlInput = typeof input.relayUrl === "string" ? input.relayUrl.trim() : "";
   const projectIdInput = typeof input.projectId === "string" ? input.projectId.trim() : "";
   const environmentInput = typeof input.environment === "string" ? input.environment.trim() : "";
   const publishKeyInput = typeof input.publishKey === "string" ? input.publishKey.trim() : "";
-  const publishKey = publishKeyInput || existingPublishKey;
+  const clearPublishKey = input.clearPublishKey === true;
+  const githubTokenInput = typeof input.githubToken === "string" ? input.githubToken.trim() : "";
+  const clearGithubToken = input.clearGithubToken === true;
+  const rememberGithubTokenInput =
+    typeof input.rememberGithubToken === "boolean" ? input.rememberGithubToken : undefined;
+  const githubRepoInput = typeof input.githubRepo === "string" ? input.githubRepo.trim() : "";
+  const githubBranchInput = typeof input.githubBranch === "string" ? input.githubBranch.trim() : "";
+  const githubPathInput = typeof input.githubPath === "string" ? input.githubPath.trim() : "";
 
-  if (!relayUrlInput) {
-    throw new Error("Relay URL is required.");
+  const existingPublishKey =
+    existingSettings && existingSettings.provider === "relay" ? existingSettings.publishKey : "";
+  const publishKey =
+    clearPublishKey ? "" : publishKeyInput || existingPublishKey;
+  const existingGithubToken =
+    existingSettings && existingSettings.provider === "github" ? existingSettings.githubToken : "";
+  const rememberGithubToken =
+    provider === "github"
+      ? clearGithubToken
+        ? false
+        : rememberGithubTokenInput !== undefined
+        ? rememberGithubTokenInput
+        : existingSettings && existingSettings.provider === "github"
+          ? existingSettings.rememberGithubToken
+          : Boolean(githubTokenInput)
+      : false;
+  const githubToken = clearGithubToken ? "" : githubTokenInput || (rememberGithubToken ? existingGithubToken : "");
+  const normalizedEnvironment = environmentInput || DEFAULT_RELAY_ENVIRONMENT;
+  const normalizedRelayUrl = relayUrlInput ? normalizeRelayUrl(relayUrlInput) : "";
+  const normalizedGitHubBranch = githubBranchInput || DEFAULT_GITHUB_BRANCH;
+  const normalizedGitHubPath = githubPathInput || DEFAULT_GITHUB_PATH;
+
+  if (provider === "relay") {
+    if (!relayUrlInput) {
+      throw new Error("Relay URL is required.");
+    }
+    if (!projectIdInput) {
+      throw new Error("Project ID is required.");
+    }
   }
-  if (!projectIdInput) {
-    throw new Error("Project ID is required.");
-  }
-  if (!publishKey) {
-    throw new Error("Publish key is required.");
+  if (provider === "github") {
+    if (!githubRepoInput || !/^[^/\s]+\/[^/\s]+$/.test(githubRepoInput)) {
+      throw new Error("Repository must be in owner/repo format.");
+    }
   }
 
-  const relayUrl = normalizeRelayUrl(relayUrlInput);
   return {
-    relayUrl,
+    provider,
+    relayUrl: normalizedRelayUrl,
     projectId: projectIdInput,
     publishKey,
-    environment: environmentInput || DEFAULT_RELAY_ENVIRONMENT
+    environment: normalizedEnvironment,
+    githubToken,
+    rememberGithubToken,
+    githubRepo: githubRepoInput,
+    githubBranch: normalizedGitHubBranch,
+    githubPath: normalizedGitHubPath
   };
 }
 
@@ -496,8 +547,7 @@ async function getStoredRelaySettings(): Promise<RelaySettings | null> {
     return null;
   }
   try {
-    const existingKey = typeof raw.publishKey === "string" ? raw.publishKey : "";
-    return normalizeRelaySettings(raw, existingKey);
+    return normalizeRelaySettings(raw, null);
   } catch {
     return null;
   }
@@ -505,9 +555,15 @@ async function getStoredRelaySettings(): Promise<RelaySettings | null> {
 
 async function saveRelaySettings(input: unknown): Promise<RelaySettings> {
   const existing = await getStoredRelaySettings();
-  const existingPublishKey = existing ? existing.publishKey : "";
-  const normalized = normalizeRelaySettings(input, existingPublishKey);
-  await figma.clientStorage.setAsync(RELAY_SETTINGS_KEY, normalized);
+  const normalized = normalizeRelaySettings(input, existing);
+  const storedSettings =
+    normalized.provider === "github" && !normalized.rememberGithubToken
+      ? {
+          ...normalized,
+          githubToken: ""
+        }
+      : normalized;
+  await figma.clientStorage.setAsync(RELAY_SETTINGS_KEY, storedSettings);
   return normalized;
 }
 
@@ -516,16 +572,30 @@ function postRelaySettingsToUi(settings: RelaySettings | null): void {
     type: "relay-settings",
     payload: settings
       ? {
+          provider: settings.provider,
           relayUrl: settings.relayUrl,
           projectId: settings.projectId,
           environment: settings.environment,
-          publishKeySaved: Boolean(settings.publishKey)
+          publishKeySaved: Boolean(settings.publishKey),
+          rememberGithubToken: settings.rememberGithubToken,
+          githubRepo: settings.githubRepo,
+          githubBranch: settings.githubBranch,
+          githubPath: settings.githubPath,
+          githubTokenSaved: Boolean(settings.githubToken),
+          githubTokenLength: settings.githubToken ? settings.githubToken.length : 0
         }
       : {
+          provider: "github",
           relayUrl: DEFAULT_RELAY_URL,
           projectId: "",
           environment: DEFAULT_RELAY_ENVIRONMENT,
-          publishKeySaved: false
+          publishKeySaved: false,
+          rememberGithubToken: false,
+          githubRepo: "",
+          githubBranch: DEFAULT_GITHUB_BRANCH,
+          githubPath: DEFAULT_GITHUB_PATH,
+          githubTokenSaved: false,
+          githubTokenLength: 0
         }
   });
 }
@@ -547,6 +617,26 @@ function encodePathForRawUrl(path: string): string {
     .filter((segment) => segment.length > 0)
     .map((segment) => encodeURIComponent(segment))
     .join("/");
+}
+
+function parseGitHubRepo(input: string): { owner: string; repo: string } | null {
+  const trimmed = input.trim();
+  const match = trimmed.match(/^([^/\s]+)\/([^/\s]+)$/);
+  if (!match) {
+    return null;
+  }
+  const owner = match[1];
+  const repo = match[2];
+  if (!owner || !repo) {
+    return null;
+  }
+  return { owner, repo };
+}
+
+function buildGitHubRawUrl(owner: string, repo: string, ref: string, path: string): string {
+  return `https://raw.githubusercontent.com/${encodeURIComponent(owner)}/${encodeURIComponent(
+    repo
+  )}/${encodeURIComponent(ref)}/${encodePathForRawUrl(path)}`;
 }
 
 function buildPreviewUrlFromRawUrl(rawUrl: string): string {
@@ -770,7 +860,7 @@ async function loadAndPostPublishedLinks(): Promise<void> {
   }
   if (!links || !links.previewUrl) {
     const settings = await getStoredRelaySettings();
-    if (settings && settings.projectId && settings.publishKey) {
+    if (settings && settings.provider === "relay" && settings.projectId && settings.publishKey) {
       const resolved = await fetchPreviewLinkFromRelay(settings);
       if (resolved.previewUrl || resolved.rawUrl) {
         links = normalizePublishedLinks({
@@ -781,6 +871,21 @@ async function loadAndPostPublishedLinks(): Promise<void> {
             links?.snapshotPreviewUrl ||
             (links?.rawUrl ? buildPreviewUrlFromRawUrl(links.rawUrl) : undefined) ||
             (resolved.rawUrl ? buildPreviewUrlFromRawUrl(resolved.rawUrl) : undefined)
+        });
+        if (links) {
+          await setStoredPublishedLinks(links);
+        }
+      }
+    }
+    if (settings && settings.provider === "github" && settings.githubRepo && settings.githubPath) {
+      const githubRepo = parseGitHubRepo(settings.githubRepo);
+      if (githubRepo) {
+        const rawUrl = buildGitHubRawUrl(githubRepo.owner, githubRepo.repo, settings.githubBranch, settings.githubPath);
+        links = normalizePublishedLinks({
+          ...(links || {}),
+          rawUrl: links?.rawUrl || rawUrl,
+          previewUrl: links?.previewUrl || buildPreviewUrlFromRawUrl(rawUrl),
+          snapshotPreviewUrl: links?.snapshotPreviewUrl || buildPreviewUrlFromRawUrl(rawUrl)
         });
         if (links) {
           await setStoredPublishedLinks(links);
@@ -799,7 +904,7 @@ async function loadAndPostPublishHistory(): Promise<void> {
 async function fetchPreviewLinkFromRelay(
   settings: RelaySettings
 ): Promise<{ rawUrl?: string; previewUrl?: string; snapshotPreviewUrl?: string }> {
-  if (!settings.projectId || !settings.publishKey || !settings.relayUrl) {
+  if (settings.provider !== "relay" || !settings.projectId || !settings.publishKey || !settings.relayUrl) {
     return {};
   }
   const endpoint = `${settings.relayUrl}/preview-link`;
@@ -921,6 +1026,310 @@ async function publishToRelay(
     previewUrl,
     snapshotPreviewUrl,
     changed
+  };
+}
+
+function createLocalVersionId(): string {
+  return `v${new Date().toISOString().replace(/[-:.TZ]/g, "")}`;
+}
+
+const BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+const BASE64_LOOKUP: Record<string, number> = BASE64_ALPHABET.split("").reduce((map, char, index) => {
+  map[char] = index;
+  return map;
+}, {} as Record<string, number>);
+
+function utf8ToBytes(input: string): number[] {
+  const encoded = encodeURIComponent(input);
+  const out: number[] = [];
+  for (let index = 0; index < encoded.length; index += 1) {
+    const char = encoded[index];
+    if (char === "%" && index + 2 < encoded.length) {
+      const hex = encoded.slice(index + 1, index + 3);
+      out.push(parseInt(hex, 16));
+      index += 2;
+      continue;
+    }
+    out.push(char.charCodeAt(0));
+  }
+  return out;
+}
+
+function bytesToUtf8(bytes: number[]): string {
+  let encoded = "";
+  for (let index = 0; index < bytes.length; index += 1) {
+    const hex = bytes[index].toString(16);
+    encoded += `%${hex.length === 1 ? `0${hex}` : hex}`;
+  }
+  return decodeURIComponent(encoded);
+}
+
+function utf8ToBase64(input: string): string {
+  const bytes = utf8ToBytes(input);
+  let out = "";
+  for (let index = 0; index < bytes.length; index += 3) {
+    const b1 = bytes[index];
+    const b2 = index + 1 < bytes.length ? bytes[index + 1] : 0;
+    const b3 = index + 2 < bytes.length ? bytes[index + 2] : 0;
+    const triple = (b1 << 16) | (b2 << 8) | b3;
+    out += BASE64_ALPHABET[(triple >> 18) & 63];
+    out += BASE64_ALPHABET[(triple >> 12) & 63];
+    out += index + 1 < bytes.length ? BASE64_ALPHABET[(triple >> 6) & 63] : "=";
+    out += index + 2 < bytes.length ? BASE64_ALPHABET[triple & 63] : "=";
+  }
+  return out;
+}
+
+function base64ToUtf8(input: string): string {
+  const clean = input.replace(/\s+/g, "");
+  if (!clean || clean.length % 4 !== 0) {
+    throw new Error("Invalid base64 input.");
+  }
+  const bytes: number[] = [];
+  for (let index = 0; index < clean.length; index += 4) {
+    const c1 = clean[index];
+    const c2 = clean[index + 1];
+    const c3 = clean[index + 2];
+    const c4 = clean[index + 3];
+    const v1 = BASE64_LOOKUP[c1];
+    const v2 = BASE64_LOOKUP[c2];
+    const v3 = c3 === "=" ? 0 : BASE64_LOOKUP[c3];
+    const v4 = c4 === "=" ? 0 : BASE64_LOOKUP[c4];
+    if (
+      typeof v1 !== "number" ||
+      typeof v2 !== "number" ||
+      (c3 !== "=" && typeof v3 !== "number") ||
+      (c4 !== "=" && typeof v4 !== "number")
+    ) {
+      throw new Error("Invalid base64 characters.");
+    }
+    const triple = (v1 << 18) | (v2 << 12) | (v3 << 6) | v4;
+    bytes.push((triple >> 16) & 255);
+    if (c3 !== "=") {
+      bytes.push((triple >> 8) & 255);
+    }
+    if (c4 !== "=") {
+      bytes.push(triple & 255);
+    }
+  }
+  return bytesToUtf8(bytes);
+}
+
+async function githubRequest(url: string, token: string, options: RequestInit = {}): Promise<Response> {
+  const headers: Record<string, string> = {};
+  const inputHeaders = options.headers;
+  if (inputHeaders && typeof inputHeaders === "object" && !Array.isArray(inputHeaders)) {
+    const source = inputHeaders as Record<string, unknown>;
+    for (const key in source) {
+      if (Object.prototype.hasOwnProperty.call(source, key)) {
+        const value = source[key];
+        if (typeof value === "string") {
+          headers[key] = value;
+        }
+      }
+    }
+  }
+  headers.Authorization = `Bearer ${token}`;
+  headers.Accept = "application/vnd.github+json";
+  headers["X-GitHub-Api-Version"] = "2022-11-28";
+  if (options.method && options.method !== "GET") {
+    headers["Content-Type"] = "application/json";
+  }
+  return fetch(url, { ...options, headers });
+}
+
+function responseStatus(response: unknown): number {
+  if (!isObjectLike(response)) {
+    return 0;
+  }
+  const status = (response as { status?: unknown }).status;
+  if (typeof status === "number" && Number.isFinite(status)) {
+    return status;
+  }
+  const statusCode = (response as { statusCode?: unknown }).statusCode;
+  if (typeof statusCode === "number" && Number.isFinite(statusCode)) {
+    return statusCode;
+  }
+  return 0;
+}
+
+function responseOk(response: unknown, status: number): boolean {
+  if (isObjectLike(response) && typeof (response as { ok?: unknown }).ok === "boolean") {
+    return (response as { ok: boolean }).ok;
+  }
+  return status >= 200 && status < 300;
+}
+
+async function readResponseTextSafe(response: unknown): Promise<string> {
+  if (!isObjectLike(response)) {
+    return "";
+  }
+  const textFn = (response as { text?: unknown }).text;
+  if (typeof textFn === "function") {
+    const value = await (textFn as () => Promise<unknown>).call(response);
+    return typeof value === "string" ? value : String(value ?? "");
+  }
+  const jsonFn = (response as { json?: unknown }).json;
+  if (typeof jsonFn === "function") {
+    try {
+      const value = await (jsonFn as () => Promise<unknown>).call(response);
+      return typeof value === "string" ? value : JSON.stringify(value);
+    } catch {
+      return "";
+    }
+  }
+  const body = (response as { body?: unknown }).body;
+  return typeof body === "string" ? body : "";
+}
+
+async function readResponseJsonSafe(response: unknown): Promise<ObjectLike> {
+  if (!isObjectLike(response)) {
+    return {};
+  }
+  const jsonFn = (response as { json?: unknown }).json;
+  if (typeof jsonFn === "function") {
+    const value = await (jsonFn as () => Promise<unknown>).call(response);
+    return isObjectLike(value) ? value : {};
+  }
+  const text = await readResponseTextSafe(response);
+  if (!text) {
+    return {};
+  }
+  try {
+    const parsed = JSON.parse(text);
+    return isObjectLike(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function buildGitHubContentsApiUrl(owner: string, repo: string, path: string, ref?: string): string {
+  const encodedPath = encodePathForRawUrl(path);
+  const base = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${encodedPath}`;
+  if (!ref) {
+    return base;
+  }
+  return `${base}?ref=${encodeURIComponent(ref)}`;
+}
+
+function normalizePublishMessage(input: string | undefined, fallback: string): string {
+  const base = typeof input === "string" ? input : "";
+  const singleLine = base.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!singleLine) {
+    return fallback;
+  }
+  return singleLine.slice(0, 120);
+}
+
+async function publishToGitHub(
+  settings: RelaySettings,
+  exportPayload: ObjectLike,
+  requestedCommitMessage?: string
+): Promise<RelayPublishResult> {
+  if (settings.provider !== "github") {
+    throw new Error("GitHub publish settings are not configured.");
+  }
+  const repoParsed = parseGitHubRepo(settings.githubRepo);
+  if (!repoParsed) {
+    throw new Error("Repository must be in owner/repo format.");
+  }
+  if (!settings.githubToken) {
+    throw new Error("GitHub Personal Access Token is required.");
+  }
+  const branch = settings.githubBranch || DEFAULT_GITHUB_BRANCH;
+  const path = settings.githubPath || DEFAULT_GITHUB_PATH;
+
+  const publishPayload = stripVolatilePublishFields(exportPayload);
+  const content = JSON.stringify(publishPayload, null, 2);
+  const versionId = createLocalVersionId();
+  const fallbackMessage = `chore(tokens): ${settings.githubRepo} ${settings.environment} ${versionId}`;
+  const commitMessage = normalizePublishMessage(requestedCommitMessage, fallbackMessage);
+
+  const readUrl = buildGitHubContentsApiUrl(repoParsed.owner, repoParsed.repo, path, branch);
+  const writeUrl = buildGitHubContentsApiUrl(repoParsed.owner, repoParsed.repo, path);
+
+  let existingSha: string | undefined;
+  let existingComparable = "";
+  try {
+    const readResponse = await githubRequest(readUrl, settings.githubToken, { method: "GET" });
+    const readStatus = responseStatus(readResponse);
+    const readOk = responseOk(readResponse, readStatus);
+    if (readStatus === 404) {
+      existingSha = undefined;
+      existingComparable = "";
+    } else if (!readOk) {
+      const text = await readResponseTextSafe(readResponse);
+      throw new Error(`GitHub read failed (${readStatus || 0}): ${truncateRelayMessage(text)}`);
+    } else {
+      const payload = await readResponseJsonSafe(readResponse);
+      existingSha = typeof payload.sha === "string" ? payload.sha : undefined;
+      const encoded = typeof payload.content === "string" ? payload.content.replace(/\n/g, "") : "";
+      const decoded = encoded ? base64ToUtf8(encoded) : "";
+      try {
+        existingComparable = stableSerialize(JSON.parse(decoded));
+      } catch {
+        existingComparable = decoded;
+      }
+    }
+  } catch (error) {
+    throw new Error(`GitHub publish failed while reading existing file. ${toErrorMessage(error)}`);
+  }
+
+  const nextComparable = stableSerialize(publishPayload);
+  const branchRawUrl = buildGitHubRawUrl(repoParsed.owner, repoParsed.repo, branch, path);
+  const branchPreviewUrl = buildPreviewUrlFromRawUrl(branchRawUrl);
+  if (existingComparable && existingComparable === nextComparable) {
+    return {
+      versionId: "",
+      message: "No changes to publish.",
+      commitMessage,
+      rawUrl: branchRawUrl,
+      previewUrl: branchPreviewUrl,
+      snapshotPreviewUrl: branchPreviewUrl,
+      changed: false
+    };
+  }
+
+  const requestBody: Record<string, unknown> = {
+    message: commitMessage,
+    content: utf8ToBase64(content),
+    branch
+  };
+  if (existingSha) {
+    requestBody.sha = existingSha;
+  }
+
+  let writePayload: ObjectLike = {};
+  try {
+    const writeResponse = await githubRequest(writeUrl, settings.githubToken, {
+      method: "PUT",
+      body: JSON.stringify(requestBody)
+    });
+    const writeStatus = responseStatus(writeResponse);
+    if (!responseOk(writeResponse, writeStatus)) {
+      const text = await readResponseTextSafe(writeResponse);
+      throw new Error(`GitHub write failed (${writeStatus || 0}): ${truncateRelayMessage(text)}`);
+    }
+    writePayload = await readResponseJsonSafe(writeResponse);
+  } catch (error) {
+    throw new Error(`GitHub publish failed while writing file. ${toErrorMessage(error)}`);
+  }
+
+  const commit = isObjectLike(writePayload.commit) ? (writePayload.commit as ObjectLike) : {};
+  const commitSha = typeof commit.sha === "string" ? commit.sha : "";
+  const referenceUrl = typeof commit.html_url === "string" ? commit.html_url : undefined;
+  const rawUrl = commitSha ? buildGitHubRawUrl(repoParsed.owner, repoParsed.repo, commitSha, path) : branchRawUrl;
+  const previewUrl = buildPreviewUrlFromRawUrl(rawUrl);
+
+  return {
+    versionId,
+    message: "Published successfully.",
+    commitMessage,
+    referenceUrl,
+    rawUrl,
+    previewUrl,
+    snapshotPreviewUrl: previewUrl,
+    changed: true
   };
 }
 
@@ -1892,7 +2301,37 @@ figma.ui.onmessage = async (msg: UiMessage) => {
         return;
       }
       const settings = await getStoredRelaySettings();
-      if (!settings || !settings.projectId || !settings.publishKey) {
+      if (!settings) {
+        figma.ui.postMessage({
+          type: "error",
+          payload: "Preview link unavailable. Configure sync provider settings first."
+        });
+        return;
+      }
+      if (settings.provider === "github") {
+        const repo = parseGitHubRepo(settings.githubRepo);
+        if (!repo || !settings.githubPath) {
+          figma.ui.postMessage({
+            type: "error",
+            payload: "Preview link unavailable. Configure GitHub repository and token file path."
+          });
+          return;
+        }
+        const rawUrl = buildGitHubRawUrl(repo.owner, repo.repo, settings.githubBranch, settings.githubPath);
+        const previewUrl = buildPreviewUrlFromRawUrl(rawUrl);
+        const merged = normalizePublishedLinks({
+          ...(existingLinks || {}),
+          rawUrl: existingLinks?.rawUrl || rawUrl,
+          previewUrl: existingLinks?.previewUrl || previewUrl,
+          snapshotPreviewUrl: existingLinks?.snapshotPreviewUrl || previewUrl
+        });
+        if (merged) {
+          await setStoredPublishedLinks(merged);
+        }
+        postPublishedLinksToUi(merged);
+        return;
+      }
+      if (!settings.projectId || !settings.publishKey) {
         figma.ui.postMessage({
           type: "error",
           payload: "Preview link unavailable. Configure Project ID and Publish key in Settings."
@@ -1938,16 +2377,38 @@ figma.ui.onmessage = async (msg: UiMessage) => {
 
   if (msg.type === "save-relay-settings") {
     try {
-      const saved = await saveRelaySettings(msg.payload);
-      postRelaySettingsToUi(saved);
+      await saveRelaySettings(msg.payload);
+      const stored = await getStoredRelaySettings();
+      postRelaySettingsToUi(stored);
       figma.ui.postMessage({
         type: "relay-settings-saved",
-        payload: {
-          relayUrl: saved.relayUrl,
-          projectId: saved.projectId,
-          environment: saved.environment,
-          publishKeySaved: true
-        }
+        payload: stored
+          ? {
+              provider: stored.provider,
+              relayUrl: stored.relayUrl,
+              projectId: stored.projectId,
+              environment: stored.environment,
+              publishKeySaved: Boolean(stored.publishKey),
+              rememberGithubToken: stored.rememberGithubToken,
+              githubRepo: stored.githubRepo,
+              githubBranch: stored.githubBranch,
+              githubPath: stored.githubPath,
+              githubTokenSaved: Boolean(stored.githubToken),
+              githubTokenLength: stored.githubToken ? stored.githubToken.length : 0
+            }
+          : {
+              provider: "github",
+              relayUrl: DEFAULT_RELAY_URL,
+              projectId: "",
+              environment: DEFAULT_RELAY_ENVIRONMENT,
+              publishKeySaved: false,
+              rememberGithubToken: false,
+              githubRepo: "",
+              githubBranch: DEFAULT_GITHUB_BRANCH,
+              githubPath: DEFAULT_GITHUB_PATH,
+              githubTokenSaved: false,
+              githubTokenLength: 0
+            }
       });
       figma.notify("Tokvista publish settings saved.");
     } catch (error) {
@@ -1968,7 +2429,10 @@ figma.ui.onmessage = async (msg: UiMessage) => {
       const publishPayload = stripVolatilePublishFields(exported);
       const previousPayload = await getLastPublishedPayload();
       let changeLog = buildPublishChangeLog(previousPayload, publishPayload);
-      const publishResult = await publishToRelay(saved, exported, commitMessage);
+      const publishResult =
+        saved.provider === "github"
+          ? await publishToGitHub(saved, exported, commitMessage)
+          : await publishToRelay(saved, exported, commitMessage);
       if (publishResult.changed === false && changeLog.summary !== "No token changes detected.") {
         changeLog = {
           summary: "No token changes detected.",
@@ -1994,8 +2458,9 @@ figma.ui.onmessage = async (msg: UiMessage) => {
         await setStoredPublishedLinks(mergedLinks);
       }
       postPublishedLinksToUi(mergedLinks);
+      const publishTarget = saved.provider === "github" ? saved.githubRepo : saved.projectId;
       const historyEntry = normalizePublishHistoryEntry({
-        id: `${publishResult.versionId || new Date().toISOString()}:${saved.projectId}:${saved.environment}`,
+        id: `${publishResult.versionId || new Date().toISOString()}:${publishTarget}:${saved.environment}`,
         publishedAt: new Date().toISOString(),
         summary: changeLog.summary,
         added: changeLog.added,

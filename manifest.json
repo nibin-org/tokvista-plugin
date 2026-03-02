@@ -9,8 +9,9 @@
   "networkAccess": {
     "allowedDomains": [
       "https://tokvista-plugin.vercel.app",
+      "https://api.github.com",
       "https://raw.githubusercontent.com"
     ],
-    "reasoning": "Tokvista plugin publishes token exports to relay API and imports tokens.json from GitHub raw links."
+    "reasoning": "Tokvista plugin publishes token exports to relay API or GitHub API and imports tokens.json from GitHub raw links."
   }
 }

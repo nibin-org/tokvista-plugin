@@ -380,9 +380,24 @@
     .publish-fab svg { width: 16px; height: 16px; display: block; }
     .publish-footer .status {
       display: none;
-      margin-top: 0; margin-left: 2px; font-size: 12px;
+      margin-top: 0;
+      margin-left: 2px;
+      margin-right: 2px;
+      font-size: 12px;
+      color: var(--t3);
     }
-    .publish-footer .status.err { display: block; }
+    .publish-footer .status.err {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(224,108,108,0.35);
+      background: linear-gradient(180deg, rgba(224,108,108,0.12), rgba(224,108,108,0.06));
+      color: #ffd7d7;
+      font-family: var(--font);
+      line-height: 1.45;
+      white-space: normal;
+      word-break: break-word;
+    }
 
     .tabp { display: none; }
     .tabp.on { display: block; animation: fadeUp 0.18s ease-out; }
@@ -939,6 +954,193 @@
     }
     .status-meta { font-size: 14px; color: var(--t3); margin-top: 2px; }
 
+    /* ── SYNC PROVIDER ── */
+    .provider-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 15px;
+    }
+    .provider-main {
+      min-width: 0;
+      flex: 1;
+    }
+    .provider-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+    .provider-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--t1);
+    }
+    .provider-badge {
+      font-size: 11px;
+      padding: 2px 7px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .provider-meta {
+      margin-top: 0;
+      font-size: 13px;
+      color: var(--t3);
+      line-height: 1.45;
+    }
+    .btn-provider-switch {
+      width: auto;
+      min-width: 104px;
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--raised);
+      color: var(--t1);
+      font-size: 13px;
+      font-weight: 600;
+      font-family: var(--font);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.12s;
+    }
+    .btn-provider-switch:hover {
+      background: var(--overlay);
+      border-color: var(--border-hi);
+    }
+    .btn-provider-switch svg {
+      width: 12px;
+      height: 12px;
+      display: block;
+    }
+    .relay-adv-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--raised);
+      color: var(--t2);
+      font-size: 13px;
+      font-weight: 600;
+      font-family: var(--font);
+      transition: all 0.12s;
+    }
+    .relay-adv-toggle:hover {
+      border-color: var(--border-hi);
+      color: var(--t1);
+      background: var(--overlay);
+    }
+    .relay-adv-toggle-meta {
+      font-size: 12px;
+      color: var(--t3);
+      font-weight: 500;
+      margin-left: auto;
+    }
+    .relay-adv-toggle-ico {
+      width: 14px;
+      height: 14px;
+      display: block;
+      transition: transform 0.14s;
+      color: var(--t3);
+      flex-shrink: 0;
+    }
+    .relay-adv-toggle.is-open .relay-adv-toggle-ico {
+      transform: rotate(180deg);
+    }
+    .relay-adv-panel { margin-top: 8px; }
+    .provider-list {
+      display: grid;
+      gap: 8px;
+    }
+    .provider-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 13px;
+      border: 1px solid var(--border);
+      border-radius: var(--rs);
+      background: rgba(0,0,0,0.2);
+    }
+    .provider-item-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .provider-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--raised);
+      color: var(--t2);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .provider-icon svg {
+      width: 16px;
+      height: 16px;
+      display: block;
+    }
+    .provider-item-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--t1);
+    }
+    .provider-item-name-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .provider-item-tag {
+      display: inline-flex;
+      align-items: center;
+      height: 18px;
+      padding: 0 6px;
+      border-radius: 99px;
+      border: 1px solid var(--border);
+      background: var(--raised);
+      color: var(--t3);
+      font-size: 10px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .provider-item-sub {
+      margin-top: 2px;
+      font-size: 13px;
+      color: var(--t3);
+    }
+    .provider-choose {
+      width: auto;
+      min-width: 88px;
+      height: 32px;
+      padding: 0 10px;
+      border-radius: var(--rs);
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--t1);
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .provider-choose:hover {
+      background: var(--raised);
+      border-color: var(--border-hi);
+    }
+
     /* ── FIELDS ── */
     .field { margin-bottom: 10px; }
     .field label {
@@ -958,6 +1160,19 @@
     }
     .field input::placeholder { color: var(--t4); }
     .field .is-mono { font-family: var(--mono); font-size: 13px; }
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 8px 0 12px;
+      color: var(--t2);
+      font-size: 13px;
+    }
+    .check-row input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      accent-color: var(--green);
+    }
 
     /* ── DANGER ROWS ── */
     .danger-row {
@@ -1176,6 +1391,7 @@
     }
     .btn-mp:hover { opacity: 0.86; }
     .btn-mp svg { width: 14px; height: 14px; display: block; }
+    .btn-modal-wide { grid-column: 1 / -1; }
     .btn-full-center { width: 100%; justify-content: center; }
     .th-icon-col { width: 28px; padding-left: 14px; }
     .th-value-right { text-align: right; }
@@ -1893,25 +2109,73 @@
       </div>
     </div>
 
-    <div class="sec">Connection</div>
-    <div class="field">
-      <label for="relayUrlInput">API URL</label>
-      <input id="relayUrlInput" class="is-mono" type="text" placeholder="https://your-app.vercel.app/api"/>
+    <div class="sec">Sync provider</div>
+    <div class="card mb-10">
+      <div class="provider-row">
+        <div class="provider-main">
+          <div class="provider-head">
+            <div id="providerLabel" class="provider-name">GitHub</div>
+            <span id="providerBadge" class="pill pill-n provider-badge">GitHub</span>
+          </div>
+          <div id="providerMeta" class="provider-meta">Configured with Personal Access Token and repository path.</div>
+        </div>
+        <button id="openProviderModalBtn" class="btn-provider-switch" type="button" aria-label="Change sync provider">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 1 1-2-5.3M20 2v5h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Change
+        </button>
+      </div>
     </div>
 
-    <div class="sec">Project</div>
-    <div class="field">
-      <label for="projectIdInput">Project name</label>
-      <input id="projectIdInput" type="text" placeholder="project-alpha"/>
+    <div id="relaySettingsGroup">
+      <button id="relayAdvancedToggleBtn" class="relay-adv-toggle" type="button" aria-expanded="false">
+        <span>Advanced settings</span>
+        <span class="relay-adv-toggle-meta" data-relay-adv-meta>Show relay options</span>
+        <svg class="relay-adv-toggle-ico" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div id="relayAdvancedPanel" class="relay-adv-panel hide">
+        <div class="sec">Connection</div>
+        <div class="field">
+          <label for="relayUrlInput">API URL</label>
+          <input id="relayUrlInput" class="is-mono" type="text" placeholder="https://your-app.vercel.app/api"/>
+        </div>
+
+        <div class="sec">Project</div>
+        <div class="field">
+          <label for="projectIdInput">Project name</label>
+          <input id="projectIdInput" type="text" placeholder="project-alpha"/>
+        </div>
+        <div class="field">
+          <label for="publishKeyInput">Publish key</label>
+          <input id="publishKeyInput" class="is-mono" type="password" autocomplete="off" spellcheck="false" placeholder="Leave blank to use saved key"/>
+        </div>
+      </div>
     </div>
-    <div class="field">
-      <label for="environmentInput">Branch / environment</label>
-      <input id="environmentInput" type="text" placeholder="dev"/>
+
+    <div id="githubSettingsGroup" class="hide">
+      <div class="sec">GitHub</div>
+      <div class="field">
+        <label for="githubTokenInput">Personal Access Token</label>
+        <input id="githubTokenInput" class="is-mono" type="password" autocomplete="off" spellcheck="false" placeholder="Leave blank to use saved token"/>
+      </div>
+      <label class="check-row" for="rememberGithubTokenInput">
+        <input id="rememberGithubTokenInput" type="checkbox"/>
+        <span>Remember token on this device</span>
+      </label>
+      <div class="field">
+        <label for="githubRepoInput">Repository (owner/repo)</label>
+        <input id="githubRepoInput" class="is-mono" type="text" placeholder="org/repository"/>
+      </div>
+      <div class="field">
+        <label for="githubBranchInput">Branch</label>
+        <input id="githubBranchInput" class="is-mono" type="text" placeholder="main"/>
+      </div>
+      <div class="field">
+        <label for="githubPathInput">Token file path</label>
+        <input id="githubPathInput" class="is-mono" type="text" placeholder="tokens.json"/>
+      </div>
     </div>
-    <div class="field">
-      <label for="publishKeyInput">Publish key</label>
-      <input id="publishKeyInput" class="is-mono" type="password" placeholder="Leave blank to use saved key"/>
-    </div>
+
+    <input id="environmentInput" type="hidden" value="dev"/>
 
     <div class="my-12-16">
       <button id="saveRelayBtn" class="btn-save" type="button">
@@ -1932,7 +2196,7 @@
       <div class="danger-row">
         <div>
           <div class="danger-title">Clear saved key</div>
-          <div class="danger-meta">Removes stored publish key from this device</div>
+          <div id="clearSecretMeta" class="danger-meta">Removes stored publish key from this device</div>
         </div>
         <button id="clearKeyBtn" class="btn-danger" type="button">Clear</button>
       </div>
@@ -2010,6 +2274,49 @@
     </div>
   </div>
 </div>
+<div id="providerModal" class="modal-wrap">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <span class="modal-title">Add new sync provider</span>
+      <button id="closeProviderModalBtn" class="modal-close" type="button">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div class="provider-list">
+        <div class="provider-item">
+          <div class="provider-item-main">
+            <span class="provider-icon">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M8 18c-4 1.2-4-2-5.5-2.5M13.5 21v-3.1c0-1 .1-1.4-.5-2 2-.2 4-1 4-4.3 0-.9-.3-1.7-.8-2.4.1-.3.3-1.2-.1-2.4 0 0-.7-.2-2.4.9a8.2 8.2 0 0 0-4.4 0c-1.7-1.1-2.4-.9-2.4-.9-.4 1.2-.2 2.1-.1 2.4-.5.7-.8 1.5-.8 2.4 0 3.3 2 4.1 4 4.3-.5.5-.5 1-.5 1.9V21" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <div>
+              <div class="provider-item-name">GitHub</div>
+              <div class="provider-item-sub">Use personal token + repo (owner/repo).</div>
+            </div>
+          </div>
+          <button class="provider-choose" data-provider-choice="github" type="button">Choose</button>
+        </div>
+        <div class="provider-item">
+          <div class="provider-item-main">
+            <span class="provider-icon">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M4 12h16M4 7h16M4 17h16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            </span>
+            <div>
+              <div class="provider-item-name-row">
+                <div class="provider-item-name">Relay URL</div>
+                <span class="provider-item-tag">Advanced</span>
+              </div>
+              <div class="provider-item-sub">Use managed backend controls and shared team routing.</div>
+            </div>
+          </div>
+          <button class="provider-choose" data-provider-choice="relay" type="button">Choose</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button id="providerDoneBtn" class="btn-mp btn-modal-wide" type="button">Done</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ══════ UTILS ══════ */
@@ -2021,6 +2328,12 @@ const state = {
   latestExportPayload: null,
   latestExportText: '',
   selectedFile: null,
+  syncProvider: 'relay',
+  relayAdvancedOpen: false,
+  publishKeySaved: false,
+  githubTokenSaved: false,
+  githubTokenMaskLength: 16,
+  rememberGithubToken: false,
   latestPreviewUrl: '',
   latestSnapshotPreviewUrl: '',
   latestReferenceUrl: '',
@@ -2033,6 +2346,7 @@ const state = {
   snapshotRawOpen: false,
   changeLog: { summary: '', lines: [], added: 0, changed: 0, removed: 0 }
 };
+const SAVED_SECRET_MASK = '••••••••••••••••';
 let currentViewMode = 'visual';
 
 const refs = {
@@ -2040,6 +2354,17 @@ const refs = {
   selectedFileRow: $('selectedFileRow'), selectedFileName: $('selectedFileName'),
   clearSelectedFileBtn: $('clearSelectedFileBtn'), importBtn: $('importBtn'),
   tokensUrlInput: $('tokensUrlInput'), importFromUrlBtn: $('importFromUrlBtn'),
+  providerLabel: $('providerLabel'), providerMeta: $('providerMeta'),
+  providerBadge: $('providerBadge'),
+  openProviderModalBtn: $('openProviderModalBtn'),
+  providerModal: $('providerModal'), closeProviderModalBtn: $('closeProviderModalBtn'),
+  providerDoneBtn: $('providerDoneBtn'),
+  relaySettingsGroup: $('relaySettingsGroup'), githubSettingsGroup: $('githubSettingsGroup'),
+  relayAdvancedToggleBtn: $('relayAdvancedToggleBtn'), relayAdvancedPanel: $('relayAdvancedPanel'),
+  githubTokenInput: $('githubTokenInput'), githubRepoInput: $('githubRepoInput'),
+  rememberGithubTokenInput: $('rememberGithubTokenInput'),
+  githubBranchInput: $('githubBranchInput'), githubPathInput: $('githubPathInput'),
+  clearSecretMeta: $('clearSecretMeta'),
   relayUrlInput: $('relayUrlInput'), projectIdInput: $('projectIdInput'),
   environmentInput: $('environmentInput'), publishKeyInput: $('publishKeyInput'),
   previewRows: $('previewRows'), syncInfo: $('syncInfo'), statusLine: $('statusLine'),
@@ -2080,20 +2405,181 @@ function setTab(id) {
 tabs.forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
 
 /* ── HELPERS ── */
+function squeezeWhitespace(input) {
+  return String(input || '').replace(/\s+/g, ' ').trim();
+}
+function parseTrailingJsonObject(input) {
+  const raw = String(input || '');
+  const start = raw.indexOf('{');
+  const end = raw.lastIndexOf('}');
+  if (start < 0 || end <= start) return null;
+  try {
+    return JSON.parse(raw.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+}
+function truncateStatusMessage(input, max = 180) {
+  const text = squeezeWhitespace(input);
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+function formatPremiumErrorMessage(input) {
+  const source = squeezeWhitespace(input);
+  if (!source) return 'Something went wrong. Try again.';
+
+  // Keep simple local validation errors unchanged.
+  if (!/github|publish failed|relay|unauthorized|failed \(\d+\)|not found|error:/i.test(source)) {
+    return source;
+  }
+
+  let text = source.replace(/^Error:\s*/i, '');
+  text = text.replace(/^GitHub publish failed while (reading existing file|writing file)\.\s*/i, '');
+
+  const ghFailure = text.match(/^GitHub (read|write) failed \((\d+)\):\s*(.+)$/i);
+  let statusCode = ghFailure ? Number(ghFailure[2]) : 0;
+  let detail = ghFailure ? ghFailure[3] : text;
+
+  const parsedJson = parseTrailingJsonObject(detail);
+  if (parsedJson && typeof parsedJson.message === 'string') {
+    detail = parsedJson.message;
+    if (!statusCode && typeof parsedJson.status === 'string') {
+      const parsedStatus = Number(parsedJson.status);
+      statusCode = Number.isFinite(parsedStatus) ? parsedStatus : 0;
+    }
+  }
+
+  const lowered = detail.toLowerCase();
+  if (/branch .* not found/.test(lowered)) {
+    return 'GitHub publish failed. Branch not found. Update the Branch field (for example `main`).';
+  }
+  if (statusCode === 401 || /bad credentials|requires authentication|unauthorized/.test(lowered)) {
+    return 'GitHub publish failed. Token is invalid or expired. Create a PAT with Contents read/write.';
+  }
+  if (statusCode === 403 || /forbidden|resource not accessible|insufficient|permission/.test(lowered)) {
+    return 'GitHub publish failed. Token lacks permission. Grant Contents read/write for this repository.';
+  }
+  if (statusCode === 404 || /not found/.test(lowered)) {
+    return 'GitHub publish failed. Verify repository, branch, and token file path.';
+  }
+  if (/failed to fetch|network|timed out|timeout|could not reach/.test(source.toLowerCase())) {
+    return 'Network issue while publishing. Check connection and try again.';
+  }
+
+  return `Publish failed. ${truncateStatusMessage(detail || text)}`;
+}
 function setStatus(msg, err) {
-  refs.statusLine.textContent = msg;
+  refs.statusLine.textContent = err ? formatPremiumErrorMessage(msg) : msg;
   refs.statusLine.classList.toggle('err', !!err);
 }
-function readRelayPayload() {
+function normalizeProvider(provider) {
+  return provider === 'github' ? 'github' : 'relay';
+}
+function providerTitle(provider) {
+  return provider === 'github' ? 'GitHub' : 'Relay URL';
+}
+function setRelayAdvancedOpen(open) {
+  const next = !!open;
+  state.relayAdvancedOpen = next;
+  refs.relayAdvancedPanel?.classList.toggle('hide', !next);
+  if (refs.relayAdvancedToggleBtn) {
+    refs.relayAdvancedToggleBtn.classList.toggle('is-open', next);
+    refs.relayAdvancedToggleBtn.setAttribute('aria-expanded', next ? 'true' : 'false');
+    const meta = refs.relayAdvancedToggleBtn.querySelector('[data-relay-adv-meta]');
+    if (meta) meta.textContent = next ? 'Hide relay options' : 'Show relay options';
+  }
+}
+function buildMaskedSecret(length) {
+  const n = Number.isFinite(Number(length)) ? Math.max(1, Math.floor(Number(length))) : SAVED_SECRET_MASK.length;
+  return '•'.repeat(n);
+}
+function setSecretInputMaskedState(input, isSaved, placeholder, maskLength) {
+  if (!input) return;
+  const masked = input.dataset.secretMasked === 'true';
+  const current = input.value.trim();
+  if (isSaved && (masked || !current)) {
+    input.value = buildMaskedSecret(maskLength);
+    input.dataset.secretMasked = 'true';
+  } else if (!isSaved && masked) {
+    input.value = '';
+    delete input.dataset.secretMasked;
+  }
+  input.placeholder = placeholder;
+}
+function clearSecretMask(input) {
+  if (!input) return;
+  if (input.dataset.secretMasked === 'true') {
+    input.value = '';
+    delete input.dataset.secretMasked;
+  }
+}
+function readSecretInputValue(input) {
+  if (!input) return '';
+  if (input.dataset.secretMasked === 'true') return '';
+  return input.value.trim();
+}
+function updateSettingsSummary() {
+  setSecretInputMaskedState(refs.publishKeyInput, !!state.publishKeySaved, 'Leave blank to use saved key');
+  setSecretInputMaskedState(
+    refs.githubTokenInput,
+    !!state.githubTokenSaved,
+    'Leave blank to use saved token',
+    state.githubTokenMaskLength
+  );
+  refs.rememberGithubTokenInput.checked = !!state.rememberGithubToken;
+
+  const provider = normalizeProvider(state.syncProvider);
+  if (provider === 'github') {
+    const repo = refs.githubRepoInput.value.trim();
+    refs.settingsHost.textContent = repo || 'github.com';
+    refs.settingsMeta.textContent = state.githubTokenSaved
+      ? `Configured for ${repo || 'repository'} / ${refs.githubBranchInput.value.trim() || 'main'}`
+      : state.rememberGithubToken
+        ? 'GitHub token not saved yet.'
+        : 'Token is session-only. It will not be stored.';
+    refs.clearSecretMeta.textContent = 'Removes stored GitHub token from this device';
+    return;
+  }
+  const relayUrl = refs.relayUrlInput.value.trim();
+  refs.settingsHost.textContent = relayUrl.replace(/^https?:\/\//i, '') || 'Not configured';
+  refs.settingsMeta.textContent = state.publishKeySaved
+    ? `Configured for ${refs.projectIdInput.value.trim() || 'project'} / ${refs.environmentInput.value.trim() || 'dev'}`
+    : 'Publish key not saved yet.';
+  refs.clearSecretMeta.textContent = 'Removes stored publish key from this device';
+}
+function applyProviderUi(provider) {
+  const previousProvider = normalizeProvider(state.syncProvider);
+  const normalized = normalizeProvider(provider);
+  state.syncProvider = normalized;
+  const isGithub = normalized === 'github';
+  refs.relaySettingsGroup.classList.toggle('hide', isGithub);
+  refs.githubSettingsGroup.classList.toggle('hide', !isGithub);
+  if (isGithub) {
+    setRelayAdvancedOpen(false);
+  } else if (previousProvider !== 'relay') {
+    setRelayAdvancedOpen(false);
+  }
+  refs.providerLabel.textContent = providerTitle(normalized);
+  if (refs.providerBadge) refs.providerBadge.textContent = isGithub ? 'GitHub' : 'Relay';
+  refs.providerMeta.textContent = isGithub
+    ? 'Configured with Personal Access Token and repository path.'
+    : 'Advanced mode with backend-managed project routing.';
+}
+function readSyncPayload() {
   return {
+    provider: normalizeProvider(state.syncProvider),
     relayUrl:    refs.relayUrlInput.value.trim(),
     projectId:   refs.projectIdInput.value.trim(),
     environment: refs.environmentInput.value.trim(),
-    publishKey:  refs.publishKeyInput.value.trim(),
+    publishKey:  readSecretInputValue(refs.publishKeyInput),
+    githubToken: readSecretInputValue(refs.githubTokenInput),
+    rememberGithubToken: !!refs.rememberGithubTokenInput.checked,
+    githubRepo: refs.githubRepoInput.value.trim(),
+    githubBranch: refs.githubBranchInput.value.trim(),
+    githubPath: refs.githubPathInput.value.trim(),
   };
 }
 function readPublishPayload() {
-  const base = readRelayPayload();
+  const base = readSyncPayload();
   const commitMessage = refs.modalCommitMessageInput?.value?.trim() || '';
   if (commitMessage) {
     return { ...base, commitMessage };
@@ -2824,12 +3310,21 @@ function updateSnapToggle() {
 
 /* ── MODAL ── */
 function openModal() {
-  refs.modalEndpoint.textContent = refs.relayUrlInput.value.trim() || '—';
-  refs.modalProject.textContent  = refs.projectIdInput.value.trim() || '—';
-  refs.modalBranch.textContent   = refs.environmentInput.value.trim() || 'dev';
+  const provider = normalizeProvider(state.syncProvider);
+  if (provider === 'github') {
+    refs.modalEndpoint.textContent = 'api.github.com';
+    refs.modalProject.textContent  = refs.githubRepoInput.value.trim() || '—';
+    refs.modalBranch.textContent   = refs.githubBranchInput.value.trim() || 'main';
+  } else {
+    refs.modalEndpoint.textContent = refs.relayUrlInput.value.trim() || '—';
+    refs.modalProject.textContent  = refs.projectIdInput.value.trim() || '—';
+    refs.modalBranch.textContent   = refs.environmentInput.value.trim() || 'dev';
+  }
   refs.modal.classList.add('on');
 }
 function closeModal() { refs.modal.classList.remove('on'); }
+function openProviderModal() { refs.providerModal?.classList.add('on'); }
+function closeProviderModal() { refs.providerModal?.classList.remove('on'); }
 
 /* ── SYNC ── */
 function refresh() {
@@ -2907,13 +3402,26 @@ $('syncBtn').addEventListener('click', refresh);
 $('fullRefreshBtn').addEventListener('click', fullRefresh);
 $('devPreviewBtn').addEventListener('click', openDeveloperPreview);
 $('snapshotPreviewBtn').addEventListener('click', openSnapshotPreview);
-$('saveRelayBtn').addEventListener('click', () => post({ type: 'save-relay-settings', payload: readRelayPayload() }));
+$('saveRelayBtn').addEventListener('click', () => post({ type: 'save-relay-settings', payload: readSyncPayload() }));
 $('refreshChangesBtn').addEventListener('click', () => post({ type: 'preview-publish-changes' }));
 $('previewPublishBtn').addEventListener('click', () => { setTab('changes'); post({ type: 'preview-publish-changes' }); });
 $('openPublishBtn').addEventListener('click', openModal);
 $('cancelPublishBtn').addEventListener('click', closeModal);
 $('closeModalBtn').addEventListener('click', closeModal);
 refs.modal.addEventListener('click', e => { if (e.target === refs.modal) closeModal(); });
+refs.openProviderModalBtn?.addEventListener('click', openProviderModal);
+refs.closeProviderModalBtn?.addEventListener('click', closeProviderModal);
+refs.providerDoneBtn?.addEventListener('click', closeProviderModal);
+refs.providerModal?.addEventListener('click', e => { if (e.target === refs.providerModal) closeProviderModal(); });
+refs.relayAdvancedToggleBtn?.addEventListener('click', () => setRelayAdvancedOpen(!state.relayAdvancedOpen));
+document.querySelectorAll('[data-provider-choice]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    applyProviderUi(btn.dataset.providerChoice || 'github');
+    updateSettingsSummary();
+    setStatus(`Sync provider switched to ${providerTitle(state.syncProvider)}. Save settings to apply.`, false);
+    closeProviderModal();
+  });
+});
 refs.closeHistoryModalBtn.addEventListener('click', closeHistoryModal);
 refs.historyCloseBtn.addEventListener('click', closeHistoryModal);
 refs.historyRefreshBtn.addEventListener('click', () => post({ type: 'load-publish-history' }));
@@ -2940,7 +3448,54 @@ refs.downloadMenu.querySelectorAll('.dl-option').forEach(b => {
 document.addEventListener('click', e => { if (!e.target.closest('.dl-pop')) refs.downloadMenu.classList.add('hide'); });
 refs.clearLoadedBtn.addEventListener('click', clearLoadedData);
 refs.fullscreenToggleBtn.addEventListener('click', () => post({ type: 'toggle-fullscreen' }));
-$('clearKeyBtn').addEventListener('click', () => { refs.publishKeyInput.value = ''; setStatus('Key cleared.', false); });
+[
+  refs.publishKeyInput,
+  refs.githubTokenInput
+].forEach(input => {
+  input?.addEventListener('focus', () => clearSecretMask(input));
+  input?.addEventListener('keydown', () => clearSecretMask(input));
+});
+refs.rememberGithubTokenInput?.addEventListener('change', () => {
+  state.rememberGithubToken = !!refs.rememberGithubTokenInput.checked;
+  updateSettingsSummary();
+});
+[
+  refs.relayUrlInput,
+  refs.projectIdInput,
+  refs.environmentInput,
+  refs.githubRepoInput,
+  refs.githubBranchInput
+].forEach(input => input?.addEventListener('input', () => updateSettingsSummary()));
+$('clearKeyBtn').addEventListener('click', () => {
+  if (normalizeProvider(state.syncProvider) === 'github') {
+    refs.githubTokenInput.value = '';
+    state.githubTokenSaved = false;
+    state.githubTokenMaskLength = 16;
+    state.rememberGithubToken = false;
+    refs.rememberGithubTokenInput.checked = false;
+    post({
+      type: 'save-relay-settings',
+      payload: {
+        ...readSyncPayload(),
+        clearGithubToken: true,
+        rememberGithubToken: false,
+      }
+    });
+    setStatus('Clearing saved GitHub token…', false);
+  } else {
+    refs.publishKeyInput.value = '';
+    state.publishKeySaved = false;
+    post({
+      type: 'save-relay-settings',
+      payload: {
+        ...readSyncPayload(),
+        clearPublishKey: true,
+      }
+    });
+    setStatus('Clearing saved publish key…', false);
+  }
+  updateSettingsSummary();
+});
 $('resetBaselineBtn').addEventListener('click', () => {
   state.changeLog = { summary: '', lines: [], added: 0, changed: 0, removed: 0 };
   renderChangeLog(state.changeLog); setStatus('Baseline reset.', false);
@@ -2996,20 +3551,37 @@ window.onmessage = event => {
   const msg = event.data.pluginMessage; if (!msg) return;
   if (msg.type === 'relay-settings') {
     const p = msg.payload || {};
+    const provider = normalizeProvider(p.provider || 'github');
+    applyProviderUi(provider);
     refs.relayUrlInput.value    = p.relayUrl || 'https://tokvista-plugin.vercel.app/api';
     refs.projectIdInput.value   = p.projectId || '';
     refs.environmentInput.value = p.environment || 'dev';
+    refs.githubRepoInput.value = p.githubRepo || '';
+    refs.githubBranchInput.value = p.githubBranch || 'main';
+    refs.githubPathInput.value = p.githubPath || 'tokens.json';
     refs.publishKeyInput.value  = '';
-    refs.settingsHost.textContent = refs.relayUrlInput.value.replace(/^https?:\/\//i, '') || 'Not configured';
-    refs.settingsMeta.textContent = p.publishKeySaved
-      ? `Configured for ${refs.projectIdInput.value || 'project'} / ${refs.environmentInput.value || 'dev'}`
-      : 'Publish key not saved yet.';
+    refs.githubTokenInput.value = '';
+    state.publishKeySaved = !!p.publishKeySaved;
+    state.githubTokenSaved = !!p.githubTokenSaved;
+    state.githubTokenMaskLength = Number.isFinite(Number(p.githubTokenLength))
+      ? Math.max(1, Number(p.githubTokenLength))
+      : 16;
+    state.rememberGithubToken = !!p.rememberGithubToken;
+    updateSettingsSummary();
   }
   if (msg.type === 'relay-settings-saved') {
     setStatus('Settings saved.', false);
     refs.publishKeyInput.value = '';
-    refs.settingsHost.textContent = refs.relayUrlInput.value.replace(/^https?:\/\//i, '') || 'Not configured';
-    refs.settingsMeta.textContent = `Configured for ${refs.projectIdInput.value || 'project'} / ${refs.environmentInput.value || 'dev'}`;
+    refs.githubTokenInput.value = '';
+    const provider = normalizeProvider((msg.payload || {}).provider || state.syncProvider || 'github');
+    applyProviderUi(provider);
+    state.publishKeySaved = !!(msg.payload || {}).publishKeySaved;
+    state.githubTokenSaved = !!(msg.payload || {}).githubTokenSaved;
+    state.githubTokenMaskLength = Number.isFinite(Number((msg.payload || {}).githubTokenLength))
+      ? Math.max(1, Number((msg.payload || {}).githubTokenLength))
+      : 16;
+    state.rememberGithubToken = !!(msg.payload || {}).rememberGithubToken;
+    updateSettingsSummary();
   }
   if (msg.type === 'publish-result') {
     const p = msg.payload || {};
@@ -3063,7 +3635,7 @@ window.onmessage = event => {
     setStatus(`Import complete: ${p.imported||0} applied (${p.created||0} created, ${p.updated||0} updated, ${p.replaced||0} replaced), ${p.skipped||0} skipped.`, false);
     refresh();
   }
-  if (msg.type === 'error') { setStatus(`Error: ${msg.payload}`, true); }
+  if (msg.type === 'error') { setStatus(msg.payload || 'Unknown error', true); }
 };
 
 /* ── VIEW MODE ── */
@@ -3124,6 +3696,8 @@ updateFsBtn();
 updatePreviewLinkUi();
 updateSnapToggle();
 updateImportFromUrlState();
+applyProviderUi('github');
+updateSettingsSummary();
 renderSnapshot(null);
 post({ type: 'load-relay-settings' });
 post({ type: 'load-publish-history' });
