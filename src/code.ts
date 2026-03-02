@@ -1429,6 +1429,20 @@ function normalizePublishMessage(input: string | undefined, fallback: string): s
   return singleLine.slice(0, 120);
 }
 
+function sleep(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
+}
+
+function isGitHubShaConflict(status: number, message: string): boolean {
+  const text = (message || "").toLowerCase();
+  if (status !== 409 && status !== 422) {
+    return false;
+  }
+  return text.includes("does not match") || text.includes("sha");
+}
+
 async function publishToGitHub(
   settings: RelaySettings,
   exportPayload: ObjectLike,
@@ -1456,29 +1470,38 @@ async function publishToGitHub(
   const readUrl = buildGitHubContentsApiUrl(repoParsed.owner, repoParsed.repo, path, branch);
   const writeUrl = buildGitHubContentsApiUrl(repoParsed.owner, repoParsed.repo, path);
 
-  let existingSha: string | undefined;
-  let existingComparable = "";
-  try {
-    const readResponse = await githubRequest(readUrl, settings.githubToken, { method: "GET" });
+  async function readExistingFileState(): Promise<{ sha?: string; comparable: string }> {
+    const bust = Date.now().toString(36);
+    const uncachedReadUrl = `${readUrl}${readUrl.includes("?") ? "&" : "?"}_ts=${encodeURIComponent(bust)}`;
+    const readResponse = await githubRequest(uncachedReadUrl, settings.githubToken, { method: "GET" });
     const readStatus = responseStatus(readResponse);
     const readOk = responseOk(readResponse, readStatus);
     if (readStatus === 404) {
-      existingSha = undefined;
-      existingComparable = "";
-    } else if (!readOk) {
+      return { sha: undefined, comparable: "" };
+    }
+    if (!readOk) {
       const text = await readResponseTextSafe(readResponse);
       throw new Error(`GitHub read failed (${readStatus || 0}): ${truncateRelayMessage(text)}`);
-    } else {
-      const payload = await readResponseJsonSafe(readResponse);
-      existingSha = typeof payload.sha === "string" ? payload.sha : undefined;
-      const encoded = typeof payload.content === "string" ? payload.content.replace(/\n/g, "") : "";
-      const decoded = encoded ? base64ToUtf8(encoded) : "";
-      try {
-        existingComparable = stableSerialize(JSON.parse(decoded));
-      } catch {
-        existingComparable = decoded;
-      }
     }
+    const payload = await readResponseJsonSafe(readResponse);
+    const sha = typeof payload.sha === "string" ? payload.sha : undefined;
+    const encoded = typeof payload.content === "string" ? payload.content.replace(/\n/g, "") : "";
+    const decoded = encoded ? base64ToUtf8(encoded) : "";
+    let comparable = "";
+    try {
+      comparable = stableSerialize(JSON.parse(decoded));
+    } catch {
+      comparable = decoded;
+    }
+    return { sha, comparable };
+  }
+
+  let existingSha: string | undefined;
+  let existingComparable = "";
+  try {
+    const state = await readExistingFileState();
+    existingSha = state.sha;
+    existingComparable = state.comparable;
   } catch (error) {
     throw new Error(`GitHub publish failed while reading existing file. ${toErrorMessage(error)}`);
   }
@@ -1509,16 +1532,70 @@ async function publishToGitHub(
 
   let writePayload: ObjectLike = {};
   try {
-    const writeResponse = await githubRequest(writeUrl, settings.githubToken, {
-      method: "PUT",
-      body: JSON.stringify(requestBody)
-    });
-    const writeStatus = responseStatus(writeResponse);
-    if (!responseOk(writeResponse, writeStatus)) {
-      const text = await readResponseTextSafe(writeResponse);
-      throw new Error(`GitHub write failed (${writeStatus || 0}): ${truncateRelayMessage(text)}`);
+    async function writeWithBody(body: Record<string, unknown>): Promise<{
+      ok: boolean;
+      status: number;
+      text: string;
+      payload: ObjectLike;
+    }> {
+      const writeResponse = await githubRequest(writeUrl, settings.githubToken, {
+        method: "PUT",
+        body: JSON.stringify(body)
+      });
+      const status = responseStatus(writeResponse);
+      if (!responseOk(writeResponse, status)) {
+        const text = await readResponseTextSafe(writeResponse);
+        return { ok: false, status, text: truncateRelayMessage(text), payload: {} };
+      }
+      const payload = await readResponseJsonSafe(writeResponse);
+      return { ok: true, status, text: "", payload };
     }
-    writePayload = await readResponseJsonSafe(writeResponse);
+
+    const maxAttempts = 3;
+    let currentSha = existingSha;
+    let writeResult: { ok: boolean; status: number; text: string; payload: ObjectLike } = {
+      ok: false,
+      status: 0,
+      text: "",
+      payload: {}
+    };
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      const body: Record<string, unknown> = {
+        message: commitMessage,
+        content: utf8ToBase64(content),
+        branch
+      };
+      if (currentSha) {
+        body.sha = currentSha;
+      }
+      writeResult = await writeWithBody(body);
+      if (writeResult.ok) {
+        break;
+      }
+      if (!isGitHubShaConflict(writeResult.status, writeResult.text) || attempt === maxAttempts) {
+        break;
+      }
+      if (attempt > 1) {
+        await sleep(200 * attempt);
+      }
+      const latest = await readExistingFileState();
+      if (latest.comparable && latest.comparable === nextComparable) {
+        return {
+          versionId: "",
+          message: "No changes to publish.",
+          commitMessage,
+          rawUrl: branchRawUrl,
+          previewUrl: branchPreviewUrl,
+          snapshotPreviewUrl: branchPreviewUrl,
+          changed: false
+        };
+      }
+      currentSha = latest.sha;
+    }
+    if (!writeResult.ok) {
+      throw new Error(`GitHub write failed (${writeResult.status || 0}): ${writeResult.text}`);
+    }
+    writePayload = writeResult.payload;
   } catch (error) {
     throw new Error(`GitHub publish failed while writing file. ${toErrorMessage(error)}`);
   }

@@ -2584,6 +2584,9 @@ function formatPremiumErrorMessage(input) {
   if (statusCode === 404 || /not found/.test(lowered)) {
     return 'GitHub publish failed. Verify repository, branch, and token file path.';
   }
+  if (statusCode === 409 || /does not match|sha/.test(lowered)) {
+    return 'GitHub publish conflict detected. Another update changed this file. Please wait a moment and publish again.';
+  }
   if (/failed to fetch|network|timed out|timeout|could not reach/.test(source.toLowerCase())) {
     return 'Network issue while publishing. Check connection and try again.';
   }
