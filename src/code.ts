@@ -37,6 +37,7 @@ type UiMessage =
   | { type: "save-relay-settings"; payload: unknown }
   | { type: "set-active-sync-profile"; payload: unknown }
   | { type: "delete-sync-profile"; payload: unknown }
+  | { type: "reset-publish-baseline" }
   | { type: "publish-tokvista"; payload: unknown }
   | { type: "open-external-url"; payload: { url: string } };
 
@@ -141,7 +142,18 @@ type ExportTokensOptions = {
 
 const MAX_CHANGE_LOG_LINES = 40;
 const MAX_PUBLISH_HISTORY_ITEMS = 80;
+const DEFAULT_STORAGE_SCOPE_ID = "default";
 let isFullscreen = false;
+
+function buildScopedStorageKey(baseKey: string, scopeId: string): string {
+  const normalizedScopeId = scopeId.trim();
+  return `${baseKey}:${normalizedScopeId || DEFAULT_STORAGE_SCOPE_ID}`;
+}
+
+async function getActiveStorageScopeId(): Promise<string> {
+  const store = await getStoredRelaySettingsStore();
+  return store.activeProfileId || DEFAULT_STORAGE_SCOPE_ID;
+}
 
 function isObjectLike(value: unknown): value is ObjectLike {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -303,7 +315,7 @@ function normalizeProfileName(input: unknown, fallback: string): string {
 
 function defaultRelaySettings(): RelaySettings {
   return {
-    provider: "github",
+    provider: "relay",
     relayUrl: DEFAULT_RELAY_URL,
     projectId: "",
     publishKey: "",
@@ -596,15 +608,32 @@ function buildPublishChangeLog(previousPayload: ObjectLike | null, currentPayloa
 }
 
 async function getLastPublishedPayload(): Promise<ObjectLike | null> {
-  const raw = await figma.clientStorage.getAsync(LAST_PUBLISHED_PAYLOAD_KEY);
-  if (!isObjectLike(raw)) {
-    return null;
+  const scopeId = await getActiveStorageScopeId();
+  const scopedKey = buildScopedStorageKey(LAST_PUBLISHED_PAYLOAD_KEY, scopeId);
+  const scopedRaw = await figma.clientStorage.getAsync(scopedKey);
+  if (isObjectLike(scopedRaw)) {
+    return scopedRaw;
   }
-  return raw;
+  const legacyRaw = await figma.clientStorage.getAsync(LAST_PUBLISHED_PAYLOAD_KEY);
+  if (isObjectLike(legacyRaw)) {
+    await figma.clientStorage.setAsync(scopedKey, legacyRaw);
+    return legacyRaw;
+  }
+  return null;
 }
 
 async function setLastPublishedPayload(payload: ObjectLike): Promise<void> {
-  await figma.clientStorage.setAsync(LAST_PUBLISHED_PAYLOAD_KEY, payload);
+  const scopeId = await getActiveStorageScopeId();
+  const scopedKey = buildScopedStorageKey(LAST_PUBLISHED_PAYLOAD_KEY, scopeId);
+  await figma.clientStorage.setAsync(scopedKey, payload);
+  await figma.clientStorage.deleteAsync(LAST_PUBLISHED_PAYLOAD_KEY);
+}
+
+async function clearLastPublishedPayload(): Promise<void> {
+  const scopeId = await getActiveStorageScopeId();
+  const scopedKey = buildScopedStorageKey(LAST_PUBLISHED_PAYLOAD_KEY, scopeId);
+  await figma.clientStorage.deleteAsync(scopedKey);
+  await figma.clientStorage.deleteAsync(LAST_PUBLISHED_PAYLOAD_KEY);
 }
 
 function createEmptyExportPayload(collections: string[] = []): ObjectLike {
@@ -1000,13 +1029,34 @@ function normalizePublishHistory(input: unknown): PublishHistoryEntry[] {
 }
 
 async function getStoredPublishHistory(): Promise<PublishHistoryEntry[]> {
-  const raw = await figma.clientStorage.getAsync(PUBLISH_HISTORY_KEY);
-  return normalizePublishHistory(raw);
+  const scopeId = await getActiveStorageScopeId();
+  const scopedKey = buildScopedStorageKey(PUBLISH_HISTORY_KEY, scopeId);
+  const scopedRaw = await figma.clientStorage.getAsync(scopedKey);
+  if (Array.isArray(scopedRaw)) {
+    return normalizePublishHistory(scopedRaw);
+  }
+  const legacyRaw = await figma.clientStorage.getAsync(PUBLISH_HISTORY_KEY);
+  if (Array.isArray(legacyRaw)) {
+    const migrated = normalizePublishHistory(legacyRaw);
+    await figma.clientStorage.setAsync(scopedKey, migrated);
+    return migrated;
+  }
+  return [];
 }
 
 async function setStoredPublishHistory(history: PublishHistoryEntry[]): Promise<void> {
+  const scopeId = await getActiveStorageScopeId();
+  const scopedKey = buildScopedStorageKey(PUBLISH_HISTORY_KEY, scopeId);
   const normalized = normalizePublishHistory(history);
-  await figma.clientStorage.setAsync(PUBLISH_HISTORY_KEY, normalized);
+  await figma.clientStorage.setAsync(scopedKey, normalized);
+  await figma.clientStorage.deleteAsync(PUBLISH_HISTORY_KEY);
+}
+
+async function clearStoredPublishHistory(): Promise<void> {
+  const scopeId = await getActiveStorageScopeId();
+  const scopedKey = buildScopedStorageKey(PUBLISH_HISTORY_KEY, scopeId);
+  await figma.clientStorage.deleteAsync(scopedKey);
+  await figma.clientStorage.deleteAsync(PUBLISH_HISTORY_KEY);
 }
 
 function postPublishHistoryToUi(history: PublishHistoryEntry[]): void {
@@ -1025,17 +1075,38 @@ async function appendPublishHistoryEntry(entry: PublishHistoryEntry): Promise<Pu
 }
 
 async function getStoredPublishedLinks(): Promise<PublishedLinks | null> {
-  const raw = await figma.clientStorage.getAsync(LAST_PUBLISHED_LINKS_KEY);
-  return normalizePublishedLinks(raw);
+  const scopeId = await getActiveStorageScopeId();
+  const scopedKey = buildScopedStorageKey(LAST_PUBLISHED_LINKS_KEY, scopeId);
+  const scopedRaw = await figma.clientStorage.getAsync(scopedKey);
+  if (scopedRaw !== undefined) {
+    return normalizePublishedLinks(scopedRaw);
+  }
+  const legacyRaw = await figma.clientStorage.getAsync(LAST_PUBLISHED_LINKS_KEY);
+  const normalizedLegacy = normalizePublishedLinks(legacyRaw);
+  if (normalizedLegacy) {
+    await figma.clientStorage.setAsync(scopedKey, normalizedLegacy);
+  }
+  return normalizedLegacy;
 }
 
 async function setStoredPublishedLinks(links: PublishedLinks): Promise<void> {
+  const scopeId = await getActiveStorageScopeId();
+  const scopedKey = buildScopedStorageKey(LAST_PUBLISHED_LINKS_KEY, scopeId);
   const normalized = normalizePublishedLinks(links);
   if (!normalized) {
+    await figma.clientStorage.deleteAsync(scopedKey);
     await figma.clientStorage.deleteAsync(LAST_PUBLISHED_LINKS_KEY);
     return;
   }
-  await figma.clientStorage.setAsync(LAST_PUBLISHED_LINKS_KEY, normalized);
+  await figma.clientStorage.setAsync(scopedKey, normalized);
+  await figma.clientStorage.deleteAsync(LAST_PUBLISHED_LINKS_KEY);
+}
+
+async function clearStoredPublishedLinks(): Promise<void> {
+  const scopeId = await getActiveStorageScopeId();
+  const scopedKey = buildScopedStorageKey(LAST_PUBLISHED_LINKS_KEY, scopeId);
+  await figma.clientStorage.deleteAsync(scopedKey);
+  await figma.clientStorage.deleteAsync(LAST_PUBLISHED_LINKS_KEY);
 }
 
 function postPublishedLinksToUi(links: PublishedLinks | null): void {
@@ -1107,6 +1178,12 @@ async function loadAndPostPublishedLinks(): Promise<void> {
 async function loadAndPostPublishHistory(): Promise<void> {
   const history = await getStoredPublishHistory();
   postPublishHistoryToUi(history);
+}
+
+async function refreshPublishUiState(): Promise<void> {
+  await loadAndPostPublishedLinks();
+  await loadAndPostPublishHistory();
+  await postPublishChangePreview();
 }
 
 async function fetchPreviewLinkFromRelay(
@@ -2669,6 +2746,7 @@ figma.ui.onmessage = async (msg: UiMessage) => {
         type: "relay-settings-saved",
         payload: buildRelaySettingsUiPayload(store)
       });
+      await refreshPublishUiState();
       figma.notify("Tokvista publish settings saved.");
     } catch (error) {
       const message = toErrorMessage(error);
@@ -2686,6 +2764,7 @@ figma.ui.onmessage = async (msg: UiMessage) => {
         type: "relay-settings-saved",
         payload: buildRelaySettingsUiPayload(store)
       });
+      await refreshPublishUiState();
       figma.notify("Active sync profile updated.");
     } catch (error) {
       const message = toErrorMessage(error);
@@ -2703,11 +2782,27 @@ figma.ui.onmessage = async (msg: UiMessage) => {
         type: "relay-settings-saved",
         payload: buildRelaySettingsUiPayload(store)
       });
+      await refreshPublishUiState();
       figma.notify("Sync profile deleted.");
     } catch (error) {
       const message = toErrorMessage(error);
       figma.ui.postMessage({ type: "error", payload: message });
       figma.notify(`Delete failed: ${message}`);
+    }
+    return;
+  }
+
+  if (msg.type === "reset-publish-baseline") {
+    try {
+      await clearLastPublishedPayload();
+      await clearStoredPublishHistory();
+      await clearStoredPublishedLinks();
+      await refreshPublishUiState();
+      figma.notify("Publish baseline reset.");
+    } catch (error) {
+      const message = toErrorMessage(error);
+      figma.ui.postMessage({ type: "error", payload: message });
+      figma.notify(`Reset failed: ${message}`);
     }
     return;
   }

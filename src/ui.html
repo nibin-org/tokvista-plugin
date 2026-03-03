@@ -2451,6 +2451,7 @@ const state = {
   syncProfiles: [],
   activeProfileId: '',
   draftNewProfile: false,
+  pendingDraftSave: false,
   relayAdvancedOpen: false,
   publishKeySaved: false,
   githubTokenSaved: false,
@@ -2643,22 +2644,30 @@ function readSyncProfilesFromPayload(payload) {
       return {
         id,
         name: typeof profile.name === 'string' ? profile.name : '',
-        provider: typeof profile.provider === 'string' ? profile.provider : 'github',
+        provider: typeof profile.provider === 'string' ? profile.provider : 'relay',
         label: typeof profile.label === 'string' ? profile.label : '',
         isActive: !!profile.isActive
       };
     })
     .filter(Boolean);
 }
-function applySyncPayload(payload) {
+function applySyncProfilesOnly(payload, preserveDraft) {
   const p = payload || {};
-  const provider = normalizeProvider(p.provider || 'github');
   const profiles = readSyncProfilesFromPayload(p);
   const payloadActiveId = typeof p.activeProfileId === 'string' ? p.activeProfileId.trim() : '';
   const fallbackActiveId = profiles.find(profile => profile.isActive)?.id || (profiles[0]?.id || '');
   state.syncProfiles = profiles;
-  state.activeProfileId = payloadActiveId || fallbackActiveId;
+  if (!preserveDraft) {
+    state.activeProfileId = payloadActiveId || fallbackActiveId;
+  }
+  renderSyncProfiles();
+}
+function applySyncPayload(payload) {
+  const p = payload || {};
+  const provider = normalizeProvider(p.provider || 'relay');
+  applySyncProfilesOnly(p, false);
   state.draftNewProfile = false;
+  state.pendingDraftSave = false;
   applyProviderUi(provider);
   refs.relayUrlInput.value    = p.relayUrl || 'https://tokvista-plugin.vercel.app/api';
   refs.projectIdInput.value   = p.projectId || '';
@@ -2674,11 +2683,11 @@ function applySyncPayload(payload) {
     ? Math.max(1, Number(p.githubTokenLength))
     : 16;
   state.rememberGithubToken = !!p.rememberGithubToken;
-  renderSyncProfiles();
   updateSettingsSummary();
 }
 function beginNewSyncProfile() {
   state.draftNewProfile = true;
+  state.pendingDraftSave = false;
   state.activeProfileId = '';
   state.syncProvider = 'github';
   applyProviderUi('github');
@@ -3624,7 +3633,10 @@ $('syncBtn').addEventListener('click', refresh);
 $('fullRefreshBtn').addEventListener('click', fullRefresh);
 $('devPreviewBtn').addEventListener('click', openDeveloperPreview);
 $('snapshotPreviewBtn').addEventListener('click', openSnapshotPreview);
-$('saveRelayBtn').addEventListener('click', () => post({ type: 'save-relay-settings', payload: readSyncPayload() }));
+$('saveRelayBtn').addEventListener('click', () => {
+  state.pendingDraftSave = !!state.draftNewProfile;
+  post({ type: 'save-relay-settings', payload: readSyncPayload() });
+});
 refs.newSyncProfileBtn?.addEventListener('click', beginNewSyncProfile);
 refs.syncProfilesList?.addEventListener('click', e => {
   const target = e.target.closest('[data-profile-action]');
@@ -3739,8 +3751,8 @@ $('clearKeyBtn').addEventListener('click', () => {
   updateSettingsSummary();
 });
 $('resetBaselineBtn').addEventListener('click', () => {
-  state.changeLog = { summary: '', lines: [], added: 0, changed: 0, removed: 0 };
-  renderChangeLog(state.changeLog); setStatus('Baseline reset.', false);
+  setStatus('Resetting baseline…', false);
+  post({ type: 'reset-publish-baseline' });
 });
 
 /* ── DROPZONE ── */
@@ -3792,11 +3804,23 @@ refs.snapshotToggleBtn.addEventListener('click', () => {
 window.onmessage = event => {
   const msg = event.data.pluginMessage; if (!msg) return;
   if (msg.type === 'relay-settings') {
-    applySyncPayload(msg.payload || {});
+    const payload = msg.payload || {};
+    if (state.draftNewProfile && !state.pendingDraftSave) {
+      applySyncProfilesOnly(payload, true);
+    } else {
+      applySyncPayload(payload);
+    }
   }
   if (msg.type === 'relay-settings-saved') {
+    const payload = msg.payload || {};
+    const keepDraft = state.draftNewProfile && !state.pendingDraftSave;
+    state.pendingDraftSave = false;
     setStatus('Settings saved.', false);
-    applySyncPayload(msg.payload || {});
+    if (keepDraft) {
+      applySyncProfilesOnly(payload, true);
+    } else {
+      applySyncPayload(payload);
+    }
   }
   if (msg.type === 'publish-result') {
     const p = msg.payload || {};
@@ -3911,7 +3935,7 @@ updateFsBtn();
 updatePreviewLinkUi();
 updateSnapToggle();
 updateImportFromUrlState();
-applyProviderUi('github');
+applyProviderUi(state.syncProvider);
 updateSettingsSummary();
 renderSyncProfiles();
 renderSnapshot(null);
