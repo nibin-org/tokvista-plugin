@@ -58,7 +58,7 @@ Export notes:
 
 ## Tokvista Publish (Recommended)
 1. Open plugin and fill:
-   - `Relay URL` (for example `http://localhost:8787`)
+   - `Relay URL` (default: `https://tokvista-plugin.vercel.app/api`)
    - `Project ID`
    - `Environment` (`dev`, `stage`, `prod`, etc.)
    - `Publish key`
@@ -70,6 +70,11 @@ Notes:
 - Plugin never needs GitHub token when using relay publish.
 - Backend relay validates payload and writes to package/repository.
 - Relay can run in local file mode (`localPath`) with no GitHub integration.
+- This community build only allows network calls to:
+  - `https://tokvista-plugin.vercel.app`
+  - `https://api.github.com`
+  - `https://raw.githubusercontent.com`
+- Import URL supports approved origins only.
 
 ## Cloud Setup (Vercel)
 Use this for multi-user team workflow.
@@ -91,8 +96,9 @@ Use this for multi-user team workflow.
    - Project ID: `project-alpha`
    - Environment: `dev`
    - Publish key: value from `TOKVISTA_PROJECTS`
-7. Update `manifest.json`:
-   - Add your Vercel domain in `networkAccess.allowedDomains`
+7. For a private custom-domain build, update:
+   - `manifest.json` -> `networkAccess.allowedDomains`
+   - `src/code.ts` -> `ALLOWED_RELAY_URL_ORIGINS` and `ALLOWED_IMPORT_URL_ORIGINS`
    - Rebuild plugin: `npm run build`
    - Re-import plugin in Figma development plugins
 
@@ -113,7 +119,8 @@ This starts:
 
 Stop both with `Ctrl + C`.
 
-Test file: [examples/tokens.sample.json](examples/tokens.sample.json)
+Note:
+- `http://localhost:8787` works for private/development builds only after allowlist updates described above.
 
 ## Community publish metadata
 

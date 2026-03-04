@@ -38,8 +38,8 @@ Tokvista is built for teams using design tokens as a shared source of truth acro
 
 ## Required Metadata
 
-- Privacy policy URL: `https://github.com/nibin-org/tokvista-plugin/blob/main/docs/privacy-policy.md`
-- Support URL: `https://nibin-portfolio.vercel.app/`
+- Privacy policy URL: `https://raw.githubusercontent.com/nibin-org/tokvista-plugin/main/docs/privacy-policy.md`
+- Support URL: `https://raw.githubusercontent.com/nibin-org/tokvista-plugin/main/docs/support.md`
 - Support email: `nibin.lab.99@gmail.com`
 - Issue tracker: `https://github.com/nibin-org/tokvista-plugin/issues`
 

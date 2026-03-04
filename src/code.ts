@@ -24,6 +24,11 @@ const DEFAULT_RELAY_ENVIRONMENT = "dev";
 const DEFAULT_TOKVISTA_PREVIEW_BASE_URL = "https://tokvista-demo.vercel.app/";
 const DEFAULT_GITHUB_BRANCH = "main";
 const DEFAULT_GITHUB_PATH = "tokens.json";
+const ALLOWED_RELAY_URL_ORIGINS = new Set<string>(["https://tokvista-plugin.vercel.app"]);
+const ALLOWED_IMPORT_URL_ORIGINS = new Set<string>([
+  "https://raw.githubusercontent.com",
+  "https://tokvista-plugin.vercel.app"
+]);
 
 type UiMessage =
   | { type: "import-tokens"; payload: unknown }
@@ -218,6 +223,34 @@ function normalizeSyncProvider(input: unknown): "relay" | "github" {
   return input === "github" ? "github" : "relay";
 }
 
+function parseHttpsUrl(value: string): URL | null {
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "https:") {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function formatAllowedOrigins(origins: Set<string>): string {
+  return [...origins].sort().join(", ");
+}
+
+function assertAllowedOrigin(urlValue: string, allowedOrigins: Set<string>, fieldName: string): void {
+  const parsed = parseHttpsUrl(urlValue);
+  if (!parsed) {
+    throw new Error(`${fieldName} must be a valid https URL.`);
+  }
+  if (!allowedOrigins.has(parsed.origin)) {
+    throw new Error(
+      `${fieldName} host is not allowed in this build. Allowed origins: ${formatAllowedOrigins(allowedOrigins)}`
+    );
+  }
+}
+
 function normalizeRelaySettings(input: unknown, existingSettings: RelaySettings | null): RelaySettings {
   if (!isObjectLike(input)) {
     throw new Error("Invalid publish settings payload.");
@@ -263,6 +296,7 @@ function normalizeRelaySettings(input: unknown, existingSettings: RelaySettings 
     if (!relayUrlInput) {
       throw new Error("Relay URL is required.");
     }
+    assertAllowedOrigin(normalizedRelayUrl, ALLOWED_RELAY_URL_ORIGINS, "Relay URL");
     if (!projectIdInput) {
       throw new Error("Project ID is required.");
     }
@@ -2520,17 +2554,19 @@ function normalizeHttpUrl(value: unknown): string {
   if (/\s/.test(trimmed)) {
     return "";
   }
-  if (!/^https?:\/\/\S+$/i.test(trimmed)) {
+  const parsed = parseHttpsUrl(trimmed);
+  if (!parsed) {
     return "";
   }
-  return trimmed;
+  return parsed.toString();
 }
 
 async function importTokensFromUrl(urlValue: unknown): Promise<ImportResult> {
   const url = normalizeHttpUrl(urlValue);
   if (!url) {
-    throw new Error("Invalid URL. Use a valid http/https tokens.json URL.");
+    throw new Error("Invalid URL. Use a valid https tokens.json URL.");
   }
+  assertAllowedOrigin(url, ALLOWED_IMPORT_URL_ORIGINS, "Import URL");
   const response = await fetch(url, { method: "GET" });
   if (!response.ok) {
     throw new Error(`Failed to fetch tokens from URL (${response.status}).`);

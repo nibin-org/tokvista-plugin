@@ -4,9 +4,6 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Tokvista</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     /* ╔══════════════════════════════════════╗
        ║  DESIGN SYSTEM                       ║
@@ -45,8 +42,8 @@
       --bl-dim:  rgba(107,159,232,0.10);
       --bl-brd:  rgba(107,159,232,0.25);
 
-      --font: 'Geist', system-ui, sans-serif;
-      --mono: 'Geist Mono', 'Courier New', monospace;
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --mono: 'Consolas', 'Courier New', monospace;
       --r:  10px;
       --rs: 7px;
     }
@@ -676,15 +673,17 @@
       line-height: 1.75; text-align: right; -webkit-user-select: none; user-select: none;
       flex-shrink: 0; border-right: 1px solid #1e1c18;
       background: rgba(0,0,0,0.2); min-width: 28px;
+      white-space: pre;
+      overflow: hidden;
     }
     .json-code {
       padding: 12px 14px; font-family: var(--mono); font-size: 11px;
-      color: #7a7264; line-height: 1.75; white-space: pre; flex: 1;
+      color: #c9bfab; line-height: 1.75; white-space: pre; flex: 1;
       background: transparent; margin: 0; border: none; tab-size: 2;
     }
-    .j-k  { color: #c4a472; } .j-s  { color: #d4a84b; }
-    .j-n  { color: #e8c97a; } .j-b  { color: #9c9487; }
-    .j-br { color: #3d3a30; }
+    .j-k  { color: #e8c07a; } .j-s  { color: #f1d08c; }
+    .j-n  { color: #f0deac; } .j-b  { color: #d5cab4; }
+    .j-br { color: #b8ad96; }
 
     /* ── TOKEN TABLE ── */
     .tok-table { width: 100%; border-collapse: collapse; }
@@ -1960,7 +1959,7 @@
         </svg>
       </div>
       <span class="brand-name">tokvista</span>
-      <span class="ver">v2.4.1</span>
+      <span class="ver">v2.5.0</span>
     </div>
 
   </div>
@@ -2905,18 +2904,50 @@ function withSourceCacheBust(previewUrl) {
     return previewUrl;
   }
 }
+function legacyCopyText(text) {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '-9999px';
+    ta.style.left = '-9999px';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    const ok = typeof document.execCommand === 'function' && document.execCommand('copy');
+    ta.remove();
+    return Boolean(ok);
+  } catch {
+    return false;
+  }
+}
+function copyText(text) {
+  const value = String(text || '');
+  if (!value) return Promise.resolve(false);
+  const legacyOk = legacyCopyText(value);
+  if (legacyOk) return Promise.resolve(true);
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    return navigator.clipboard.writeText(value)
+      .then(() => true)
+      .catch(() => false);
+  }
+  return Promise.resolve(false);
+}
 function openAndCopyPreview(url) {
   const finalUrl = withSourceCacheBust(url);
   post({ type: 'open-external-url', payload: { url: finalUrl } });
-  navigator.clipboard?.writeText(finalUrl)
-    .then(() => setStatus('Developer preview opened and link copied.', false))
-    .catch(() => setStatus('Developer preview opened.', false));
+  copyText(finalUrl).then(ok => {
+    setStatus(ok ? 'Developer preview opened and link copied.' : 'Developer preview opened.', false);
+  });
 }
 function openAndCopySnapshot(url) {
   post({ type: 'open-external-url', payload: { url } });
-  navigator.clipboard?.writeText(url)
-    .then(() => setStatus(`Snapshot link copied: ${url}`, false))
-    .catch(() => setStatus('Snapshot link opened.', false));
+  copyText(url).then(ok => {
+    setStatus(ok ? `Snapshot link copied: ${url}` : 'Snapshot link opened.', false);
+  });
 }
 function openDeveloperPreview() {
   const url = state.latestPreviewUrl;
@@ -3895,11 +3926,18 @@ function setViewMode(mode) {
 /* ── JSON COPY ── */
 function copyJson() {
   const text = state.latestExportText || '';
-  navigator.clipboard?.writeText(text).then(() => {
+  copyText(text).then(ok => {
     const btn = document.getElementById('jtCopyBtn');
     if (!btn) return;
-    btn.textContent = 'copied!';
-    btn.classList.add('copied');
+    if (ok) {
+      btn.textContent = 'copied!';
+      btn.classList.add('copied');
+      setStatus('JSON copied to clipboard.', false);
+    } else {
+      btn.textContent = 'copy failed';
+      btn.classList.remove('copied');
+      setStatus('Could not access clipboard in this environment.', true);
+    }
     setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 1800);
   });
 }
@@ -3923,10 +3961,20 @@ function renderJsonView(payload) {
     gutter.textContent = '1';
     return;
   }
-  const jsonText = state.latestExportText;
+  const jsonText = String(state.latestExportText);
   const lines = jsonText.split('\n');
   gutter.innerHTML = lines.map((_, i) => i + 1).join('\n');
-  pre.innerHTML = syntaxHighlightJson(jsonText);
+  try {
+    const highlighted = syntaxHighlightJson(jsonText);
+    const stripped = highlighted.replace(/<[^>]*>/g, '').trim();
+    if (!stripped) {
+      pre.textContent = jsonText;
+      return;
+    }
+    pre.innerHTML = highlighted;
+  } catch {
+    pre.textContent = jsonText;
+  }
 }
 
 /* ── INIT ── */
@@ -3978,3 +4026,5 @@ function updateFilterBar(payload) {
 </script>
 </body>
 </html>
+
+

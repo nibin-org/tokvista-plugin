@@ -12,6 +12,6 @@
       "https://api.github.com",
       "https://raw.githubusercontent.com"
     ],
-    "reasoning": "Tokvista plugin publishes token exports to relay API or GitHub API and imports tokens.json from GitHub raw links."
+    "reasoning": "Tokvista uses a pinned relay endpoint plus GitHub API/raw hosts for publish, preview resolution, and approved token URL import."
   }
 }
