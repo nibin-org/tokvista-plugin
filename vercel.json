@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/preview", "destination": "/api/preview-page" }
+    { "source": "/preview/:path*", "destination": "/api/preview-page" }
   ]
 }
