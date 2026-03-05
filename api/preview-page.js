@@ -166,7 +166,8 @@ function getQuery(req) {
   return parsed.searchParams;
 }
 
-function buildHtml(tokensJson, css, appBundle) {
+function buildHtml(tokensJson, css, appBundle, historyApiUrl) {
+  const historyUrlJson = JSON.stringify(String(historyApiUrl || ""));
   return `<!doctype html>
 <html>
   <head>
@@ -178,6 +179,145 @@ function buildHtml(tokensJson, css, appBundle) {
   <body>
     <div id="tokvista-root"></div>
     <script>window.__TOKVISTA_TOKENS__ = ${tokensJson};</script>
+    <script>
+      (() => {
+        const endpoint = ${historyUrlJson};
+        if (!endpoint) return;
+
+        const style = document.createElement("style");
+        style.textContent = ".tvh-btn{position:fixed;top:18px;right:18px;z-index:100000;background:#eef3ff;border:1px solid #c7d6ff;color:#2455d6;padding:8px 12px;border-radius:10px;font:600 13px/1.2 system-ui,sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(30,60,120,.12)}.tvh-overlay{position:fixed;inset:0;z-index:100001;background:rgba(10,18,40,.42);display:none;align-items:center;justify-content:center;padding:18px}.tvh-overlay.on{display:flex}.tvh-modal{width:min(880px,96vw);max-height:min(84vh,760px);background:#fff;border:1px solid #d6e1ff;border-radius:14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 64px rgba(8,20,44,.24)}.tvh-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #e7ecfb}.tvh-title{font:700 18px/1.2 system-ui,sans-serif;color:#1f2f4f}.tvh-actions{display:flex;gap:8px}.tvh-action{background:#eef3ff;border:1px solid #c7d6ff;color:#2455d6;padding:7px 10px;border-radius:9px;font:600 12px/1 system-ui,sans-serif;cursor:pointer}.tvh-status{padding:10px 16px;border-bottom:1px solid #eef2fb;font:500 12px/1.4 system-ui,sans-serif;color:#49608d}.tvh-list{padding:10px 12px;overflow:auto;display:grid;gap:8px}.tvh-item{border:1px solid #dde6ff;border-radius:10px;padding:10px;background:#fbfdff}.tvh-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.tvh-ver{font:700 13px/1.2 system-ui,sans-serif;color:#243559}.tvh-time{font:500 12px/1.2 system-ui,sans-serif;color:#5f739a}.tvh-msg{margin-top:6px;font:500 12px/1.35 system-ui,sans-serif;color:#33496f}.tvh-links{display:flex;gap:8px;margin-top:8px}.tvh-link{background:#f2f6ff;border:1px solid #cfdcff;color:#2a57d8;padding:6px 9px;border-radius:8px;font:600 12px/1 system-ui,sans-serif;cursor:pointer}";
+        document.head.appendChild(style);
+
+        const openUrl = (url) => {
+          if (!url) return;
+          try {
+            window.open(url, "_blank", "noopener,noreferrer");
+          } catch {}
+        };
+        const fmtTime = (raw) => {
+          if (!raw || typeof raw !== "string") return "-";
+          const d = new Date(raw);
+          if (Number.isNaN(d.getTime())) return raw;
+          return d.toLocaleString();
+        };
+        const buildPreviewFromRaw = (rawUrl) => {
+          if (!rawUrl) return "";
+          try {
+            const current = new URL(window.location.href);
+            current.searchParams.set("source", rawUrl);
+            current.searchParams.delete("projectId");
+            current.searchParams.delete("environment");
+            return current.toString();
+          } catch {
+            return "";
+          }
+        };
+
+        const btn = document.createElement("button");
+        btn.className = "tvh-btn";
+        btn.type = "button";
+        btn.textContent = "Snapshot History";
+        document.body.appendChild(btn);
+
+        const overlay = document.createElement("div");
+        overlay.className = "tvh-overlay";
+        overlay.innerHTML = '<div class="tvh-modal"><div class="tvh-head"><div class="tvh-title">Snapshot History</div><div class="tvh-actions"><button class="tvh-action" data-act="refresh" type="button">Refresh</button><button class="tvh-action" data-act="close" type="button">Close</button></div></div><div class="tvh-status" id="tvh-status">Ready</div><div class="tvh-list" id="tvh-list"></div></div>';
+        document.body.appendChild(overlay);
+
+        const statusEl = overlay.querySelector("#tvh-status");
+        const listEl = overlay.querySelector("#tvh-list");
+        const closeBtn = overlay.querySelector('[data-act="close"]');
+        const refreshBtn = overlay.querySelector('[data-act="refresh"]');
+
+        const closeModal = () => {
+          overlay.classList.remove("on");
+        };
+        closeBtn.addEventListener("click", closeModal);
+        overlay.addEventListener("click", (event) => {
+          if (event.target === overlay) {
+            closeModal();
+          }
+        });
+
+        const renderItems = (items) => {
+          listEl.innerHTML = "";
+          if (!items.length) {
+            const empty = document.createElement("div");
+            empty.className = "tvh-item";
+            empty.textContent = "No versions found yet.";
+            listEl.appendChild(empty);
+            return;
+          }
+          items.forEach((item) => {
+            const card = document.createElement("div");
+            card.className = "tvh-item";
+            const version = item && typeof item.versionId === "string" && item.versionId.trim() ? item.versionId.trim() : "unversioned";
+            const message = item && typeof item.commitMessage === "string" ? item.commitMessage : "";
+            const when = fmtTime(item && typeof item.publishedAt === "string" ? item.publishedAt : "");
+            card.innerHTML = '<div class="tvh-row"><div class="tvh-ver"></div><div class="tvh-time"></div></div><div class="tvh-msg"></div><div class="tvh-links"></div>';
+            card.querySelector(".tvh-ver").textContent = version;
+            card.querySelector(".tvh-time").textContent = when;
+            card.querySelector(".tvh-msg").textContent = message || "No commit message.";
+            const links = card.querySelector(".tvh-links");
+
+            const snapshotUrl =
+              (item && typeof item.previewUrl === "string" && item.previewUrl) ||
+              buildPreviewFromRaw(item && typeof item.rawUrl === "string" ? item.rawUrl : "");
+            if (snapshotUrl) {
+              const openSnapshot = document.createElement("button");
+              openSnapshot.type = "button";
+              openSnapshot.className = "tvh-link";
+              openSnapshot.textContent = "Open Snapshot";
+              openSnapshot.addEventListener("click", () => openUrl(snapshotUrl));
+              links.appendChild(openSnapshot);
+            }
+            if (item && typeof item.referenceUrl === "string" && item.referenceUrl) {
+              const openCommit = document.createElement("button");
+              openCommit.type = "button";
+              openCommit.className = "tvh-link";
+              openCommit.textContent = "Open Commit";
+              openCommit.addEventListener("click", () => openUrl(item.referenceUrl));
+              links.appendChild(openCommit);
+            }
+            listEl.appendChild(card);
+          });
+        };
+
+        const loadHistory = async () => {
+          statusEl.textContent = "Loading snapshot history...";
+          try {
+            const response = await fetch(endpoint, { method: "GET", cache: "no-store" });
+            const rawText = await response.text();
+            let data = {};
+            try {
+              data = rawText ? JSON.parse(rawText) : {};
+            } catch {
+              data = {};
+            }
+            if (!response.ok) {
+              statusEl.textContent =
+                data && typeof data.error === "string" && data.error.trim()
+                  ? data.error.trim()
+                  : "Failed to load snapshot history.";
+              renderItems([]);
+              return;
+            }
+            const items = data && Array.isArray(data.items) ? data.items : [];
+            statusEl.textContent = items.length ? "Latest snapshots loaded." : "No snapshots found.";
+            renderItems(items);
+          } catch (error) {
+            statusEl.textContent = "Snapshot history request failed.";
+            renderItems([]);
+          }
+        };
+
+        refreshBtn.addEventListener("click", loadHistory);
+        btn.addEventListener("click", () => {
+          overlay.classList.add("on");
+          loadHistory();
+        });
+      })();
+    </script>
     <script type="module">${appBundle}</script>
   </body>
 </html>`;
@@ -196,6 +336,7 @@ module.exports = async function handler(req, res) {
   const projectId = (query.get("projectId") || "").trim();
   const environment = (query.get("environment") || "dev").trim() || "dev";
   const sourceRaw = (query.get("source") || "").trim();
+  let historyApiUrl = "";
 
   let tokens;
   if (sourceRaw) {
@@ -207,6 +348,7 @@ module.exports = async function handler(req, res) {
       res.status(400).send(message);
       return;
     }
+    historyApiUrl = `/api/version-history?source=${encodeURIComponent(sourceUrl)}`;
     try {
       tokens = await fetchTokensFromSource(sourceUrl);
     } catch (error) {
@@ -221,6 +363,7 @@ module.exports = async function handler(req, res) {
       res.status(400).send("Missing projectId parameter");
       return;
     }
+    historyApiUrl = `/api/version-history?projectId=${encodeURIComponent(projectId)}&environment=${encodeURIComponent(environment)}`;
 
     const projects = parseProjectsConfig();
     const projectConfig = projects[projectId];
@@ -287,7 +430,7 @@ module.exports = async function handler(req, res) {
     const previewTokens = normalizeTokensForPreview(tokens);
     const tokensJson = JSON.stringify(previewTokens);
 
-    const html = buildHtml(tokensJson, css, appBundle);
+    const html = buildHtml(tokensJson, css, appBundle, historyApiUrl);
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
