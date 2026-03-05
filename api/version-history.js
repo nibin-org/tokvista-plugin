@@ -274,6 +274,10 @@ function getCommitsUrl(target, limit) {
 
 function sendHistoryResponse(res, target, items) {
   setNoStoreHeaders(res);
+  if (target.mode === "source") {
+    sendJson(res, 200, items);
+    return;
+  }
   sendJson(res, 200, {
     ...buildResponseMeta(target),
     count: items.length,
