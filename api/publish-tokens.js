@@ -35,16 +35,12 @@ function buildBranchRawUrl(owner, repo, branch, path) {
   )}/${encodeURIComponent(branch)}/${encodePathForRaw(path)}`;
 }
 
-function buildPreviewUrl(rawUrl) {
-  if (!rawUrl) {
-    return undefined;
-  }
-  const base = (process.env.TOKVISTA_PREVIEW_BASE_URL || "https://tokvista-demo.vercel.app/").trim();
+function buildPreviewUrl(req, projectId, environment) {
+  const base = buildApiBaseUrl(req);
   if (!base) {
     return undefined;
   }
-  const normalizedBase = base.endsWith("/") ? base : `${base}/`;
-  return `${normalizedBase}?source=${encodeURIComponent(rawUrl)}`;
+  return `${base}/preview?projectId=${encodeURIComponent(projectId)}&environment=${encodeURIComponent(environment)}`;
 }
 
 function buildApiBaseUrl(req) {
@@ -163,8 +159,8 @@ module.exports = async function handler(req, res) {
     });
     if (!githubResult.changed) {
       const rawUrl = buildBranchRawUrl(owner, repo, branch, path);
-      const snapshotPreviewUrl = buildPreviewUrl(rawUrl);
-      const previewUrl = buildPreviewUrl(buildLiveSourceUrl(req, projectId, environment) || rawUrl);
+      const previewUrl = buildPreviewUrl(req, projectId, environment);
+      const snapshotPreviewUrl = previewUrl;
       sendJson(res, 200, {
         message: "No changes to publish.",
         commitMessage,
@@ -186,10 +182,8 @@ module.exports = async function handler(req, res) {
         ? githubPayload.commit.html_url
         : undefined;
     const rawUrl = buildRawUrl(owner, repo, commitSha, path);
-    const previewSource =
-      buildLiveSourceUrl(req, projectId, environment) || rawUrl || buildBranchRawUrl(owner, repo, branch, path);
-    const previewUrl = buildPreviewUrl(previewSource);
-    const snapshotPreviewUrl = buildPreviewUrl(rawUrl || buildBranchRawUrl(owner, repo, branch, path));
+    const previewUrl = buildPreviewUrl(req, projectId, environment);
+    const snapshotPreviewUrl = previewUrl;
 
     sendJson(res, 200, {
       versionId,
