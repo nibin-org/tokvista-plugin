@@ -272,10 +272,10 @@ function getCommitsUrl(target, limit) {
   )}/commits?sha=${encodeURIComponent(target.branch)}&path=${encodeURIComponent(target.path)}&per_page=${limit}`;
 }
 
-function sendHistoryResponse(res, target, items) {
+function sendHistoryResponse(res, target, items, sourceCommits) {
   setNoStoreHeaders(res);
   if (target.mode === "source") {
-    sendJson(res, 200, items);
+    sendJson(res, 200, Array.isArray(sourceCommits) ? sourceCommits : []);
     return;
   }
   sendJson(res, 200, {
@@ -332,8 +332,9 @@ module.exports = async function handler(req, res) {
     }
 
     const payload = await response.json();
-    const items = getItemsFromPayload(payload, target, req);
-    sendHistoryResponse(res, target, items);
+    const commits = parseCommitsPayload(payload);
+    const items = mapCommitItems(commits, target, req);
+    sendHistoryResponse(res, target, items, commits);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     sendJson(res, 502, { error: message });
