@@ -8,6 +8,10 @@ function decodeBase64ToUtf8(input) {
   return Buffer.from(String(input || ""), "base64").toString("utf8");
 }
 
+function isObjectLike(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function getApiBaseUrl(req) {
   const protoHeader = req.headers["x-forwarded-proto"];
   const hostHeader = req.headers["x-forwarded-host"] || req.headers.host;
@@ -59,6 +63,23 @@ function normalizeSourceUrl(input, req) {
     );
   }
   return parsed.toString();
+}
+
+function normalizeTokensForPreview(payload) {
+  const root = isObjectLike(payload) && isObjectLike(payload.tokens) ? payload.tokens : payload;
+  if (!isObjectLike(root)) {
+    return {};
+  }
+  const hasExpectedTopLevelSets =
+    isObjectLike(root["Foundation/Value"]) ||
+    isObjectLike(root["Semantic/Value"]) ||
+    Object.keys(root).some((key) => key.startsWith("Components/"));
+  if (hasExpectedTopLevelSets) {
+    return root;
+  }
+  return {
+    "Foundation/Value": root
+  };
 }
 
 async function githubRequest(url, token) {
@@ -203,7 +224,8 @@ module.exports = async function handler(req, res) {
 
     const css = fs.readFileSync(cssPath, "utf8");
     const appBundle = fs.readFileSync(jsPath, "utf8");
-    const tokensJson = JSON.stringify(tokens);
+    const previewTokens = normalizeTokensForPreview(tokens);
+    const tokensJson = JSON.stringify(previewTokens);
 
     const html = buildHtml(tokensJson, css, appBundle);
 
