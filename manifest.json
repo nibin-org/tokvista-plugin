@@ -10,7 +10,8 @@
     "allowedDomains": [
       "https://tokvista-plugin.vercel.app",
       "https://api.github.com",
-      "https://raw.githubusercontent.com"
+      "https://raw.githubusercontent.com",
+      "https://api.groq.com"
     ],
     "reasoning": "Tokvista uses a pinned relay endpoint plus GitHub API/raw hosts for publish, preview resolution, and approved token URL import."
   }
