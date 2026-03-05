@@ -65,6 +65,74 @@ function normalizeSourceUrl(input, req) {
   return parsed.toString();
 }
 
+function parseRawGitHubSource(sourceUrl) {
+  let parsed;
+  try {
+    parsed = new URL(sourceUrl);
+  } catch {
+    return null;
+  }
+  if (parsed.origin !== "https://raw.githubusercontent.com") {
+    return null;
+  }
+  const segments = parsed.pathname.split("/").filter(Boolean);
+  if (segments.length < 4) {
+    return null;
+  }
+  const owner = decodeURIComponent(segments[0]);
+  const repo = decodeURIComponent(segments[1]);
+  const ref = decodeURIComponent(segments[2]);
+  const filePath = segments.slice(3).map((segment) => decodeURIComponent(segment)).join("/");
+  if (!owner || !repo || !ref || !filePath) {
+    return null;
+  }
+  return {
+    owner,
+    repo,
+    ref,
+    filePath
+  };
+}
+
+async function fetchTokensFromSource(sourceUrl) {
+  const parsedRawSource = parseRawGitHubSource(sourceUrl);
+  if (parsedRawSource) {
+    const encodedPath = parsedRawSource.filePath
+      .split("/")
+      .map((segment) => encodeURIComponent(segment))
+      .join("/");
+    const contentsApiUrl = `https://api.github.com/repos/${encodeURIComponent(
+      parsedRawSource.owner
+    )}/${encodeURIComponent(parsedRawSource.repo)}/contents/${encodedPath}?ref=${encodeURIComponent(
+      parsedRawSource.ref
+    )}`;
+    const githubToken = process.env.TOKVISTA_GITHUB_TOKEN;
+    const response = await githubRequest(contentsApiUrl, githubToken);
+    if (!response.ok) {
+      throw new Error(`Source read failed (${response.status})`);
+    }
+    const payload = await response.json();
+    const content =
+      typeof payload.content === "string" && payload.encoding === "base64"
+        ? decodeBase64ToUtf8(payload.content.replace(/\n/g, ""))
+        : "";
+    if (!content.trim()) {
+      throw new Error("Source response did not include token content");
+    }
+    return JSON.parse(content);
+  }
+
+  const response = await fetch(sourceUrl, { method: "GET", headers: { Accept: "application/json" } });
+  if (!response.ok) {
+    throw new Error(`Source read failed (${response.status})`);
+  }
+  const content = await response.text();
+  if (!content.trim()) {
+    throw new Error("Source response did not include token content");
+  }
+  return JSON.parse(content);
+}
+
 function normalizeTokensForPreview(payload) {
   const root = isObjectLike(payload) && isObjectLike(payload.tokens) ? payload.tokens : payload;
   if (!isObjectLike(root)) {
@@ -140,20 +208,12 @@ module.exports = async function handler(req, res) {
       return;
     }
     try {
-      const response = await fetch(sourceUrl, { method: "GET", headers: { Accept: "application/json" } });
-      if (!response.ok) {
-        res.status(response.status).send(`Source read failed (${response.status})`);
-        return;
-      }
-      const content = await response.text();
-      if (!content.trim()) {
-        res.status(502).send("Source response did not include token content");
-        return;
-      }
-      tokens = JSON.parse(content);
+      tokens = await fetchTokensFromSource(sourceUrl);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      res.status(502).send(`Failed to fetch source tokens: ${message}`);
+      const statusMatch = typeof message === "string" ? message.match(/\((\d{3})\)/) : null;
+      const statusCode = statusMatch ? Number(statusMatch[1]) : 502;
+      res.status(statusCode).send(`Failed to fetch source tokens: ${message}`);
       return;
     }
   } else {
