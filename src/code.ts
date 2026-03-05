@@ -910,10 +910,9 @@ function buildGitHubRawUrl(owner: string, repo: string, ref: string, path: strin
   )}/${encodeURIComponent(ref)}/${encodePathForRawUrl(path)}`;
 }
 
-function buildPreviewUrlFromRawUrl(rawUrl: string): string {
+function buildPreviewUrl(projectId: string, environment: string): string {
   const base = DEFAULT_TOKVISTA_PREVIEW_BASE_URL;
-  const normalizedBase = base.endsWith("/") ? base : `${base}/`;
-  return `${normalizedBase}?source=${encodeURIComponent(rawUrl)}`;
+  return `${base}?projectId=${encodeURIComponent(projectId)}&environment=${encodeURIComponent(environment)}`;
 }
 
 function parseGitHubCommitReferenceUrl(referenceUrl: string): { owner: string; repo: string; sha: string } | null {
@@ -974,8 +973,7 @@ async function resolvePreviewLinksFromReference(
       parsed.repo
     )}/${encodeURIComponent(parsed.sha)}/${encodedPath}`;
     return {
-      rawUrl,
-      previewUrl: buildPreviewUrlFromRawUrl(rawUrl)
+      rawUrl
     };
   } catch {
     return {};
@@ -1151,14 +1149,9 @@ function postPublishedLinksToUi(links: PublishedLinks | null): void {
 }
 
 async function loadAndPostPublishedLinks(): Promise<void> {
+  const settings = await getStoredRelaySettings();
   let links = await getStoredPublishedLinks();
-  if (links && !links.snapshotPreviewUrl && links.rawUrl) {
-    links = {
-      ...links,
-      snapshotPreviewUrl: buildPreviewUrlFromRawUrl(links.rawUrl)
-    };
-    await setStoredPublishedLinks(links);
-  }
+  
   if (links && !links.previewUrl && links.referenceUrl) {
     const resolved = await resolvePreviewLinksFromReference(links.referenceUrl);
     if (resolved.previewUrl || resolved.rawUrl) {
@@ -1171,23 +1164,17 @@ async function loadAndPostPublishedLinks(): Promise<void> {
       await setStoredPublishedLinks(links);
     }
   }
+  
   if (!links || !links.previewUrl) {
-    const settings = await getStoredRelaySettings();
-    if (settings && settings.provider === "relay" && settings.projectId && settings.publishKey) {
-      const resolved = await fetchPreviewLinkFromRelay(settings);
-      if (resolved.previewUrl || resolved.rawUrl) {
-        links = normalizePublishedLinks({
-          ...(links || {}),
-          rawUrl: links?.rawUrl || resolved.rawUrl,
-          previewUrl: links?.previewUrl || resolved.previewUrl,
-          snapshotPreviewUrl:
-            links?.snapshotPreviewUrl ||
-            (links?.rawUrl ? buildPreviewUrlFromRawUrl(links.rawUrl) : undefined) ||
-            (resolved.rawUrl ? buildPreviewUrlFromRawUrl(resolved.rawUrl) : undefined)
-        });
-        if (links) {
-          await setStoredPublishedLinks(links);
-        }
+    if (settings && settings.provider === "relay" && settings.projectId) {
+      const previewUrl = buildPreviewUrl(settings.projectId, settings.environment);
+      links = normalizePublishedLinks({
+        ...(links || {}),
+        previewUrl: links?.previewUrl || previewUrl,
+        snapshotPreviewUrl: links?.snapshotPreviewUrl || previewUrl
+      });
+      if (links) {
+        await setStoredPublishedLinks(links);
       }
     }
     if (settings && settings.provider === "github" && settings.githubRepo && settings.githubPath) {
@@ -1196,9 +1183,7 @@ async function loadAndPostPublishedLinks(): Promise<void> {
         const rawUrl = buildGitHubRawUrl(githubRepo.owner, githubRepo.repo, settings.githubBranch, settings.githubPath);
         links = normalizePublishedLinks({
           ...(links || {}),
-          rawUrl: links?.rawUrl || rawUrl,
-          previewUrl: links?.previewUrl || buildPreviewUrlFromRawUrl(rawUrl),
-          snapshotPreviewUrl: links?.snapshotPreviewUrl || buildPreviewUrlFromRawUrl(rawUrl)
+          rawUrl: links?.rawUrl || rawUrl
         });
         if (links) {
           await setStoredPublishedLinks(links);
@@ -1206,6 +1191,7 @@ async function loadAndPostPublishedLinks(): Promise<void> {
       }
     }
   }
+  
   postPublishedLinksToUi(links);
 }
 
@@ -1332,8 +1318,8 @@ async function publishToRelay(
     previewUrl = previewUrl || resolved.previewUrl;
     snapshotPreviewUrl = snapshotPreviewUrl || resolved.snapshotPreviewUrl;
   }
-  if (!snapshotPreviewUrl && rawUrl) {
-    snapshotPreviewUrl = buildPreviewUrlFromRawUrl(rawUrl);
+  if (!snapshotPreviewUrl) {
+    snapshotPreviewUrl = buildPreviewUrl(settings.projectId, settings.environment);
   }
   const changed = typeof data.changed === "boolean" ? data.changed : undefined;
   return {
@@ -1619,15 +1605,12 @@ async function publishToGitHub(
 
   const nextComparable = stableSerialize(publishPayload);
   const branchRawUrl = buildGitHubRawUrl(repoParsed.owner, repoParsed.repo, branch, path);
-  const branchPreviewUrl = buildPreviewUrlFromRawUrl(branchRawUrl);
   if (existingComparable && existingComparable === nextComparable) {
     return {
       versionId: "",
       message: "No changes to publish.",
       commitMessage,
       rawUrl: branchRawUrl,
-      previewUrl: branchPreviewUrl,
-      snapshotPreviewUrl: branchPreviewUrl,
       changed: false
     };
   }
@@ -1696,8 +1679,6 @@ async function publishToGitHub(
           message: "No changes to publish.",
           commitMessage,
           rawUrl: branchRawUrl,
-          previewUrl: branchPreviewUrl,
-          snapshotPreviewUrl: branchPreviewUrl,
           changed: false
         };
       }
@@ -1715,7 +1696,6 @@ async function publishToGitHub(
   const commitSha = typeof commit.sha === "string" ? commit.sha : "";
   const referenceUrl = typeof commit.html_url === "string" ? commit.html_url : undefined;
   const rawUrl = commitSha ? buildGitHubRawUrl(repoParsed.owner, repoParsed.repo, commitSha, path) : branchRawUrl;
-  const previewUrl = buildPreviewUrlFromRawUrl(rawUrl);
 
   return {
     versionId,
@@ -1723,8 +1703,6 @@ async function publishToGitHub(
     commitMessage,
     referenceUrl,
     rawUrl,
-    previewUrl,
-    snapshotPreviewUrl: previewUrl,
     changed: true
   };
 }
@@ -2716,12 +2694,9 @@ figma.ui.onmessage = async (msg: UiMessage) => {
           return;
         }
         const rawUrl = buildGitHubRawUrl(repo.owner, repo.repo, settings.githubBranch, settings.githubPath);
-        const previewUrl = buildPreviewUrlFromRawUrl(rawUrl);
         const merged = normalizePublishedLinks({
           ...(existingLinks || {}),
-          rawUrl: existingLinks?.rawUrl || rawUrl,
-          previewUrl: existingLinks?.previewUrl || previewUrl,
-          snapshotPreviewUrl: existingLinks?.snapshotPreviewUrl || previewUrl
+          rawUrl: existingLinks?.rawUrl || rawUrl
         });
         if (merged) {
           await setStoredPublishedLinks(merged);
@@ -2750,8 +2725,7 @@ figma.ui.onmessage = async (msg: UiMessage) => {
         previewUrl: existingLinks?.previewUrl || resolved.previewUrl,
         snapshotPreviewUrl:
           existingLinks?.snapshotPreviewUrl ||
-          resolved.snapshotPreviewUrl ||
-          (resolved.rawUrl ? buildPreviewUrlFromRawUrl(resolved.rawUrl) : undefined)
+          resolved.snapshotPreviewUrl
       });
       if (merged) {
         await setStoredPublishedLinks(merged);
@@ -2875,8 +2849,7 @@ figma.ui.onmessage = async (msg: UiMessage) => {
         previewUrl: publishResult.previewUrl || existingLinks?.previewUrl,
         snapshotPreviewUrl:
           publishResult.snapshotPreviewUrl ||
-          existingLinks?.snapshotPreviewUrl ||
-          (publishResult.rawUrl ? buildPreviewUrlFromRawUrl(publishResult.rawUrl) : undefined)
+          existingLinks?.snapshotPreviewUrl
       });
       if (mergedLinks) {
         await setStoredPublishedLinks(mergedLinks);
@@ -2897,8 +2870,7 @@ figma.ui.onmessage = async (msg: UiMessage) => {
         previewUrl: publishResult.previewUrl || mergedLinks?.previewUrl,
         snapshotPreviewUrl:
           publishResult.snapshotPreviewUrl ||
-          mergedLinks?.snapshotPreviewUrl ||
-          (publishResult.rawUrl ? buildPreviewUrlFromRawUrl(publishResult.rawUrl) : undefined)
+          mergedLinks?.snapshotPreviewUrl
       });
       if (historyEntry) {
         const history = await appendPublishHistoryEntry(historyEntry);
