@@ -3,7 +3,7 @@
 const { handleOptions, readJsonBody, sendJson } = require("./_shared");
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL = "llama3-8b-8192";
+const DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant";
 
 const SYSTEM_PROMPT = [
   "You are Tokvista AI, a friendly design token expert inside a Figma plugin.",
@@ -145,6 +145,7 @@ module.exports = async function handler(req, res) {
   }
 
   const apiKey = String(process.env.GROQ_API_KEY || "").trim();
+  const model = String(process.env.GROQ_MODEL || DEFAULT_GROQ_MODEL).trim() || DEFAULT_GROQ_MODEL;
   if (!apiKey) {
     sendJson(res, 500, { error: "GROQ_API_KEY is not configured." });
     return;
@@ -179,7 +180,7 @@ module.exports = async function handler(req, res) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: GROQ_MODEL,
+        model,
         temperature: 0.4,
         messages
       })
@@ -215,4 +216,3 @@ module.exports = async function handler(req, res) {
     sendJson(res, 502, { error: messageText });
   }
 };
-
