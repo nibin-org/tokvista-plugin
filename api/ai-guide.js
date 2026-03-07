@@ -505,6 +505,25 @@ function componentPathForLeaf(path) {
   return null;
 }
 
+function isSemanticRootPath(path) {
+  if (!Array.isArray(path) || path.length === 0) {
+    return false;
+  }
+  const head = String(path[0] || "").trim().toLowerCase();
+  return (
+    head === "background" ||
+    head === "surface" ||
+    head === "text" ||
+    head === "border" ||
+    head === "primary" ||
+    head === "success" ||
+    head === "warning" ||
+    head === "danger" ||
+    head === "focusring" ||
+    head === "focus-ring"
+  );
+}
+
 function buildCollectionBundle(tokensRoot) {
   const foundationTokens = {};
   const semanticTokens = {};
@@ -525,6 +544,10 @@ function buildCollectionBundle(tokensRoot) {
     }
     if (semanticPath && semanticPath.length) {
       setLeafAtPath(semanticTokens, semanticPath, leaf);
+      return;
+    }
+    if (isSemanticRootPath(normalizedPath)) {
+      setLeafAtPath(semanticTokens, normalizedPath, leaf);
       return;
     }
     if ((componentPath && componentPath.length) || isComponentPath(normalizedPath)) {
@@ -734,6 +757,107 @@ function normalizeHistory(input) {
     .slice(-6);
 }
 
+function tokenizeIntentText(input) {
+  return String(input || "")
+    .toLowerCase()
+    .match(/[a-z0-9+#.-]+/g) || [];
+}
+
+function hasAnyIntentToken(tokens, words) {
+  const lookup = new Set(tokens);
+  return words.some((word) => lookup.has(String(word).toLowerCase()));
+}
+
+function countIntentSignals(tokens, words) {
+  const lookup = new Set(tokens);
+  return words.reduce((count, word) => count + (lookup.has(String(word).toLowerCase()) ? 1 : 0), 0);
+}
+
+function hasEnoughDesignContext(message, history) {
+  const source = [
+    String(message || ""),
+    ...history.map((item) => item.content || "")
+  ].join(" ");
+  const tokens = tokenizeIntentText(source);
+  if (tokens.length < 4) {
+    return false;
+  }
+
+  const brandSignals = countIntentSignals(tokens, [
+    "brand",
+    "branding",
+    "color",
+    "colors",
+    "palette",
+    "emerald",
+    "teal",
+    "neutral",
+    "dark",
+    "light",
+    "theme",
+    "themes",
+    "typography",
+    "font",
+    "fonts",
+    "spacing",
+    "radius",
+    "shadow",
+    "semantic",
+    "foundation"
+  ]);
+
+  const productSignals = countIntentSignals(tokens, [
+    "app",
+    "mobile",
+    "dashboard",
+    "fintech",
+    "banking",
+    "saas",
+    "ecommerce",
+    "product",
+    "website",
+    "platform",
+    "investment",
+    "card",
+    "wallet"
+  ]);
+
+  return brandSignals >= 2 && productSignals >= 1;
+}
+
+function looksLikeClarifyingAnswer(answer) {
+  const text = String(answer || "").toLowerCase();
+  if (!text.trim()) {
+    return true;
+  }
+  return (
+    text.includes("tell me") ||
+    text.includes("can you tell me") ||
+    text.includes("could you share") ||
+    text.includes("what kind of") ||
+    text.includes("what type of") ||
+    text.includes("to get started") ||
+    text.includes("i need a bit more") ||
+    text.includes("i need more detail") ||
+    text.includes("before i generate") ||
+    text.includes("before generating") ||
+    text.includes("can you clarify")
+  );
+}
+
+function shouldAttemptTokenRepair({ message, history, answer, extractedTokens }) {
+  if (isProductionReadyTokenBundle(extractedTokens)) {
+    return false;
+  }
+  if (!hasEnoughDesignContext(message, history)) {
+    return false;
+  }
+  if (looksLikeClarifyingAnswer(answer)) {
+    return false;
+  }
+  return true;
+}
+
 async function requestGroqChat({ apiKey, model, messages }) {
   const response = await fetch(GROQ_URL, {
     method: "POST",
@@ -850,7 +974,7 @@ module.exports = async function handler(req, res) {
   try {
     const answer = await requestGroqChat({ apiKey, model, messages });
     let tokens = extractTokensFromAnswer(answer);
-    if (!isProductionReadyTokenBundle(tokens)) {
+    if (shouldAttemptTokenRepair({ message, history, answer, extractedTokens: tokens })) {
       try {
         const repairedAnswer = await repairTokenBundle({
           apiKey,

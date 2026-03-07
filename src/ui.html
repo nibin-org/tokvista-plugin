@@ -2221,11 +2221,9 @@
       padding: 12px 14px 10px;
       min-height: 54px;
     }
-    .ai-shell.is-compact .ai-head-badges,
     .ai-shell.is-compact .ai-prompt-list {
       display: none;
     }
-    .ai-shell.is-compact .ai-subtitle { display: none; }
     .ai-shell.is-compact .ai-head-row { margin-bottom: 4px; }
     .ai-shell.is-compact .ai-title { font-size: 15px; }
     .ai-shell.is-compact .ai-online { padding: 2px 9px; }
@@ -2269,13 +2267,6 @@
     }
     .ai-title-spark {
       color: var(--a); font-size: 14px;
-    }
-    .ai-subtitle {
-      font-size: 12px;
-      color: var(--t3);
-      position: relative;
-      line-height: 1.5;
-      max-width: 280px;
     }
     .ai-budget {
       margin-top: 0;
@@ -2387,33 +2378,10 @@
       0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(78,201,148,0.4); }
       50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(78,201,148,0); }
     }
-    .ai-head-badges {
-      display: flex;
-      gap: 6px;
-      margin-top: 10px;
-      flex-wrap: wrap;
-      position: relative;
-    }
-    .ai-head-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 9px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.08);
-      background: rgba(255,255,255,0.03);
-      color: var(--t2);
-      font-size: 11px;
-      font-weight: 600;
-    }
-    .ai-head-badge strong {
-      color: var(--a);
-      font-weight: 700;
-    }
     .ai-prompt-list {
       display: flex;
       gap: 8px;
-      margin-top: 12px;
+      margin-top: 10px;
       overflow-x: auto;
       padding-bottom: 2px;
       position: relative;
@@ -2945,11 +2913,6 @@
             </button>
             <span class="ai-online"><span class="ai-online-dot"></span>Online</span>
           </div>
-        </div>
-        <div class="ai-subtitle">Describe your product, brand direction, and dark mode needs. Tokvista AI will return an import-ready token system.</div>
-        <div class="ai-head-badges">
-          <span class="ai-head-badge"><strong>Foundation</strong> raw token scale</span>
-          <span class="ai-head-badge"><strong>Semantic</strong> ready for themes</span>
         </div>
         <div class="ai-prompt-list">
           <button class="ai-prompt-chip" type="button" data-ai-prompt="Create a token system for a fintech mobile app with navy, teal, soft neutrals, clear feedback colors, and dark mode.">
@@ -4893,8 +4856,7 @@ function updateImportFromUrlState() {
 
 /* ── TOKVISTA AI ── */
 const AI_WELCOME_MESSAGE =
-  "Tell me what you're building, your brand colors, typography tone, and whether you need dark mode.\n" +
-  "I'll generate a foundation + semantic token structure you can import straight into Figma.";
+  "Describe your product and Tokvista AI will generate import-ready foundation + semantic tokens.";
 const AI_MESSAGE_PREVIEW_LIMIT = 200;
 const AI_RATE_LIMIT_DEFAULT = Object.freeze({
   approximate: true,
@@ -5269,6 +5231,22 @@ function aiComponentPath(path) {
   if (afterComponent?.length) return afterComponent;
   return null;
 }
+function aiIsSemanticRootPath(path) {
+  if (!Array.isArray(path) || path.length === 0) return false;
+  const head = String(path[0] || '').trim().toLowerCase();
+  return (
+    head === 'background' ||
+    head === 'surface' ||
+    head === 'text' ||
+    head === 'border' ||
+    head === 'primary' ||
+    head === 'success' ||
+    head === 'warning' ||
+    head === 'danger' ||
+    head === 'focusring' ||
+    head === 'focus-ring'
+  );
+}
 function buildAiCollectionBundle(tokensRoot) {
   const foundationTokens = {};
   const semanticTokens = {};
@@ -5289,6 +5267,10 @@ function buildAiCollectionBundle(tokensRoot) {
     }
     if (semanticPath?.length) {
       setAiLeafAtPath(semanticTokens, semanticPath, leaf);
+      return;
+    }
+    if (aiIsSemanticRootPath(normalizedPath)) {
+      setAiLeafAtPath(semanticTokens, normalizedPath, leaf);
       return;
     }
     if (componentPath?.length || aiIsComponentPath(normalizedPath)) {
