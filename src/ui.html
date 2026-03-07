@@ -163,7 +163,10 @@
       display: grid; place-items: center;
       box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 0 0 1px rgba(212,168,75,0.2) inset;
     }
-    .brand-mark svg { width: 14px; height: 14px; display: block; }
+    .brand-mark {
+      color: var(--a);
+    }
+    .brand-mark svg { width: 16px; height: 16px; display: block; }
 
     .brand-name {
       font-size: 17px; font-weight: 700;
@@ -262,6 +265,19 @@
       border-top: none;
       border-bottom: 5px solid #1d1a13;
     }
+    .has-tip[data-tip-edge="right"]::after {
+      left: auto;
+      right: 0;
+      transform: translate(0, 3px);
+    }
+    .has-tip[data-tip-edge="right"]::before {
+      left: auto;
+      right: 10px;
+      transform: none;
+    }
+    .has-tip[data-tip-pos="bottom"][data-tip-edge="right"]::after {
+      transform: translate(0, -3px);
+    }
     .has-tip:hover::after,
     .has-tip:hover::before,
     .has-tip:focus-visible::after,
@@ -275,6 +291,10 @@
     .has-tip[data-tip-pos="bottom"]:hover::after,
     .has-tip[data-tip-pos="bottom"]:focus-visible::after {
       transform: translate(-50%, 0);
+    }
+    .has-tip[data-tip-edge="right"]:hover::after,
+    .has-tip[data-tip-edge="right"]:focus-visible::after {
+      transform: translate(0, 0);
     }
 
     /* ── TABS ── */
@@ -311,6 +331,59 @@
     .tab.on {
       color: var(--t1);
       border-bottom-color: var(--a);
+    }
+    .tab-ai {
+      color: rgba(240,235,227,0.88);
+    }
+    .tab-ai svg {
+      color: #f3cf78;
+      filter: drop-shadow(0 0 8px rgba(212,168,75,0.14));
+    }
+    .tab-ai .tab-label {
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+    .tab-ai:hover {
+      color: var(--t1);
+      background: linear-gradient(180deg, rgba(212,168,75,0.08), rgba(212,168,75,0.02));
+    }
+    .tab-ai.on {
+      color: #f5dd9b;
+      background: linear-gradient(180deg, rgba(212,168,75,0.10), rgba(212,168,75,0.03));
+      box-shadow: inset 0 -1px 0 rgba(212,168,75,0.12);
+    }
+    .tab-ai-badge {
+      position: absolute;
+      top: 1px;
+      right: 7px;
+      height: 14px;
+      padding: 0 4px;
+      border-radius: 999px;
+      border: 1px solid rgba(212,168,75,0.34);
+      background: linear-gradient(180deg, rgba(212,168,75,0.16), rgba(212,168,75,0.06));
+      color: #f3cf78;
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      line-height: 12px;
+      text-transform: uppercase;
+      pointer-events: none;
+      box-shadow: 0 4px 10px rgba(212,168,75,0.12);
+    }
+    .tab-ai.on .tab-ai-badge {
+      border-color: rgba(212,168,75,0.48);
+      background: linear-gradient(180deg, rgba(212,168,75,0.22), rgba(212,168,75,0.08));
+    }
+    .tab-ai-badge::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 4px;
+      margin-right: 3px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 8px rgba(243,207,120,0.45);
+      vertical-align: middle;
     }
 
     .chg-badge {
@@ -439,16 +512,26 @@
       font-size: 13px; color: var(--t3); flex: 1; font-weight: 500;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    .publish-footer-hint .hint-view-link {
+      flex-shrink: 0;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: var(--t3);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .publish-footer-hint .hint-view-link:hover {
+      color: var(--t1);
+    }
     /* Warning state — only shown when there ARE changes */
     .publish-footer-hint.has-changes {
       background: var(--yn-dim); border-color: var(--yn-brd);
     }
     .publish-footer-hint.has-changes svg { color: var(--yellow); }
     .publish-footer-hint.has-changes span { color: var(--yellow); }
-    .publish-footer-hint .btn-warn {
-      height: 28px; padding: 0 12px;
-      border-radius: 6px; flex-shrink: 0;
-    }
+    .publish-footer-hint.has-changes .hint-view-link { color: var(--yellow); }
     /* Labeled publish button */
     .publish-fab {
       height: auto; min-width: 0;
@@ -1080,6 +1163,18 @@
       display: flex; align-items: center;
       justify-content: space-between; gap: 10px;
       margin-bottom: 8px;
+    }
+    .changes-head-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .changes-publish-btn {
+      height: 32px;
+      padding: 0 12px;
+      border-radius: var(--rs);
+      white-space: nowrap;
     }
     .changes-subhint {
       margin: -2px 0 10px;
@@ -1782,6 +1877,36 @@
     .btn-mp svg { width: 14px; height: 14px; display: block; }
     .btn-modal-wide { grid-column: 1 / -1; }
     .btn-full-center { width: 100%; justify-content: center; }
+    .success-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--gn-brd);
+      background: var(--gn-dim);
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+    .success-badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 0 4px rgba(78,201,148,0.12);
+    }
+    .modal-stack {
+      display: grid;
+      gap: 12px;
+    }
+    .modal-link-note {
+      color: var(--t3);
+      font-size: 12px;
+      line-height: 1.5;
+    }
     .th-icon-col { width: 28px; padding-left: 14px; }
     .th-value-right { text-align: right; }
     .tab-import-padded { padding-bottom: 12px; }
@@ -2215,7 +2340,7 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      box-shadow: 0 0 0 1px rgba(212,168,75,0.06) inset, 0 4px 32px rgba(212,168,75,0.06);
+      box-shadow: 0 0 0 1px rgba(212,168,75,0.07) inset, 0 10px 36px rgba(212,168,75,0.08);
     }
     .ai-shell.is-compact .ai-head {
       padding: 12px 14px 10px;
@@ -2242,6 +2367,16 @@
       width: 120px; height: 120px;
       border-radius: 50%;
       background: radial-gradient(circle, rgba(212,168,75,0.15), transparent 70%);
+      pointer-events: none;
+    }
+    .ai-head::after {
+      content: '';
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      top: 0;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(212,168,75,0.55), rgba(212,168,75,0.18), transparent 78%);
       pointer-events: none;
     }
     .ai-head-row {
@@ -2388,6 +2523,20 @@
       scrollbar-width: none;
     }
     .ai-prompt-list::-webkit-scrollbar { display: none; }
+    .ai-disclaimer {
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(212,168,75,0.12);
+      background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.01));
+      color: var(--t3);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+    .ai-disclaimer strong {
+      color: var(--t2);
+      font-weight: 700;
+    }
     .ai-prompt-chip {
       flex: 0 0 auto;
       min-width: 128px;
@@ -2616,8 +2765,8 @@
     }
     .ai-input {
       flex: 1;
-      min-height: 44px;
-      max-height: 120px;
+      min-height: 82px;
+      max-height: 168px;
       border-radius: var(--rs);
       border: 1px solid var(--border);
       background: var(--bg);
@@ -2629,10 +2778,11 @@
       transition: border-color 0.2s, box-shadow 0.2s;
       resize: none;
       line-height: 1.45;
+      overflow-y: auto;
     }
     .ai-shell.is-compact .ai-input {
-      min-height: 40px;
-      max-height: 96px;
+      min-height: 68px;
+      max-height: 132px;
       padding-top: 10px;
       padding-bottom: 10px;
     }
@@ -2674,12 +2824,9 @@
   <div class="header-row">
     <div class="brand">
       <div class="brand-mark">
-        <!-- tokvista grid mark -->
-        <svg viewBox="0 0 12 12" fill="none">
-          <rect x="1"   y="1"   width="4.5" height="4.5" rx="1"   fill="#d4a84b"/>
-          <rect x="6.5" y="1"   width="4.5" height="4.5" rx="1"   fill="#d4a84b" opacity=".55"/>
-          <rect x="1"   y="6.5" width="4.5" height="4.5" rx="1"   fill="#d4a84b" opacity=".55"/>
-          <rect x="6.5" y="6.5" width="4.5" height="4.5" rx="1"   fill="#d4a84b" opacity=".25"/>
+        <svg viewBox="0 0 88 88" fill="none" aria-label="Tokvista mark">
+          <rect x="30" y="30" width="52" height="52" rx="13" stroke="currentColor" stroke-width="5" opacity="0.26"/>
+          <rect x="6" y="6" width="52" height="52" rx="13" fill="currentColor"/>
         </svg>
       </div>
       <span class="brand-name">tokvista</span>
@@ -2709,9 +2856,10 @@
         <span id="changesBadge" class="chg-badge">0</span>
         <span class="tab-label">Changes</span>
       </button>
-      <button class="tab" data-tab="ai" type="button" role="tab" aria-label="AI">
+      <button class="tab tab-ai" data-tab="ai" type="button" role="tab" aria-label="AI">
         <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.8 4.5L18 9.3l-4.2 1.8L12 15.6l-1.8-4.5L6 9.3l4.2-1.8L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M18.5 14l.8 2 .9.4-.9.4-.8 2-.8-2-.9-.4.9-.4.8-2ZM6 15.2l.6 1.5.7.3-.7.3-.6 1.5-.6-1.5-.7-.3.7-.3.6-1.5Z" fill="currentColor"/></svg>
         <span class="tab-label">AI</span>
+        <span class="tab-ai-badge" aria-hidden="true">New</span>
       </button>
       <button class="tab" data-tab="settings" type="button" role="tab" aria-label="Settings">
         <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.8"/></svg>
@@ -2756,16 +2904,16 @@
           </label>
           <div class="preview-actions" aria-label="Preview actions">
             <div class="preview-live-wrap">
-              <button id="devPreviewBtn" class="icon-btn has-tip" type="button" data-tip="Generate developer preview link" aria-label="Developer preview link">
+              <button id="devPreviewBtn" class="icon-btn has-tip" type="button" data-tip="Generate developer preview link" data-tip-pos="bottom" aria-label="Developer preview link">
                 <svg viewBox="0 0 24 24" fill="none"><path d="M10 14L21 3M21 3h-6M21 3v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 14.5V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </button>
               <span id="previewLiveBadge" class="preview-live-badge">Live</span>
             </div>
-            <button id="snapshotPreviewBtn" class="icon-btn has-tip" type="button" data-tip="Open publish history" aria-label="Open publish history">
+            <button id="snapshotPreviewBtn" class="icon-btn has-tip" type="button" data-tip="Open publish history" data-tip-pos="bottom" aria-label="Open publish history">
               <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.8"/></svg>
             </button>
             <div class="dl-pop">
-              <button id="downloadTriggerBtn" class="icon-btn has-tip" type="button" data-tip="Download tokens" aria-label="Download tokens">
+              <button id="downloadTriggerBtn" class="icon-btn has-tip" type="button" data-tip="Download tokens" data-tip-pos="bottom" aria-label="Download tokens">
                 <svg viewBox="0 0 24 24" fill="none"><path d="M3 12.3v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7.9 12.3 12 16.3 16.1 12.3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/><line x1="12" y1="2.7" x2="12" y2="14.2" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg>
               </button>
               <div id="downloadMenu" class="dl-menu hide">
@@ -2785,7 +2933,7 @@
                 </div>
               </div>
             </div>
-            <button id="clearLoadedBtn" class="icon-btn has-tip" type="button" data-tip="Clear loaded data" aria-label="Clear loaded data">
+            <button id="clearLoadedBtn" class="icon-btn has-tip" type="button" data-tip="Clear loaded data" data-tip-pos="bottom" data-tip-edge="right" aria-label="Clear loaded data">
               <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5.8A1.8 1.8 0 0 1 10.8 4h2.4A1.8 1.8 0 0 1 15 5.8V7M8.2 7l.6 11.1A2 2 0 0 0 10.8 20h2.4a2 2 0 0 0 2-1.9L15.8 7M10 10.3v6.2M14 10.3v6.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             </button>
           </div>
@@ -2813,7 +2961,7 @@
           <div id="visualContent">
             <div class="explorer-empty-state">
               <div class="ees-icon">
-                <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="3" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="13" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="13" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6" opacity=".38"/></svg>
+                <svg viewBox="0 0 88 88" fill="none" aria-hidden="true"><rect x="30" y="30" width="52" height="52" rx="13" stroke="currentColor" stroke-width="5" opacity="0.26"/><rect x="6" y="6" width="52" height="52" rx="13" fill="currentColor"/></svg>
               </div>
               <div class="ees-title">No tokens loaded</div>
               <div class="ees-sub">Hit Sync to pull your Figma variables into the preview</div>
@@ -2835,7 +2983,7 @@
               <tr><td colspan="3">
                 <div class="explorer-empty-state">
                   <div class="ees-icon">
-                    <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="3" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="13" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="13" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6" opacity=".38"/></svg>
+                    <svg viewBox="0 0 88 88" fill="none" aria-hidden="true"><rect x="30" y="30" width="52" height="52" rx="13" stroke="currentColor" stroke-width="5" opacity="0.26"/><rect x="6" y="6" width="52" height="52" rx="13" fill="currentColor"/></svg>
                   </div>
                   <div class="ees-title">No tokens loaded</div>
                   <div class="ees-sub">Hit Sync to pull your Figma variables</div>
@@ -2928,6 +3076,9 @@
             <span class="ai-prompt-copy">Ecommerce with light and dark</span>
           </button>
         </div>
+        <div class="ai-disclaimer">
+          <strong>Experimental AI:</strong> Tokvista AI can make mistakes. Review generated tokens before importing or publishing.
+        </div>
       </div>
 
       <div id="aiMessages" class="ai-messages"></div>
@@ -2962,6 +3113,12 @@
   <section id="tab-changes" class="tabp" role="tabpanel">
     <div class="changes-head mt-2">
       <div class="sec sec-flex-fill">Since last publish</div>
+      <div class="changes-head-actions">
+        <button id="changesPublishBtn" class="btn-mp changes-publish-btn" type="button">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4M8 8l4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 18v1.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Publish
+        </button>
+      </div>
     </div>
     <div class="changes-subhint">Compared against your latest published baseline.</div>
 
@@ -3115,7 +3272,7 @@
     <div class="publish-footer-hint" id="publishHintBar">
       <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5M12 16v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       <span id="homePublishHint">No changes pending since last publish</span>
-      <button id="previewPublishBtn" class="btn-warn" type="button">Review</button>
+      <button id="viewChangesBtn" class="hint-view-link" type="button">View changes</button>
     </div>
     <button id="openPublishBtn" class="publish-fab has-tip" type="button" aria-label="Publish to Tokvista" data-tip="Publish tokens">
       <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4M8 8l4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 18v1.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -3157,6 +3314,32 @@
         <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4M8 8l4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 18v1.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         Confirm &amp; Publish
       </button>
+    </div>
+  </div>
+</div>
+<div id="publishSuccessModal" class="modal-wrap">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <span class="modal-title">Publish complete</span>
+      <button id="closePublishSuccessModalBtn" class="modal-close" type="button">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-stack">
+        <div class="success-badge">Published successfully</div>
+        <p id="publishSuccessCopy" class="modal-copy">Your tokens are live and ready to preview.</p>
+        <div class="pub-card">
+          <div class="pub-row"><span class="pub-label">Version</span><span id="publishSuccessVersion" class="pub-val">—</span></div>
+          <div class="pub-row"><span class="pub-label">Target</span><span id="publishSuccessTarget" class="pub-val">—</span></div>
+          <div class="pub-row"><span class="pub-label">Preview</span><span id="publishSuccessPreview" class="pub-val">Unavailable</span></div>
+        </div>
+        <div id="publishSuccessLinkNote" class="modal-link-note">Open the preview or copy the latest preview link for QA.</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button id="publishSuccessCopyBtn" class="btn-mc" type="button">Copy preview link</button>
+      <button id="publishSuccessOpenBtn" class="btn-mp" type="button">Open preview</button>
+      <button id="publishSuccessDoneBtn" class="btn-mp btn-modal-wide" type="button">Done</button>
     </div>
   </div>
 </div>
@@ -3270,6 +3453,26 @@
     </div>
   </div>
 </div>
+<div id="clearLoadedModal" class="modal-wrap">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <span class="modal-title">Clear loaded data</span>
+      <button id="closeClearLoadedModalBtn" class="modal-close" type="button">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div class="sec mt-0">This clears the current plugin preview</div>
+      <div class="history-empty" style="text-align:left;">
+        This will remove the currently loaded token preview, selected import file, and generated JSON from the plugin UI.
+        Your actual Figma variables and published data will not be deleted.
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button id="cancelClearLoadedBtn" class="btn-mc" type="button">Cancel</button>
+      <button id="confirmClearLoadedBtn" class="btn-mp btn-danger-fill" type="button">Clear loaded data</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ══════ UTILS ══════ */
@@ -3335,6 +3538,10 @@ const refs = {
   cancelDeleteProfileBtn: $('cancelDeleteProfileBtn'),
   confirmDeleteProfileBtn: $('confirmDeleteProfileBtn'),
   deleteProfileName: $('deleteProfileName'),
+  clearLoadedModal: $('clearLoadedModal'),
+  closeClearLoadedModalBtn: $('closeClearLoadedModalBtn'),
+  cancelClearLoadedBtn: $('cancelClearLoadedBtn'),
+  confirmClearLoadedBtn: $('confirmClearLoadedBtn'),
   relaySettingsGroup: $('relaySettingsGroup'), githubSettingsGroup: $('githubSettingsGroup'),
   relayAdvancedToggleBtn: $('relayAdvancedToggleBtn'), relayAdvancedPanel: $('relayAdvancedPanel'),
   githubTokenInput: $('githubTokenInput'), githubRepoInput: $('githubRepoInput'),
@@ -3364,6 +3571,16 @@ const refs = {
   modalRemoved: $('modalRemoved'), modalChanges: $('modalChanges'),
   modalEndpoint: $('modalEndpoint'), modalProject: $('modalProject'),
   modalBranch: $('modalBranch'), modalCommitMessageInput: $('modalCommitMessageInput'),
+  publishSuccessModal: $('publishSuccessModal'),
+  closePublishSuccessModalBtn: $('closePublishSuccessModalBtn'),
+  publishSuccessCopy: $('publishSuccessCopy'),
+  publishSuccessVersion: $('publishSuccessVersion'),
+  publishSuccessTarget: $('publishSuccessTarget'),
+  publishSuccessPreview: $('publishSuccessPreview'),
+  publishSuccessLinkNote: $('publishSuccessLinkNote'),
+  publishSuccessCopyBtn: $('publishSuccessCopyBtn'),
+  publishSuccessOpenBtn: $('publishSuccessOpenBtn'),
+  publishSuccessDoneBtn: $('publishSuccessDoneBtn'),
   statColors: $('statColors'), statSpacing: $('statSpacing'),
   statTypography: $('statTypography'), statOther: $('statOther'),
   fullRefreshBtn: $('fullRefreshBtn'),
@@ -3675,9 +3892,10 @@ function updateSettingsSummary() {
     return;
   }
   const relayUrl = refs.relayUrlInput.value.trim();
-  refs.settingsHost.textContent = relayUrl.replace(/^https?:\/\//i, '') || 'Not configured';
+  const projectName = refs.projectIdInput.value.trim() || 'project';
+  refs.settingsHost.textContent = relayUrl ? 'Tokvista Cloud' : 'Relay not configured';
   refs.settingsMeta.textContent = state.publishKeySaved
-    ? `Configured for ${refs.projectIdInput.value.trim() || 'project'} / ${refs.environmentInput.value.trim() || 'dev'}`
+    ? `Connected for ${projectName} / ${refs.environmentInput.value.trim() || 'dev'}`
     : 'Publish key not saved yet.';
   refs.clearSecretMeta.textContent = 'Removes stored publish key from this device';
 }
@@ -4795,7 +5013,43 @@ function openModal() {
   }
   refs.modal.classList.add('on');
 }
+function openPublishReviewModal() {
+  post({ type: 'preview-publish-changes' });
+  openModal();
+}
 function closeModal() { refs.modal.classList.remove('on'); }
+function closePublishSuccessModal() {
+  refs.publishSuccessModal?.classList.remove('on');
+}
+function openPublishSuccessModal(payload) {
+  const p = isObj(payload) ? payload : {};
+  const versionId = normalizeLinkValue(p.versionId) || state.latestVersionId || 'Latest';
+  const previewUrl =
+    normalizeLinkValue(p.previewUrl) ||
+    normalizeLinkValue(p.snapshotPreviewUrl) ||
+    normalizeLinkValue(state.latestPreviewUrl) ||
+    normalizeLinkValue(state.latestSnapshotPreviewUrl);
+  const provider = normalizeProvider(state.syncProvider);
+  const target = provider === 'github'
+    ? (refs.githubRepoInput.value.trim() || 'GitHub repository')
+    : (refs.projectIdInput.value.trim() || 'Tokvista Cloud');
+  if (refs.publishSuccessCopy) {
+    refs.publishSuccessCopy.textContent = previewUrl
+      ? 'Your tokens are live. Open the preview or copy the latest link for QA.'
+      : 'Your publish completed successfully. A preview link is not available yet.';
+  }
+  if (refs.publishSuccessVersion) refs.publishSuccessVersion.textContent = versionId;
+  if (refs.publishSuccessTarget) refs.publishSuccessTarget.textContent = target;
+  if (refs.publishSuccessPreview) refs.publishSuccessPreview.textContent = previewUrl ? 'Ready' : 'Unavailable';
+  if (refs.publishSuccessLinkNote) {
+    refs.publishSuccessLinkNote.textContent = previewUrl
+      ? previewUrl
+      : 'Preview link unavailable. Publish succeeded, but no preview URL was returned.';
+  }
+  if (refs.publishSuccessCopyBtn) refs.publishSuccessCopyBtn.disabled = !previewUrl;
+  if (refs.publishSuccessOpenBtn) refs.publishSuccessOpenBtn.disabled = !previewUrl;
+  refs.publishSuccessModal?.classList.add('on');
+}
 function openProviderModal() { refs.providerModal?.classList.add('on'); }
 function closeProviderModal() { refs.providerModal?.classList.remove('on'); }
 function openDeleteProfileModal(profileId, profileName) {
@@ -4808,6 +5062,12 @@ function closeDeleteProfileModal() {
   state.pendingDeleteProfileId = '';
   state.pendingDeleteProfileName = '';
   refs.deleteProfileModal?.classList.remove('on');
+}
+function openClearLoadedModal() {
+  refs.clearLoadedModal?.classList.add('on');
+}
+function closeClearLoadedModal() {
+  refs.clearLoadedModal?.classList.remove('on');
 }
 
 /* ── SYNC ── */
@@ -5687,8 +5947,9 @@ refs.syncProfilesList?.addEventListener('click', e => {
     openDeleteProfileModal(profileId, profileName);
   }
 });
-$('previewPublishBtn').addEventListener('click', () => { setTab('changes'); post({ type: 'preview-publish-changes' }); });
-$('openPublishBtn').addEventListener('click', openModal);
+$('viewChangesBtn').addEventListener('click', () => { setTab('changes'); post({ type: 'preview-publish-changes' }); });
+$('openPublishBtn').addEventListener('click', openPublishReviewModal);
+$('changesPublishBtn').addEventListener('click', openPublishReviewModal);
 $('cancelPublishBtn').addEventListener('click', closeModal);
 $('closeModalBtn').addEventListener('click', closeModal);
 refs.modal.addEventListener('click', e => { if (e.target === refs.modal) closeModal(); });
@@ -5755,7 +6016,39 @@ refs.downloadMenu.querySelectorAll('.dl-option').forEach(b => {
   b.addEventListener('click', () => { state.downloadFormat = b.dataset.value || 'json'; updateDlUi(); });
 });
 document.addEventListener('click', e => { if (!e.target.closest('.dl-pop')) refs.downloadMenu.classList.add('hide'); });
-refs.clearLoadedBtn.addEventListener('click', clearLoadedData);
+refs.clearLoadedBtn.addEventListener('click', openClearLoadedModal);
+refs.closeClearLoadedModalBtn?.addEventListener('click', closeClearLoadedModal);
+refs.cancelClearLoadedBtn?.addEventListener('click', closeClearLoadedModal);
+refs.confirmClearLoadedBtn?.addEventListener('click', () => {
+  closeClearLoadedModal();
+  clearLoadedData();
+});
+refs.clearLoadedModal?.addEventListener('click', e => { if (e.target === refs.clearLoadedModal) closeClearLoadedModal(); });
+refs.closePublishSuccessModalBtn?.addEventListener('click', closePublishSuccessModal);
+refs.publishSuccessDoneBtn?.addEventListener('click', closePublishSuccessModal);
+refs.publishSuccessModal?.addEventListener('click', e => { if (e.target === refs.publishSuccessModal) closePublishSuccessModal(); });
+refs.publishSuccessCopyBtn?.addEventListener('click', () => {
+  const url = normalizeLinkValue(state.latestPreviewUrl) || normalizeLinkValue(state.latestSnapshotPreviewUrl);
+  if (!url) return;
+  copyText(url).then(ok => {
+    if (refs.publishSuccessCopyBtn) {
+      refs.publishSuccessCopyBtn.textContent = ok ? 'Copied' : 'Copy failed';
+      refs.publishSuccessCopyBtn.disabled = true;
+      window.setTimeout(() => {
+        if (!refs.publishSuccessCopyBtn) return;
+        refs.publishSuccessCopyBtn.textContent = 'Copy preview link';
+        refs.publishSuccessCopyBtn.disabled = false;
+      }, 1600);
+    }
+    setStatus(ok ? 'Preview link copied.' : 'Could not copy preview link.', !ok);
+  });
+});
+refs.publishSuccessOpenBtn?.addEventListener('click', () => {
+  const url = normalizeLinkValue(state.latestPreviewUrl) || normalizeLinkValue(state.latestSnapshotPreviewUrl);
+  if (!url) return;
+  post({ type: 'open-external-url', payload: { url } });
+  setStatus('Preview opened.', false);
+});
 [
   refs.publishKeyInput,
   refs.githubTokenInput
@@ -5873,6 +6166,7 @@ window.onmessage = event => {
   if (msg.type === 'publish-result') {
     const p = msg.payload || {};
     setPreviewLinkState(p);
+    closeModal();
     if (refs.modalCommitMessageInput) refs.modalCommitMessageInput.value = '';
     const snapshotLink = normalizeLinkValue(p.snapshotPreviewUrl) || buildPreviewFromRaw(normalizeLinkValue(p.rawUrl));
     if (p.versionId && snapshotLink) {
@@ -5884,6 +6178,7 @@ window.onmessage = event => {
     }
     if (p.changeLog && typeof p.changeLog === 'object') { state.changeLog = p.changeLog; renderChangeLog(state.changeLog); }
     post({ type: 'preview-publish-changes' });
+    openPublishSuccessModal(p);
   }
   if (msg.type === 'developer-preview-link') {
     setPreviewLinkState(msg.payload || {});

@@ -4,8 +4,15 @@ const fs = require("fs");
 const path = require("path");
 const { getTargetPath, handleOptions, parseProjectsConfig } = require("./_shared");
 
+const TOKVISTA_MARK_DARK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 88" fill="none" aria-label="Tokvista mark dark"><rect x="30" y="30" width="52" height="52" rx="13" stroke="#FFFFFF" stroke-width="5" opacity="0.26"/><rect x="6" y="6" width="52" height="52" rx="13" fill="#FFFFFF"/></svg>`;
+const TOKVISTA_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 88" fill="none" aria-label="Tokvista icon"><rect width="88" height="88" rx="18" fill="#0A0A0A"/><rect x="30" y="30" width="52" height="52" rx="13" stroke="#FFFFFF" stroke-width="5" opacity="0.26"/><rect x="6" y="6" width="52" height="52" rx="13" fill="#FFFFFF"/></svg>`;
+
 function decodeBase64ToUtf8(input) {
   return Buffer.from(String(input || ""), "base64").toString("utf8");
+}
+
+function svgToDataUrl(svg) {
+  return `data:image/svg+xml,${encodeURIComponent(String(svg || "").trim())}`;
 }
 
 function isObjectLike(value) {
@@ -212,14 +219,15 @@ function buildRuntimeConfig({ projectId, environment, sourceUrl, historyApiUrl, 
   return {
     title: "Tokvista",
     subtitle: buildPreviewSubtitle({ sourceUrl, projectId, environment, version }),
-    theme: "light",
+    logo: svgToDataUrl(TOKVISTA_MARK_DARK_SVG),
+    theme: "dark",
     themeColors: {
-      primary: "#FF6B6B",
-      background: "#FFFFFF",
-      surface: "#F9FAFB",
-      border: "#E5E7EB",
-      text: "#111827",
-      textSecondary: "#6B7280",
+      primary: "#d4a84b",
+      background: "#141210",
+      surface: "#1c1a17",
+      border: "#2e2b23",
+      text: "#f0ebe3",
+      textSecondary: "#9c9487",
     },
     showSearch: true,
     snapshotHistory: {
@@ -233,12 +241,16 @@ function buildRuntimeConfig({ projectId, environment, sourceUrl, historyApiUrl, 
 }
 
 function buildHtml(tokensJson, configJson, css, appBundle) {
+  const faviconUrl = svgToDataUrl(TOKVISTA_ICON_SVG);
   return `<!doctype html>
 <html>
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tokvista Preview</title>
+    <link rel="icon" type="image/svg+xml" href="${faviconUrl}">
+    <link rel="shortcut icon" href="${faviconUrl}">
+    <link rel="apple-touch-icon" href="${faviconUrl}">
     <style>${css}</style>
   </head>
   <body>
