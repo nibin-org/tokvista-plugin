@@ -12,13 +12,42 @@ function isObjectLike(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function stripSemverRangePrefix(value) {
+  return String(value || "").trim().replace(/^[^\d]*/, "");
+}
+
+function readJsonFile(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function findPackageRootFromEntry(entryPath) {
+  let cursor = path.dirname(entryPath);
+  while (cursor && cursor !== path.dirname(cursor)) {
+    const candidate = path.join(cursor, "package.json");
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+    cursor = path.dirname(cursor);
+  }
+  return "";
+}
+
 function readTokvistaVersion() {
   try {
-    const pkgPath = path.join(process.cwd(), "node_modules", "tokvista", "package.json");
-    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+    const entryPath = require.resolve("tokvista");
+    const pkgPath = findPackageRootFromEntry(entryPath);
+    if (!pkgPath) {
+      return "";
+    }
+    const pkg = readJsonFile(pkgPath);
     return typeof pkg.version === "string" && pkg.version.trim() ? pkg.version.trim() : "";
   } catch {
-    return "";
+    try {
+      const pluginPkg = readJsonFile(path.join(__dirname, "..", "package.json"));
+      return stripSemverRangePrefix(pluginPkg.dependencies?.tokvista);
+    } catch {
+      return "";
+    }
   }
 }
 

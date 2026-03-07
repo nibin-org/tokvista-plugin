@@ -7,7 +7,8 @@ const {
   parseProjectsConfig,
   putContent,
   readJsonBody,
-  sendJson
+  sendJson,
+  takeRateLimit
 } = require("./_shared");
 
 function encodePathForRaw(path) {
@@ -114,6 +115,16 @@ module.exports = async function handler(req, res) {
     sendJson(res, 404, { error: "Unknown projectId." });
     return;
   }
+
+  const rateLimit = takeRateLimit(`publish:${projectId}`, { limit: 10, windowMs: 60_000 });
+  if (!rateLimit.allowed) {
+    sendJson(res, 429, {
+      error: "Rate limit exceeded for this project. Try again shortly.",
+      retryAfterSeconds: rateLimit.retryAfterSeconds
+    });
+    return;
+  }
+
   if (projectConfig.publishKey !== publishKey) {
     sendJson(res, 401, { error: "Unauthorized publish key." });
     return;

@@ -7,7 +7,9 @@ dotenv.config();
 
 const PORT = Number(process.env.PORT || 8787);
 const DATA_DIR = process.env.DATA_DIR || join(process.cwd(), "relay", "data");
-const PREVIEW_BASE_URL = (process.env.TOKVISTA_PREVIEW_BASE_URL || "https://tokvista-demo.vercel.app/").trim();
+const PREVIEW_BASE_URL = (process.env.TOKVISTA_PREVIEW_BASE_URL || "https://tokvista-plugin.vercel.app/preview").trim();
+const rateLimitBuckets = globalThis.__tokvistaRelayRateLimitBuckets || new Map();
+globalThis.__tokvistaRelayRateLimitBuckets = rateLimitBuckets;
 
 function parseProjectsConfig() {
   const raw = process.env.TOKVISTA_PROJECTS;
@@ -274,6 +276,47 @@ function buildPreviewUrl(rawUrl) {
   return `${normalizedBase}?source=${encodeURIComponent(rawUrl)}`;
 }
 
+function pruneRateLimitBuckets(now) {
+  if (rateLimitBuckets.size < 512) {
+    return;
+  }
+  for (const [key, bucket] of rateLimitBuckets) {
+    if (!bucket || bucket.resetAt <= now) {
+      rateLimitBuckets.delete(key);
+    }
+  }
+}
+
+function takeRateLimit(key, { limit, windowMs }) {
+  const safeLimit = Number(limit || 0);
+  const safeWindowMs = Number(windowMs || 0);
+  if (!key || !Number.isFinite(safeLimit) || safeLimit <= 0 || !Number.isFinite(safeWindowMs) || safeWindowMs <= 0) {
+    return { allowed: true, retryAfterSeconds: 0 };
+  }
+
+  const now = Date.now();
+  pruneRateLimitBuckets(now);
+
+  let bucket = rateLimitBuckets.get(key);
+  if (!bucket || bucket.resetAt <= now) {
+    bucket = { count: 0, resetAt: now + safeWindowMs };
+    rateLimitBuckets.set(key, bucket);
+  }
+
+  if (bucket.count >= safeLimit) {
+    return {
+      allowed: false,
+      retryAfterSeconds: Math.max(1, Math.ceil((bucket.resetAt - now) / 1000))
+    };
+  }
+
+  bucket.count += 1;
+  return {
+    allowed: true,
+    retryAfterSeconds: 0
+  };
+}
+
 function buildServerBaseUrl(req) {
   const protoHeader = req.headers["x-forwarded-proto"];
   const hostHeader = req.headers["x-forwarded-host"] || req.headers.host;
@@ -356,6 +399,14 @@ async function handlePublish(req, res) {
   const projectConfig = getProjectConfig(projectId);
   if (!projectConfig) {
     sendJson(res, 404, { error: "Unknown projectId." });
+    return;
+  }
+  const rateLimit = takeRateLimit(`publish:${projectId}`, { limit: 10, windowMs: 60_000 });
+  if (!rateLimit.allowed) {
+    sendJson(res, 429, {
+      error: "Rate limit exceeded for this project. Try again shortly.",
+      retryAfterSeconds: rateLimit.retryAfterSeconds
+    });
     return;
   }
   if (projectConfig.publishKey !== publishKey) {
@@ -676,6 +727,13 @@ async function handleVersionHistory(req, res) {
 
     setNoStoreHeaders(res);
     sendJson(res, 200, {
+      mode: "project",
+      meta: {
+        projectId,
+        environment,
+        branch,
+        path
+      },
       projectId,
       environment,
       branch,

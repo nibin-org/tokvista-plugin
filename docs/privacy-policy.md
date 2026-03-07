@@ -34,6 +34,8 @@ Tokvista stores plugin settings in Figma `clientStorage` on the user's device/wo
 
 When you click publish, Tokvista sends the exported token payload and publish settings metadata to the configured relay endpoint (for example, `https://tokvista-plugin.vercel.app/api/publish-tokens`).
 
+That publish request also includes the current Figma `fileKey` when Figma exposes it. Tokvista uses this only as publish metadata for relay-side debugging/audit context.
+
 This build only performs network requests to approved hosts listed in plugin manifest:
 - `https://tokvista-plugin.vercel.app`
 - `https://api.github.com`

@@ -202,6 +202,7 @@ function buildResponseMeta(target) {
   if (target.mode === "source") {
     return {
       source: target.source,
+      environment: target.environment,
       branch: target.branch,
       path: target.path
     };
@@ -272,14 +273,13 @@ function getCommitsUrl(target, limit) {
   )}/commits?sha=${encodeURIComponent(target.branch)}&path=${encodeURIComponent(target.path)}&per_page=${limit}`;
 }
 
-function sendHistoryResponse(res, target, items, sourceCommits) {
+function sendHistoryResponse(res, target, items) {
+  const meta = buildResponseMeta(target);
   setNoStoreHeaders(res);
-  if (target.mode === "source") {
-    sendJson(res, 200, Array.isArray(sourceCommits) ? sourceCommits : []);
-    return;
-  }
   sendJson(res, 200, {
-    ...buildResponseMeta(target),
+    mode: target.mode,
+    meta,
+    ...meta,
     count: items.length,
     items
   });
@@ -334,7 +334,7 @@ module.exports = async function handler(req, res) {
     const payload = await response.json();
     const commits = parseCommitsPayload(payload);
     const items = mapCommitItems(commits, target, req);
-    sendHistoryResponse(res, target, items, commits);
+    sendHistoryResponse(res, target, items);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     sendJson(res, 502, { error: message });

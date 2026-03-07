@@ -1,5 +1,8 @@
 "use strict";
 
+const rateLimitBuckets = globalThis.__tokvistaRateLimitBuckets || new Map();
+globalThis.__tokvistaRateLimitBuckets = rateLimitBuckets;
+
 function parseProjectsConfig() {
   const raw = process.env.TOKVISTA_PROJECTS;
   if (!raw) {
@@ -53,6 +56,62 @@ async function readJsonBody(req) {
     return {};
   }
   return JSON.parse(raw);
+}
+
+function pruneRateLimitBuckets(now) {
+  if (rateLimitBuckets.size < 512) {
+    return;
+  }
+  for (const [key, bucket] of rateLimitBuckets) {
+    if (!bucket || bucket.resetAt <= now) {
+      rateLimitBuckets.delete(key);
+    }
+  }
+}
+
+function takeRateLimit(key, options) {
+  const limit = Number(options?.limit || 0);
+  const windowMs = Number(options?.windowMs || 0);
+  if (!key || !Number.isFinite(limit) || limit <= 0 || !Number.isFinite(windowMs) || windowMs <= 0) {
+    return { allowed: true, remaining: limit, retryAfterSeconds: 0 };
+  }
+
+  const now = Date.now();
+  pruneRateLimitBuckets(now);
+
+  let bucket = rateLimitBuckets.get(key);
+  if (!bucket || bucket.resetAt <= now) {
+    bucket = { count: 0, resetAt: now + windowMs };
+    rateLimitBuckets.set(key, bucket);
+  }
+
+  if (bucket.count >= limit) {
+    return {
+      allowed: false,
+      remaining: 0,
+      retryAfterSeconds: Math.max(1, Math.ceil((bucket.resetAt - now) / 1000))
+    };
+  }
+
+  bucket.count += 1;
+  return {
+    allowed: true,
+    remaining: Math.max(0, limit - bucket.count),
+    retryAfterSeconds: 0
+  };
+}
+
+function getClientIp(req) {
+  const forwarded = typeof req.headers?.["x-forwarded-for"] === "string" ? req.headers["x-forwarded-for"] : "";
+  const firstForwarded = forwarded.split(",")[0].trim();
+  if (firstForwarded) {
+    return firstForwarded;
+  }
+  const realIp = typeof req.headers?.["x-real-ip"] === "string" ? req.headers["x-real-ip"].trim() : "";
+  if (realIp) {
+    return realIp;
+  }
+  return req.socket?.remoteAddress || "unknown";
 }
 
 function getTargetPath(projectConfig, environment) {
@@ -191,11 +250,13 @@ async function putContent({ owner, repo, branch, path, token, message, content }
 }
 
 module.exports = {
+  getClientIp,
   createVersionId,
   getTargetPath,
   handleOptions,
   parseProjectsConfig,
   putContent,
   readJsonBody,
-  sendJson
+  sendJson,
+  takeRateLimit
 };

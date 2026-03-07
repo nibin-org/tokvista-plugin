@@ -70,6 +70,7 @@ Notes:
 - Plugin never needs GitHub token when using relay publish.
 - Backend relay validates payload and writes to package/repository.
 - Relay can run in local file mode (`localPath`) with no GitHub integration.
+- Publish requests include the current Figma `fileKey` for relay-side traceability. See `docs/privacy-policy.md`.
 - This community build only allows network calls to:
   - `https://tokvista-plugin.vercel.app`
   - `https://api.github.com`
@@ -115,12 +116,13 @@ npm run dev:stack
 
 This starts:
 - Tokvista relay at `http://localhost:8787`
-- Tokvista demo app from `../tokvista/demo` (default Next.js dev port: `3000`)
+- Tokvista demo app from `../tokvista/demo` by default (default Next.js dev port: `3000`)
 
 Stop both with `Ctrl + C`.
 
 Note:
 - `http://localhost:8787` works for private/development builds only after allowlist updates described above.
+- If your `tokvista` repo is not a sibling checkout, set `TOKVISTA_DEMO_DIR` before running `npm run dev:stack`.
 
 ## Community publish metadata
 

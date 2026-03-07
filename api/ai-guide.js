@@ -1,9 +1,10 @@
 "use strict";
 
-const { handleOptions, readJsonBody, sendJson } = require("./_shared");
+const { getClientIp, handleOptions, readJsonBody, sendJson, takeRateLimit } = require("./_shared");
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant";
+const MAX_MESSAGE_LENGTH = 2000;
 
 const SYSTEM_PROMPT = [
   "You are Tokvista AI, a friendly design token expert inside a Figma plugin.",
@@ -599,6 +600,20 @@ module.exports = async function handler(req, res) {
   const history = normalizeHistory(body?.history);
   if (!message) {
     sendJson(res, 400, { error: "message is required." });
+    return;
+  }
+  if (message.length > MAX_MESSAGE_LENGTH) {
+    sendJson(res, 400, { error: `message must be ${MAX_MESSAGE_LENGTH} characters or fewer.` });
+    return;
+  }
+
+  const clientIp = getClientIp(req);
+  const rateLimit = takeRateLimit(`ai-guide:${clientIp}`, { limit: 20, windowMs: 60_000 });
+  if (!rateLimit.allowed) {
+    sendJson(res, 429, {
+      error: "Rate limit exceeded for this IP. Try again shortly.",
+      retryAfterSeconds: rateLimit.retryAfterSeconds
+    });
     return;
   }
 

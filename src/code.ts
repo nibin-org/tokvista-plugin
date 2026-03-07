@@ -1,3 +1,8 @@
+import {
+  buildPublishChangeLog as buildPublishChangeLogForPublish,
+  importTokens as importTokensFromPayload
+} from "./token-logic";
+
 const DEFAULT_UI_WIDTH = 420;
 const DEFAULT_UI_HEIGHT = 680;
 
@@ -741,7 +746,7 @@ async function postPublishChangePreview(): Promise<void> {
       modeName: settings?.environment
     });
     const publishPayload = stripVolatilePublishFields(exported);
-    const changeLog = buildPublishChangeLog(previousPayload, publishPayload);
+    const changeLog = buildPublishChangeLogForPublish(previousPayload, publishPayload);
     figma.ui.postMessage({
       type: "publish-change-preview",
       payload: {
@@ -2654,7 +2659,12 @@ async function importTokensFromUrl(urlValue: unknown): Promise<ImportResult> {
   } catch {
     throw new Error("URL did not return valid JSON.");
   }
-  return importTokens(payload);
+  return importTokensFromPayload(payload, figma.variables, {
+    defaultCollectionName: DEFAULT_COLLECTION_NAME,
+    remBasePx: REM_BASE_PX,
+    rawTypePluginKey: RAW_TYPE_PLUGIN_KEY,
+    complexJsonPluginKey: COMPLEX_JSON_PLUGIN_KEY
+  });
 }
 
 async function loadAndPostRelaySettings(): Promise<void> {
@@ -2674,7 +2684,12 @@ void initializeUiState();
 figma.ui.onmessage = async (msg: UiMessage) => {
   if (msg.type === "import-tokens") {
     try {
-      const result = await importTokens(msg.payload);
+      const result = await importTokensFromPayload(msg.payload, figma.variables, {
+        defaultCollectionName: DEFAULT_COLLECTION_NAME,
+        remBasePx: REM_BASE_PX,
+        rawTypePluginKey: RAW_TYPE_PLUGIN_KEY,
+        complexJsonPluginKey: COMPLEX_JSON_PLUGIN_KEY
+      });
       await postPublishChangePreview();
       figma.ui.postMessage({
         type: "import-result",
@@ -2904,7 +2919,7 @@ figma.ui.onmessage = async (msg: UiMessage) => {
       });
       const publishPayload = stripVolatilePublishFields(exported);
       const previousPayload = await getLastPublishedPayload();
-      let changeLog = buildPublishChangeLog(previousPayload, publishPayload);
+      let changeLog = buildPublishChangeLogForPublish(previousPayload, publishPayload);
       const publishResult =
         saved.provider === "github"
           ? await publishToGitHub(saved, exported, commitMessage)

@@ -4,7 +4,9 @@ import net from "node:net";
 import { resolve } from "node:path";
 
 const isWindows = process.platform === "win32";
-const demoDir = resolve("..", "tokvista", "demo");
+const demoDir = process.env.TOKVISTA_DEMO_DIR
+  ? resolve(process.env.TOKVISTA_DEMO_DIR)
+  : resolve("..", "tokvista", "demo");
 const demoLockPath = resolve(demoDir, ".next", "dev", "lock");
 const relayPort = Number(process.env.PORT || 8787);
 const processes = [];
@@ -97,6 +99,12 @@ if (relayAlreadyRunning) {
 if (existsSync(demoLockPath)) {
   process.stdout.write(`[stack] Demo appears to already be running (${demoLockPath}). Skipping demo start.\n`);
 } else {
+  if (!existsSync(demoDir)) {
+    process.stderr.write(
+      `[stack] Demo directory not found at ${demoDir}. Set TOKVISTA_DEMO_DIR if your tokvista repo is elsewhere.\n`
+    );
+    shutdown(1);
+  }
   processes.push(runProcess("tokvista-demo", "dev", demoDir));
 }
 
