@@ -12,6 +12,16 @@ function isObjectLike(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function readTokvistaVersion() {
+  try {
+    const pkgPath = path.join(process.cwd(), "node_modules", "tokvista", "package.json");
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+    return typeof pkg.version === "string" && pkg.version.trim() ? pkg.version.trim() : "";
+  } catch {
+    return "";
+  }
+}
+
 function getApiBaseUrl(req) {
   const protoHeader = req.headers["x-forwarded-proto"];
   const hostHeader = req.headers["x-forwarded-host"] || req.headers.host;
@@ -133,41 +143,6 @@ async function fetchTokensFromSource(sourceUrl) {
   return JSON.parse(content);
 }
 
-function normalizeTokensForPreview(payload) {
-  const root = isObjectLike(payload) && isObjectLike(payload.tokens) ? payload.tokens : payload;
-  if (!isObjectLike(root)) {
-    return {};
-  }
-  const hasExpectedTopLevelSets =
-    isObjectLike(root["Foundation/Value"]) ||
-    isObjectLike(root["Semantic/Value"]) ||
-    Object.keys(root).some((key) => key.startsWith("Components/"));
-  if (hasExpectedTopLevelSets) {
-    return root;
-  }
-  const foundationTokens = isObjectLike(root.Foundation) ? root.Foundation : null;
-  const semanticTokens = isObjectLike(root.Semantic) ? root.Semantic : null;
-  const componentTokens = isObjectLike(root.Components) ? root.Components : null;
-  if (foundationTokens || semanticTokens || componentTokens) {
-    const normalized = {};
-    if (foundationTokens) {
-      normalized["Foundation/Value"] = foundationTokens;
-    }
-    if (semanticTokens) {
-      normalized["Semantic/Value"] = semanticTokens;
-    }
-    if (componentTokens) {
-      normalized["Components/Mode 1"] = componentTokens;
-    }
-    if (Object.keys(normalized).length > 0) {
-      return normalized;
-    }
-  }
-  return {
-    "Foundation/Value": root
-  };
-}
-
 async function githubRequest(url, token) {
   const headers = new Headers();
   headers.set("Accept", "application/vnd.github+json");
@@ -184,21 +159,51 @@ function getQuery(req) {
   return parsed.searchParams;
 }
 
-function injectSnapshotHistoryProps(appBundle) {
-  if (typeof appBundle !== "string" || !appBundle) {
-    return appBundle;
+function buildPreviewSubtitle({ sourceUrl, projectId, environment, version }) {
+  const versionSuffix = version ? `Version ${version}` : "Hosted preview";
+  if (sourceUrl) {
+    try {
+      const parsed = new URL(sourceUrl);
+      if (parsed.hostname === "raw.githubusercontent.com") {
+        return `GitHub source preview · ${versionSuffix}`;
+      }
+      return `${parsed.hostname} preview · ${versionSuffix}`;
+    } catch {
+      return `Shared preview · ${versionSuffix}`;
+    }
   }
-  const needle = "{tokens:window.__TOKVISTA_TOKENS__}";
-  const replacement =
-    "{tokens:window.__TOKVISTA_TOKENS__,snapshotHistory:window.__TOKVISTA_SNAPSHOT_HISTORY__}";
-  if (!appBundle.includes(needle)) {
-    return appBundle;
+  if (projectId) {
+    const environmentLabel = environment ? ` · ${environment}` : "";
+    return `${projectId}${environmentLabel} · ${versionSuffix}`;
   }
-  return appBundle.replace(needle, replacement);
+  return `Shared preview · ${versionSuffix}`;
 }
 
-function buildHtml(tokensJson, css, appBundle, snapshotHistoryConfig) {
-  const snapshotHistoryJson = JSON.stringify(snapshotHistoryConfig || {});
+function buildRuntimeConfig({ projectId, environment, sourceUrl, historyApiUrl, version }) {
+  return {
+    title: "Tokvista",
+    subtitle: buildPreviewSubtitle({ sourceUrl, projectId, environment, version }),
+    theme: "light",
+    themeColors: {
+      primary: "#FF6B6B",
+      background: "#FFFFFF",
+      surface: "#F9FAFB",
+      border: "#E5E7EB",
+      text: "#111827",
+      textSecondary: "#6B7280",
+    },
+    showSearch: true,
+    snapshotHistory: {
+      enabled: Boolean(historyApiUrl),
+      accessMode: "full",
+      title: "Snapshot History",
+      historyEndpoint: historyApiUrl,
+      sourceUrl: sourceUrl || "",
+    },
+  };
+}
+
+function buildHtml(tokensJson, configJson, css, appBundle) {
   return `<!doctype html>
 <html>
   <head>
@@ -210,7 +215,7 @@ function buildHtml(tokensJson, css, appBundle, snapshotHistoryConfig) {
   <body>
     <div id="tokvista-root"></div>
     <script>window.__TOKVISTA_TOKENS__ = ${tokensJson};</script>
-    <script>window.__TOKVISTA_SNAPSHOT_HISTORY__ = ${snapshotHistoryJson};</script>
+    <script>window.__TOKVISTA_CONFIG__ = ${configJson};</script>
     <script type="module">${appBundle}</script>
   </body>
 </html>`;
@@ -321,19 +326,19 @@ module.exports = async function handler(req, res) {
     const jsPath = path.join(process.cwd(), "node_modules", "tokvista", "dist", "cli", "browser.js");
 
     const css = fs.readFileSync(cssPath, "utf8");
-    const appBundleRaw = fs.readFileSync(jsPath, "utf8");
-    const appBundle = injectSnapshotHistoryProps(appBundleRaw);
-    const previewTokens = normalizeTokensForPreview(tokens);
-    const tokensJson = JSON.stringify(previewTokens);
-    const snapshotHistoryConfig = {
-      enabled: Boolean(historyApiUrl),
-      accessMode: "full",
-      title: "Snapshot History",
-      historyEndpoint: historyApiUrl,
-      sourceUrl: snapshotSourceUrl
-    };
+    const appBundle = fs.readFileSync(jsPath, "utf8");
+    const tokensJson = JSON.stringify(tokens);
+    const version = readTokvistaVersion();
+    const runtimeConfig = buildRuntimeConfig({
+      projectId,
+      environment,
+      sourceUrl: snapshotSourceUrl,
+      historyApiUrl,
+      version,
+    });
+    const configJson = JSON.stringify(runtimeConfig);
 
-    const html = buildHtml(tokensJson, css, appBundle, snapshotHistoryConfig);
+    const html = buildHtml(tokensJson, configJson, css, appBundle);
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");

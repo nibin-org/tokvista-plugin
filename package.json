@@ -11,7 +11,7 @@
     "relay:start": "node relay/server.mjs"
   },
   "dependencies": {
-    "tokvista": "^1.4.1"
+    "tokvista": "^1.4.2"
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.106.0",
