@@ -1,6 +1,5 @@
 "use strict";
 
-// In-memory buckets persist only within a warm runtime instance.
 const rateLimitBuckets = globalThis.__tokvistaRateLimitBuckets || new Map();
 globalThis.__tokvistaRateLimitBuckets = rateLimitBuckets;
 
@@ -45,7 +44,11 @@ async function readJsonBody(req) {
     return req.body;
   }
   if (typeof req.body === "string" && req.body.trim()) {
-    return JSON.parse(req.body);
+    const parsed = JSON.parse(req.body);
+    if (typeof parsed !== "object" || parsed === null) {
+      return {};
+    }
+    return parsed;
   }
 
   const chunks = [];
@@ -56,7 +59,11 @@ async function readJsonBody(req) {
   if (!raw) {
     return {};
   }
-  return JSON.parse(raw);
+  const parsed = JSON.parse(raw);
+  if (typeof parsed !== "object" || parsed === null) {
+    return {};
+  }
+  return parsed;
 }
 
 function pruneRateLimitBuckets(now) {
@@ -164,7 +171,13 @@ function utf8ToBase64(input) {
 }
 
 function base64ToUtf8(input) {
-  return Buffer.from(input, "base64").toString("utf8");
+  const sanitized = String(input || "").replace(/[^A-Za-z0-9+/=]/g, "");
+  if (!sanitized) return "";
+  try {
+    return Buffer.from(sanitized, "base64").toString("utf8");
+  } catch {
+    return "";
+  }
 }
 
 function normalizeValueForComparison(value, isRoot = false) {
@@ -260,9 +273,13 @@ async function putContent({ owner, repo, branch, path, token, message, content }
     const text = await response.text();
     throw new Error(`GitHub write failed (${response.status}): ${text}`);
   }
+  const result = await response.json();
+  if (typeof result !== "object" || result === null) {
+    throw new Error("Invalid GitHub response format");
+  }
   return {
     changed: true,
-    payload: await response.json()
+    payload: result
   };
 }
 

@@ -8,7 +8,13 @@ const TOKVISTA_MARK_DARK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox=
 const TOKVISTA_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 88" fill="none" aria-label="Tokvista icon"><rect width="88" height="88" rx="18" fill="#0A0A0A"/><rect x="30" y="30" width="52" height="52" rx="13" stroke="#FFFFFF" stroke-width="5" opacity="0.26"/><rect x="6" y="6" width="52" height="52" rx="13" fill="#FFFFFF"/></svg>`;
 
 function decodeBase64ToUtf8(input) {
-  return Buffer.from(String(input || ""), "base64").toString("utf8");
+  const sanitized = String(input || "").replace(/[^A-Za-z0-9+/=]/g, "");
+  if (!sanitized) return "";
+  try {
+    return Buffer.from(sanitized, "base64").toString("utf8");
+  } catch {
+    return "";
+  }
 }
 
 function svgToDataUrl(svg) {
@@ -58,18 +64,7 @@ function readTokvistaVersion() {
   }
 }
 
-function getApiBaseUrl(req) {
-  const protoHeader = req.headers["x-forwarded-proto"];
-  const hostHeader = req.headers["x-forwarded-host"] || req.headers.host;
-  const proto = typeof protoHeader === "string" && protoHeader.trim() ? protoHeader.split(",")[0].trim() : "https";
-  const host = typeof hostHeader === "string" && hostHeader.trim() ? hostHeader.trim() : "";
-  if (!host) {
-    return undefined;
-  }
-  return `${proto}://${host}`;
-}
-
-function getAllowedSourceOrigins(req) {
+function getAllowedSourceOrigins() {
   const configuredOriginsRaw = typeof process.env.TOKVISTA_ALLOWED_PREVIEW_SOURCE_ORIGINS === "string"
     ? process.env.TOKVISTA_ALLOWED_PREVIEW_SOURCE_ORIGINS
     : "";
@@ -81,14 +76,10 @@ function getAllowedSourceOrigins(req) {
   for (const origin of configuredOrigins) {
     out.add(origin);
   }
-  const apiBaseUrl = getApiBaseUrl(req);
-  if (apiBaseUrl) {
-    out.add(apiBaseUrl);
-  }
   return out;
 }
 
-function normalizeSourceUrl(input, req) {
+function normalizeSourceUrl(input) {
   const value = String(input || "").trim();
   if (!value) {
     return "";
@@ -102,7 +93,7 @@ function normalizeSourceUrl(input, req) {
   if (parsed.protocol !== "https:") {
     throw new Error("source must be an https URL");
   }
-  const allowedOrigins = getAllowedSourceOrigins(req);
+  const allowedOrigins = getAllowedSourceOrigins();
   if (!allowedOrigins.has(parsed.origin)) {
     throw new Error(
       `source origin is not allowed. Allowed origins: ${[...allowedOrigins].sort().join(", ")}`
@@ -165,7 +156,11 @@ async function fetchTokensFromSource(sourceUrl) {
     if (!content.trim()) {
       throw new Error("Source response did not include token content");
     }
-    return JSON.parse(content);
+    const parsed = JSON.parse(content);
+    if (typeof parsed !== "object" || parsed === null) {
+      throw new Error("Invalid token data format");
+    }
+    return parsed;
   }
 
   const response = await fetch(sourceUrl, { method: "GET", headers: { Accept: "application/json" } });
@@ -176,7 +171,11 @@ async function fetchTokensFromSource(sourceUrl) {
   if (!content.trim()) {
     throw new Error("Source response did not include token content");
   }
-  return JSON.parse(content);
+  const parsed = JSON.parse(content);
+  if (typeof parsed !== "object" || parsed === null) {
+    throw new Error("Invalid token data format");
+  }
+  return parsed;
 }
 
 async function githubRequest(url, token) {
@@ -240,8 +239,14 @@ function buildRuntimeConfig({ projectId, environment, sourceUrl, historyApiUrl, 
   };
 }
 
+function escapeJsonForScript(json) {
+  return json.replace(/<\/script/gi, "<\\/script").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
+}
+
 function buildHtml(tokensJson, configJson, css, appBundle) {
   const faviconUrl = svgToDataUrl(TOKVISTA_ICON_SVG);
+  const safeTokensJson = escapeJsonForScript(tokensJson);
+  const safeConfigJson = escapeJsonForScript(configJson);
   return `<!doctype html>
 <html>
   <head>
@@ -255,14 +260,14 @@ function buildHtml(tokensJson, configJson, css, appBundle) {
   </head>
   <body>
     <div id="tokvista-root"></div>
-    <script>window.__TOKVISTA_TOKENS__ = ${tokensJson};</script>
-    <script>window.__TOKVISTA_CONFIG__ = ${configJson};</script>
+    <script>window.__TOKVISTA_TOKENS__ = ${safeTokensJson};</script>
+    <script>window.__TOKVISTA_CONFIG__ = ${safeConfigJson};</script>
     <script type="module">${appBundle}</script>
   </body>
 </html>`;
 }
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (handleOptions(req, res)) {
     return;
   }
@@ -282,7 +287,7 @@ module.exports = async function handler(req, res) {
   if (sourceRaw) {
     let sourceUrl;
     try {
-      sourceUrl = normalizeSourceUrl(sourceRaw, req);
+      sourceUrl = normalizeSourceUrl(sourceRaw);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       res.status(400).send(message);
@@ -329,7 +334,6 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    // Fetch tokens from GitHub
     const encodedPath = targetPath
       .split("/")
       .map((segment) => encodeURIComponent(segment))
@@ -353,7 +357,12 @@ module.exports = async function handler(req, res) {
         res.status(502).send("GitHub response did not include token content");
         return;
       }
-      tokens = JSON.parse(content);
+      const parsed = JSON.parse(content);
+      if (typeof parsed !== "object" || parsed === null) {
+        res.status(502).send("Invalid token data format");
+        return;
+      }
+      tokens = parsed;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       res.status(502).send(`Failed to fetch tokens: ${message}`);
@@ -361,7 +370,6 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // Read CSS and JS from tokvista package
   try {
     const cssPath = path.join(process.cwd(), "node_modules", "tokvista", "dist", "styles.css");
     const jsPath = path.join(process.cwd(), "node_modules", "tokvista", "dist", "cli", "browser.js");
@@ -388,4 +396,12 @@ module.exports = async function handler(req, res) {
     const message = error instanceof Error ? error.message : String(error);
     res.status(500).send(`Failed to build preview page: ${message}`);
   }
+}
+
+module.exports = handler;
+module.exports.__test = {
+  buildHtml,
+  escapeJsonForScript,
+  getAllowedSourceOrigins,
+  normalizeSourceUrl
 };

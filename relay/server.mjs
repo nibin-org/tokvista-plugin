@@ -1,7 +1,8 @@
 import { createServer } from "node:http";
 import { createRequire } from "node:module";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -11,6 +12,7 @@ const aiGuideHandler = require("../api/ai-guide.js");
 
 const PORT = Number(process.env.PORT || 8787);
 const DATA_DIR = process.env.DATA_DIR || join(process.cwd(), "relay", "data");
+const LOCAL_ROOT = resolve(process.env.TOKVISTA_LOCAL_ROOT || process.cwd());
 const PREVIEW_BASE_URL = (process.env.TOKVISTA_PREVIEW_BASE_URL || "https://tokvista-plugin.vercel.app/preview").trim();
 const rateLimitBuckets = globalThis.__tokvistaRelayRateLimitBuckets || new Map();
 globalThis.__tokvistaRelayRateLimitBuckets = rateLimitBuckets;
@@ -80,7 +82,14 @@ function getTargetPath(projectConfig, environment) {
   return "tokens.json";
 }
 
-function resolveLocalPath(localPath) {
+function isPathWithinRoot(targetPath, localRoot = LOCAL_ROOT) {
+  const root = resolve(String(localRoot || "").trim() || process.cwd());
+  const target = resolve(String(targetPath || "").trim() || ".");
+  const pathDelta = relative(root, target);
+  return pathDelta === "" || (!pathDelta.startsWith("..") && !isAbsolute(pathDelta));
+}
+
+function resolveLocalPath(localPath, localRoot = LOCAL_ROOT) {
   if (!localPath || typeof localPath !== "string") {
     throw new Error("Invalid localPath.");
   }
@@ -88,7 +97,12 @@ function resolveLocalPath(localPath) {
   if (!trimmed) {
     throw new Error("Invalid localPath.");
   }
-  return isAbsolute(trimmed) ? trimmed : resolve(process.cwd(), trimmed);
+  const root = resolve(String(localRoot || "").trim() || process.cwd());
+  const absolutePath = isAbsolute(trimmed) ? resolve(trimmed) : resolve(root, trimmed);
+  if (!isPathWithinRoot(absolutePath, root)) {
+    throw new Error("localPath must stay within TOKVISTA_LOCAL_ROOT.");
+  }
+  return absolutePath;
 }
 
 async function githubRequest(url, token, options = {}) {
@@ -799,7 +813,7 @@ async function handleAiGuide(req, res) {
   await aiGuideHandler(req, createApiCompatResponse(res));
 }
 
-const server = createServer(async (req, res) => {
+const requestHandler = async (req, res) => {
   if (req.method === "OPTIONS") {
     setCorsHeaders(res);
     res.writeHead(204);
@@ -871,9 +885,21 @@ const server = createServer(async (req, res) => {
   }
 
   sendJson(res, 404, { error: "Not found." });
-});
+};
 
-server.listen(PORT, () => {
-  // eslint-disable-next-line no-console
-  console.log(`[tokvista-relay] listening on http://localhost:${PORT}`);
-});
+const server = createServer(requestHandler);
+const isDirectExecution = Boolean(process.argv[1]) && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isDirectExecution) {
+  server.listen(PORT, () => {
+    // eslint-disable-next-line no-console
+    console.log(`[tokvista-relay] listening on http://localhost:${PORT}`);
+  });
+}
+
+export {
+  LOCAL_ROOT,
+  isPathWithinRoot,
+  requestHandler,
+  resolveLocalPath
+};

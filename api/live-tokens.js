@@ -9,7 +9,13 @@ function setNoStoreHeaders(res) {
 }
 
 function decodeBase64ToUtf8(input) {
-  return Buffer.from(String(input || ""), "base64").toString("utf8");
+  const sanitized = String(input || "").replace(/[^A-Za-z0-9+/=]/g, "");
+  if (!sanitized) return "";
+  try {
+    return Buffer.from(sanitized, "base64").toString("utf8");
+  } catch {
+    return "";
+  }
 }
 
 async function githubRequest(url, token) {
@@ -93,6 +99,10 @@ module.exports = async function handler(req, res) {
       return;
     }
     const parsed = JSON.parse(content);
+    if (typeof parsed !== "object" || parsed === null) {
+      sendJson(res, 502, { error: "Invalid token data format." });
+      return;
+    }
     setNoStoreHeaders(res);
     sendJson(res, 200, parsed);
   } catch (error) {
