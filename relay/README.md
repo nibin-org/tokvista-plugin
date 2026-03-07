@@ -19,11 +19,15 @@ Default port: `8787`
 Health:
 `GET http://localhost:8787/health`
 
+AI:
+`POST http://localhost:8787/ai-guide`
+
 ## Vercel mode
 This repo includes Vercel functions:
 - `api/health`
 - `api/publish-tokens`
 - `api/index`
+- `api/ai-guide`
 
 In plugin settings use:
 - Relay URL: `https://<your-app>.vercel.app/api`

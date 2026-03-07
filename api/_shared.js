@@ -1,5 +1,6 @@
 "use strict";
 
+// In-memory buckets persist only within a warm runtime instance.
 const rateLimitBuckets = globalThis.__tokvistaRateLimitBuckets || new Map();
 globalThis.__tokvistaRateLimitBuckets = rateLimitBuckets;
 

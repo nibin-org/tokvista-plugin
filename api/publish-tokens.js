@@ -2,6 +2,7 @@
 
 const {
   createVersionId,
+  getClientIp,
   getTargetPath,
   handleOptions,
   parseProjectsConfig,
@@ -116,7 +117,8 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const rateLimit = takeRateLimit(`publish:${projectId}`, { limit: 10, windowMs: 60_000 });
+  const clientIp = getClientIp(req);
+  const rateLimit = takeRateLimit(`publish:${projectId}:${clientIp}`, { limit: 10, windowMs: 60_000 });
   if (!rateLimit.allowed) {
     sendJson(res, 429, {
       error: "Rate limit exceeded for this project. Try again shortly.",

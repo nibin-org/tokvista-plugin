@@ -1,9 +1,13 @@
 import { createServer } from "node:http";
+import { createRequire } from "node:module";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import dotenv from "dotenv";
 
 dotenv.config();
+
+const require = createRequire(import.meta.url);
+const aiGuideHandler = require("../api/ai-guide.js");
 
 const PORT = Number(process.env.PORT || 8787);
 const DATA_DIR = process.env.DATA_DIR || join(process.cwd(), "relay", "data");
@@ -317,6 +321,49 @@ function takeRateLimit(key, { limit, windowMs }) {
   };
 }
 
+function getClientIp(req) {
+  const forwarded = typeof req.headers["x-forwarded-for"] === "string" ? req.headers["x-forwarded-for"] : "";
+  const firstForwarded = forwarded.split(",")[0].trim();
+  if (firstForwarded) {
+    return firstForwarded;
+  }
+  const realIp = typeof req.headers["x-real-ip"] === "string" ? req.headers["x-real-ip"].trim() : "";
+  if (realIp) {
+    return realIp;
+  }
+  return req.socket?.remoteAddress || "unknown";
+}
+
+function createApiCompatResponse(res) {
+  return Object.assign(res, {
+    status(statusCode) {
+      res.statusCode = statusCode;
+      return this;
+    },
+    json(payload) {
+      const body = JSON.stringify(payload);
+      if (!res.hasHeader("Content-Type")) {
+        res.setHeader("Content-Type", "application/json");
+      }
+      res.setHeader("Content-Length", Buffer.byteLength(body));
+      res.end(body);
+      return this;
+    },
+    send(payload) {
+      if (typeof payload === "object" && payload !== null && !Buffer.isBuffer(payload)) {
+        return this.json(payload);
+      }
+      const body = Buffer.isBuffer(payload) ? payload : Buffer.from(String(payload ?? ""), "utf8");
+      if (!res.hasHeader("Content-Type")) {
+        res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      }
+      res.setHeader("Content-Length", body.length);
+      res.end(body);
+      return this;
+    }
+  });
+}
+
 function buildServerBaseUrl(req) {
   const protoHeader = req.headers["x-forwarded-proto"];
   const hostHeader = req.headers["x-forwarded-host"] || req.headers.host;
@@ -401,7 +448,8 @@ async function handlePublish(req, res) {
     sendJson(res, 404, { error: "Unknown projectId." });
     return;
   }
-  const rateLimit = takeRateLimit(`publish:${projectId}`, { limit: 10, windowMs: 60_000 });
+  const clientIp = getClientIp(req);
+  const rateLimit = takeRateLimit(`publish:${projectId}:${clientIp}`, { limit: 10, windowMs: 60_000 });
   if (!rateLimit.allowed) {
     sendJson(res, 429, {
       error: "Rate limit exceeded for this project. Try again shortly.",
@@ -747,6 +795,10 @@ async function handleVersionHistory(req, res) {
   }
 }
 
+async function handleAiGuide(req, res) {
+  await aiGuideHandler(req, createApiCompatResponse(res));
+}
+
 const server = createServer(async (req, res) => {
   if (req.method === "OPTIONS") {
     setCorsHeaders(res);
@@ -760,7 +812,7 @@ const server = createServer(async (req, res) => {
       ok: true,
       service: "tokvista-relay",
       status: "running",
-      endpoints: ["/health", "/config-example", "/publish-tokens", "/preview-link", "/live-tokens", "/version-history"],
+      endpoints: ["/health", "/config-example", "/publish-tokens", "/preview-link", "/live-tokens", "/version-history", "/ai-guide"],
       projectsLoaded: Object.keys(PROJECTS).length
     });
     return;
@@ -800,6 +852,11 @@ const server = createServer(async (req, res) => {
 
   if (req.method === "POST" && req.url === "/preview-link") {
     await handlePreviewLink(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/ai-guide") {
+    await handleAiGuide(req, res);
     return;
   }
 
