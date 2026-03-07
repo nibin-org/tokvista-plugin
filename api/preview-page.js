@@ -157,16 +157,7 @@ function normalizeTokensForPreview(payload) {
       normalized["Semantic/Value"] = semanticTokens;
     }
     if (componentTokens) {
-      const componentEntries = Object.entries(componentTokens);
-      if (componentEntries.length === 0) {
-        normalized["Components/Value"] = {};
-      } else {
-        for (const [key, value] of componentEntries) {
-          if (isObjectLike(value)) {
-            normalized[`Components/${key}`] = value;
-          }
-        }
-      }
+      normalized["Components/Mode 1"] = componentTokens;
     }
     if (Object.keys(normalized).length > 0) {
       return normalized;
