@@ -5,6 +5,9 @@ const { getClientIp, handleOptions, readJsonBody, sendJson, takeRateLimit } = re
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant";
 const MAX_MESSAGE_LENGTH = 2000;
+const GROQ_MAX_TOKENS = 4096;
+const REPAIR_HISTORY_ENTRY_MAX_LENGTH = 240;
+const REPAIR_ANSWER_MAX_LENGTH = 1200;
 
 function toRateLimitPayload(rateLimit) {
   return {
@@ -757,6 +760,14 @@ function normalizeHistory(input) {
     .slice(-6);
 }
 
+function truncateText(input, maxLength) {
+  const text = String(input || "").trim();
+  if (!text) {
+    return "";
+  }
+  return text.length > maxLength ? `${text.slice(0, Math.max(0, maxLength - 3)).trimEnd()}...` : text;
+}
+
 function tokenizeIntentText(input) {
   return String(input || "")
     .toLowerCase()
@@ -868,6 +879,7 @@ async function requestGroqChat({ apiKey, model, messages }) {
     body: JSON.stringify({
       model,
       temperature: 0.4,
+      max_tokens: GROQ_MAX_TOKENS,
       messages
     })
   });
@@ -901,10 +913,10 @@ async function repairTokenBundle({ apiKey, model, message, history, originalAnsw
     message,
     "",
     "Conversation history:",
-    history.map((item) => `${item.role}: ${item.content}`).join("\n") || "(none)",
+    history.map((item) => `${item.role}: ${truncateText(item.content, REPAIR_HISTORY_ENTRY_MAX_LENGTH)}`).join("\n") || "(none)",
     "",
     "Previous AI answer:",
-    originalAnswer || "(none)",
+    truncateText(originalAnswer, REPAIR_ANSWER_MAX_LENGTH) || "(none)",
     "",
     "Rewrite this into a complete Foundation + Semantic token JSON bundle for Tokvista import."
   ].join("\n");
@@ -955,7 +967,7 @@ module.exports = async function handler(req, res) {
   }
 
   const clientIp = getClientIp(req);
-  const rateLimit = takeRateLimit(`ai-guide:${clientIp}`, { limit: 20, windowMs: 60_000 });
+  let rateLimit = takeRateLimit(`ai-guide:${clientIp}`, { limit: 20, windowMs: 60_000 });
   if (!rateLimit.allowed) {
     sendJson(res, 429, {
       error: "Rate limit exceeded for this IP. Try again shortly.",
@@ -975,20 +987,24 @@ module.exports = async function handler(req, res) {
     const answer = await requestGroqChat({ apiKey, model, messages });
     let tokens = extractTokensFromAnswer(answer);
     if (shouldAttemptTokenRepair({ message, history, answer, extractedTokens: tokens })) {
-      try {
-        const repairedAnswer = await repairTokenBundle({
-          apiKey,
-          model,
-          message,
-          history,
-          originalAnswer: answer
-        });
-        const repairedTokens = extractTokensFromAnswer(repairedAnswer);
-        if (isProductionReadyTokenBundle(repairedTokens)) {
-          tokens = repairedTokens;
+      const repairRateLimit = takeRateLimit(`ai-guide:${clientIp}`, { limit: 20, windowMs: 60_000 });
+      if (repairRateLimit.allowed) {
+        rateLimit = repairRateLimit;
+        try {
+          const repairedAnswer = await repairTokenBundle({
+            apiKey,
+            model,
+            message,
+            history,
+            originalAnswer: answer
+          });
+          const repairedTokens = extractTokensFromAnswer(repairedAnswer);
+          if (isProductionReadyTokenBundle(repairedTokens)) {
+            tokens = repairedTokens;
+          }
+        } catch {
+          // Keep the first-pass answer/tokens if repair fails.
         }
-      } catch {
-        // Keep the first-pass answer/tokens if repair fails.
       }
     }
     sendJson(res, 200, {
@@ -1000,4 +1016,15 @@ module.exports = async function handler(req, res) {
     const messageText = error instanceof Error ? error.message : String(error);
     sendJson(res, 502, { error: messageText });
   }
+};
+
+module.exports.__test = {
+  truncateText,
+  normalizeGeneratedTokens,
+  isProductionReadyTokenBundle,
+  hasEnoughDesignContext,
+  looksLikeClarifyingAnswer,
+  shouldAttemptTokenRepair,
+  requestGroqChat,
+  sanitizeTokenKey
 };

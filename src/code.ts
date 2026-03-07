@@ -237,16 +237,31 @@ function normalizeSyncProvider(input: unknown): "relay" | "github" {
   return input === "github" ? "github" : "relay";
 }
 
-function parseHttpsUrl(value: string): URL | null {
-  try {
-    const parsed = new URL(value);
-    if (parsed.protocol !== "https:") {
-      return null;
-    }
-    return parsed;
-  } catch {
+function sanitizeUrlInput(value: string): string {
+  return String(value || "")
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/\s+/g, "")
+    .replace(/^['"`]+|['"`]+$/g, "");
+}
+
+function parseHttpsUrl(value: string): { origin: string; href: string } | null {
+  const input = sanitizeUrlInput(value);
+  if (!input) {
     return null;
   }
+  const match = input.match(/^https:\/\/([^/?#]+)(\/[^?#]*)?(\?[^#]*)?(#.*)?$/i);
+  if (!match) {
+    return null;
+  }
+  const host = match[1].toLowerCase();
+  const pathname = match[2] || "";
+  const search = match[3] || "";
+  const hash = match[4] || "";
+  return {
+    origin: `https://${host}`,
+    href: `https://${host}${pathname}${search}${hash}`
+  };
 }
 
 function formatAllowedOrigins(origins: Set<string>): string {
@@ -271,7 +286,7 @@ function normalizeRelaySettings(input: unknown, existingSettings: RelaySettings 
   }
 
   const provider = normalizeSyncProvider(input.provider);
-  const relayUrlInput = typeof input.relayUrl === "string" ? input.relayUrl.trim() : "";
+  const relayUrlInput = typeof input.relayUrl === "string" ? sanitizeUrlInput(input.relayUrl) : "";
   const projectIdInput = typeof input.projectId === "string" ? input.projectId.trim() : "";
   const environmentInput = typeof input.environment === "string" ? input.environment.trim() : "";
   const publishKeyInput = typeof input.publishKey === "string" ? input.publishKey.trim() : "";
@@ -455,7 +470,7 @@ function resolveActiveProfile(store: RelaySettingsStore): RelaySettingsProfile {
 }
 
 function normalizeRelayUrl(relayUrlInput: string): string {
-  const relayUrl = relayUrlInput.replace(/\/+$/, "");
+  const relayUrl = sanitizeUrlInput(relayUrlInput).replace(/\/+$/, "");
   if (/^https:\/\/[^/]+\.vercel\.app$/i.test(relayUrl)) {
     return `${relayUrl}/api`;
   }
@@ -1137,11 +1152,7 @@ async function updateAiImportHistoryEntry(
 }
 
 function collectRevertableAiRefs(entry: AiImportHistoryEntry): string[] {
-  const refs = [
-    ...entry.createdRefs,
-    ...entry.updatedRefs,
-    ...entry.replacedRefs
-  ];
+  const refs = [...entry.createdRefs];
   return [...new Set(refs)];
 }
 
@@ -2091,7 +2102,7 @@ function normalizeHttpUrl(value: unknown): string {
   if (!parsed) {
     return "";
   }
-  return parsed.toString();
+  return parsed.href;
 }
 
 async function importTokensFromUrl(urlValue: unknown): Promise<ImportResult> {
@@ -2146,8 +2157,9 @@ function buildAiImportHistoryEntry(
   result: ImportResult
 ): AiImportHistoryEntry {
   const importedAt = new Date().toISOString();
+  const suffix = Math.random().toString(36).slice(2, 8);
   return {
-    id: `${importedAt}:${meta.prompt.slice(0, 32)}`,
+    id: `${importedAt}:${meta.prompt.slice(0, 32)}:${suffix}`,
     importedAt,
     generatedAt: meta.generatedAt || undefined,
     prompt: meta.prompt,

@@ -3703,7 +3703,7 @@ function readSyncPayload() {
   return {
     profileId: state.draftNewProfile ? '' : (state.activeProfileId || ''),
     provider: normalizeProvider(state.syncProvider),
-    relayUrl:    refs.relayUrlInput.value.trim(),
+    relayUrl:    normalizeLinkValue(refs.relayUrlInput.value),
     projectId:   refs.projectIdInput.value.trim(),
     environment: refs.environmentInput.value.trim(),
     publishKey:  readSecretInputValue(refs.publishKeyInput),
@@ -3748,7 +3748,11 @@ function typeChipLabel(row) {
 }
 function normalizeLinkValue(v) {
   if (typeof v !== 'string') return '';
-  const trimmed = v.trim();
+  const trimmed = v
+    .normalize('NFKC')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\s+/g, '')
+    .replace(/^['"`]+|['"`]+$/g, '');
   return trimmed;
 }
 function escapeHtml(s) {
@@ -4013,7 +4017,10 @@ function openAiRevertModal(entryId) {
   const entry = getAiHistoryEntryById(entryId);
   if (!entry || entry.revertedAt) return;
   state.aiHistoryConfirmEntryId = entryId;
-  const imported = Number(entry.imported || 0);
+  const createdCount = Array.isArray(entry.createdRefs) ? entry.createdRefs.length : 0;
+  const overwrittenCount =
+    (Array.isArray(entry.updatedRefs) ? entry.updatedRefs.length : 0) +
+    (Array.isArray(entry.replacedRefs) ? entry.replacedRefs.length : 0);
   const collection = String(entry.collection || 'Tokvista');
   const title = buildAiHistoryHeadline(entry, [
     ...(Array.isArray(entry.createdNames) ? entry.createdNames : []),
@@ -4021,7 +4028,10 @@ function openAiRevertModal(entryId) {
     ...(Array.isArray(entry.replacedNames) ? entry.replacedNames : [])
   ]);
   if (refs.aiRevertModalSummary) {
-    refs.aiRevertModalSummary.textContent = `${title} in ${collection}. ${imported} variable${imported === 1 ? '' : 's'} will be targeted for removal.`;
+    const existingNotice = overwrittenCount > 0
+      ? ` ${overwrittenCount} existing variable${overwrittenCount === 1 ? '' : 's'} were updated but cannot be automatically restored.`
+      : '';
+    refs.aiRevertModalSummary.textContent = `${title} in ${collection}. ${createdCount} created variable${createdCount === 1 ? '' : 's'} will be removed.${existingNotice}`;
   }
   refs.aiRevertModal?.classList.add('on');
 }
@@ -4147,7 +4157,7 @@ function renderAiImportHistory(items) {
     const updatedRefs = Array.isArray(item.updatedRefs) ? item.updatedRefs : [];
     const replacedRefs = Array.isArray(item.replacedRefs) ? item.replacedRefs : [];
     const activeNames = [...createdNames, ...updatedNames, ...replacedNames];
-    const revertableVariableCount = createdRefs.length + updatedRefs.length + replacedRefs.length;
+    const revertableVariableCount = createdRefs.length;
     const visibleVariableCount = activeNames.length + skippedNames.length;
     const promptText = String(item.prompt || 'AI token import');
     const isReverted = typeof item.revertedAt === 'string' && !!item.revertedAt;
