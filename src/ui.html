@@ -4693,6 +4693,17 @@ function aiPathAfterMarker(path, marker) {
 function aiIsComponentPath(path) {
   return path.includes('component') || path.includes('components');
 }
+function aiUnwrapCollectionWrapper(path) {
+  if (!Array.isArray(path) || path.length < 2) return path;
+  const [first, second] = path;
+  const head = String(first || '').toLowerCase();
+  const next = String(second || '').toLowerCase();
+  if (head !== 'foundation') return path;
+  if (next === 'foundation' || next === 'semantic' || next === 'components' || next === 'component' || next === 'base') {
+    return path.slice(1);
+  }
+  return path;
+}
 function aiFoundationPath(path) {
   const afterFoundation = aiPathAfterMarker(path, 'foundation');
   if (afterFoundation?.length) return afterFoundation;
@@ -4720,9 +4731,10 @@ function buildAiCollectionBundle(tokensRoot) {
   const semanticRawMap = new Map();
 
   forEachAiTokenLeaf(tokensRoot, [], (leaf, path) => {
-    const foundationPath = aiFoundationPath(path);
-    const semanticPath = aiSemanticPath(path);
-    const componentPath = aiComponentPath(path);
+    const normalizedPath = aiUnwrapCollectionWrapper(path);
+    const foundationPath = aiFoundationPath(normalizedPath);
+    const semanticPath = aiSemanticPath(normalizedPath);
+    const componentPath = aiComponentPath(normalizedPath);
 
     if (foundationPath?.length) {
       setAiLeafAtPath(foundationTokens, foundationPath, leaf);
@@ -4733,13 +4745,13 @@ function buildAiCollectionBundle(tokensRoot) {
       setAiLeafAtPath(semanticTokens, semanticPath, leaf);
       return;
     }
-    if (componentPath?.length || aiIsComponentPath(path)) {
-      const targetPath = componentPath?.length ? componentPath : path;
+    if (componentPath?.length || aiIsComponentPath(normalizedPath)) {
+      const targetPath = componentPath?.length ? componentPath : normalizedPath;
       setAiLeafAtPath(componentTokens, targetPath, leaf);
       return;
     }
-    setAiLeafAtPath(foundationTokens, path, leaf);
-    foundationMap.set(`${leaf.type}|${aiComparableValue(leaf.value)}`, path);
+    setAiLeafAtPath(foundationTokens, normalizedPath, leaf);
+    foundationMap.set(`${leaf.type}|${aiComparableValue(leaf.value)}`, normalizedPath);
   });
 
   forEachAiTokenLeaf(semanticTokens, [], (leaf, path) => {

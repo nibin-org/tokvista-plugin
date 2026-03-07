@@ -385,6 +385,22 @@ function isComponentPath(path) {
   return path.includes("component") || path.includes("components");
 }
 
+function unwrapCollectionWrapper(path) {
+  if (!Array.isArray(path) || path.length < 2) {
+    return path;
+  }
+  const [first, second] = path;
+  const head = String(first || "").toLowerCase();
+  const next = String(second || "").toLowerCase();
+  if (head !== "foundation") {
+    return path;
+  }
+  if (next === "foundation" || next === "semantic" || next === "components" || next === "component" || next === "base") {
+    return path.slice(1);
+  }
+  return path;
+}
+
 function foundationPathForLeaf(path) {
   const afterFoundation = pathAfterMarker(path, "foundation");
   if (afterFoundation && afterFoundation.length) {
@@ -425,9 +441,10 @@ function buildCollectionBundle(tokensRoot) {
   const semanticRawMap = new Map();
 
   forEachTokenLeaf(tokensRoot, [], (leaf, path) => {
-    const foundationPath = foundationPathForLeaf(path);
-    const semanticPath = semanticPathForLeaf(path);
-    const componentPath = componentPathForLeaf(path);
+    const normalizedPath = unwrapCollectionWrapper(path);
+    const foundationPath = foundationPathForLeaf(normalizedPath);
+    const semanticPath = semanticPathForLeaf(normalizedPath);
+    const componentPath = componentPathForLeaf(normalizedPath);
 
     if (foundationPath && foundationPath.length) {
       setLeafAtPath(foundationTokens, foundationPath, leaf);
@@ -438,12 +455,12 @@ function buildCollectionBundle(tokensRoot) {
       setLeafAtPath(semanticTokens, semanticPath, leaf);
       return;
     }
-    if ((componentPath && componentPath.length) || isComponentPath(path)) {
-      setLeafAtPath(componentTokens, componentPath && componentPath.length ? componentPath : path, leaf);
+    if ((componentPath && componentPath.length) || isComponentPath(normalizedPath)) {
+      setLeafAtPath(componentTokens, componentPath && componentPath.length ? componentPath : normalizedPath, leaf);
       return;
     }
-    setLeafAtPath(foundationTokens, path, leaf);
-    foundationMap.set(`${leaf.type}|${comparableValue(leaf.value)}`, path);
+    setLeafAtPath(foundationTokens, normalizedPath, leaf);
+    foundationMap.set(`${leaf.type}|${comparableValue(leaf.value)}`, normalizedPath);
   });
 
   forEachTokenLeaf(semanticTokens, [], (leaf, path) => {
