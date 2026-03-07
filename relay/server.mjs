@@ -51,14 +51,21 @@ function sendJson(res, statusCode, payload) {
   res.end(body);
 }
 
+function isPlainObject(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 async function readJsonBody(req) {
   const chunks = [];
   for await (const chunk of req) {
     chunks.push(chunk);
   }
   const raw = Buffer.concat(chunks).toString("utf8");
-  if (!raw) return {};
-  return JSON.parse(raw);
+  if (!raw) {
+    return {};
+  }
+  const parsed = JSON.parse(raw);
+  return isPlainObject(parsed) ? parsed : {};
 }
 
 function getProjectConfig(projectId) {
@@ -119,7 +126,15 @@ function utf8ToBase64(input) {
 }
 
 function base64ToUtf8(input) {
-  return Buffer.from(input, "base64").toString("utf8");
+  const sanitized = String(input || "").replace(/[^A-Za-z0-9+/=]/g, "");
+  if (!sanitized) {
+    return "";
+  }
+  try {
+    return Buffer.from(sanitized, "base64").toString("utf8");
+  } catch {
+    return "";
+  }
 }
 
 function normalizeValueForComparison(value, isRoot = false) {
@@ -213,9 +228,13 @@ async function putContent({ owner, repo, branch, path, token, message, content }
     const text = await response.text();
     throw new Error(`GitHub write failed (${response.status}): ${text}`);
   }
+  const result = await response.json();
+  if (!isPlainObject(result)) {
+    throw new Error("Invalid GitHub response format");
+  }
   return {
     changed: true,
-    payload: await response.json()
+    payload: result
   };
 }
 
@@ -765,6 +784,10 @@ async function handleLiveTokens(req, res) {
     }
 
     const parsed = JSON.parse(contentText);
+    if (!isPlainObject(parsed)) {
+      sendJson(res, 502, { error: "Invalid token data format." });
+      return;
+    }
     setNoStoreHeaders(res);
     sendJson(res, 200, parsed);
   } catch (error) {
@@ -821,7 +844,10 @@ async function handleVersionHistory(req, res) {
     }
 
     const payload = await response.json();
-    const commits = Array.isArray(payload) ? payload : [];
+    if (!Array.isArray(payload)) {
+      throw new Error("Invalid GitHub history response format.");
+    }
+    const commits = payload;
     const items = commits.map((commitItem, index) => {
       const sha = typeof commitItem?.sha === "string" ? commitItem.sha : "";
       const message = firstLine(commitItem?.commit?.message);

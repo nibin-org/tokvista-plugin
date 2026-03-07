@@ -115,6 +115,20 @@ function getAllowedSourceOrigins() {
   return out;
 }
 
+function getAllowedRelayOrigins() {
+  const configuredOriginsRaw = typeof process.env.TOKVISTA_ALLOWED_RELAY_ORIGINS === "string"
+    ? process.env.TOKVISTA_ALLOWED_RELAY_ORIGINS
+    : typeof process.env.TOKVISTA_ALLOWED_PREVIEW_SOURCE_ORIGINS === "string"
+      ? process.env.TOKVISTA_ALLOWED_PREVIEW_SOURCE_ORIGINS
+      : "";
+  return new Set(
+    configuredOriginsRaw
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean)
+  );
+}
+
 function normalizeSourceUrl(input) {
   const value = String(input || "").trim();
   if (!value) {
@@ -152,7 +166,7 @@ function normalizeRelayApiUrl(input) {
   if (parsed.protocol !== "https:") {
     throw new Error("relay must be an https URL");
   }
-  const allowedOrigins = getAllowedSourceOrigins();
+  const allowedOrigins = getAllowedRelayOrigins();
   if (!allowedOrigins.has(parsed.origin)) {
     throw new Error(
       `relay origin is not allowed. Allowed origins: ${[...allowedOrigins].sort().join(", ")}`
@@ -557,6 +571,7 @@ module.exports.__test = {
   buildHtml,
   buildRuntimeConfig,
   escapeJsonForScript,
+  getAllowedRelayOrigins,
   getAllowedSourceOrigins,
   normalizeRelayApiUrl,
   normalizeSourceUrl,

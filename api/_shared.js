@@ -40,12 +40,12 @@ function handleOptions(req, res) {
 }
 
 async function readJsonBody(req) {
-  if (req.body && typeof req.body === "object") {
+  if (req.body && typeof req.body === "object" && !Array.isArray(req.body)) {
     return req.body;
   }
   if (typeof req.body === "string" && req.body.trim()) {
     const parsed = JSON.parse(req.body);
-    if (typeof parsed !== "object" || parsed === null) {
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
       return {};
     }
     return parsed;
@@ -60,7 +60,7 @@ async function readJsonBody(req) {
     return {};
   }
   const parsed = JSON.parse(raw);
-  if (typeof parsed !== "object" || parsed === null) {
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
     return {};
   }
   return parsed;
@@ -227,6 +227,9 @@ async function getContentMeta({ owner, repo, branch, path, token }) {
     throw new Error(`GitHub read failed (${response.status}): ${text}`);
   }
   const payload = await response.json();
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
+    throw new Error("Invalid GitHub response format");
+  }
   const sha = typeof payload.sha === "string" ? payload.sha : null;
   const content =
     typeof payload.content === "string" && payload.encoding === "base64"
@@ -274,7 +277,7 @@ async function putContent({ owner, repo, branch, path, token, message, content }
     throw new Error(`GitHub write failed (${response.status}): ${text}`);
   }
   const result = await response.json();
-  if (typeof result !== "object" || result === null) {
+  if (typeof result !== "object" || result === null || Array.isArray(result)) {
     throw new Error("Invalid GitHub response format");
   }
   return {

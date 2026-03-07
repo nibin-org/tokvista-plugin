@@ -12,6 +12,8 @@ const {
   takeRateLimit
 } = require("./_shared");
 
+const PREVIEW_BASE_URL = (process.env.TOKVISTA_PREVIEW_BASE_URL || "").trim();
+
 function encodePathForRaw(path) {
   return String(path)
     .split("/")
@@ -38,21 +40,32 @@ function buildBranchRawUrl(owner, repo, branch, path) {
 }
 
 function buildPreviewUrl(req, projectId, environment) {
+  const base = buildPreviewBaseUrl(req);
+  if (!base) {
+    return undefined;
+  }
+  return `${base}?projectId=${encodeURIComponent(projectId)}&environment=${encodeURIComponent(environment)}`;
+}
+
+function buildGitHubPreviewUrl(req, owner, repo, ref, tokenPath) {
+  const base = buildPreviewBaseUrl(req);
+  if (!base || !owner || !repo || !ref || !tokenPath) {
+    return undefined;
+  }
+  return `${base}?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}&ref=${encodeURIComponent(
+    ref
+  )}&path=${encodeURIComponent(tokenPath)}`;
+}
+
+function buildPreviewBaseUrl(req) {
+  if (PREVIEW_BASE_URL) {
+    return PREVIEW_BASE_URL;
+  }
   const base = buildApiBaseUrl(req);
   if (!base) {
     return undefined;
   }
-  return `${base}/preview?projectId=${encodeURIComponent(projectId)}&environment=${encodeURIComponent(environment)}`;
-}
-
-function buildGitHubPreviewUrl(req, owner, repo, ref, tokenPath) {
-  const base = buildApiBaseUrl(req);
-  if (!base || !owner || !repo || !ref || !tokenPath) {
-    return undefined;
-  }
-  return `${base}/preview?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}&ref=${encodeURIComponent(
-    ref
-  )}&path=${encodeURIComponent(tokenPath)}`;
+  return `${base}/preview`;
 }
 
 function buildApiBaseUrl(req) {
