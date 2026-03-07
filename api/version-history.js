@@ -24,16 +24,46 @@ function buildRawUrl(owner, repo, commitSha, path) {
   )}/${encodeURIComponent(commitSha)}/${encodePathForRaw(path)}`;
 }
 
-function buildPreviewUrl(rawUrl) {
-  if (!rawUrl) {
+function buildPreviewBaseUrl(req) {
+  const configured = (process.env.TOKVISTA_PREVIEW_BASE_URL || "").trim();
+  if (configured) {
+    return configured;
+  }
+  const baseUrl = buildApiBaseUrl(req);
+  if (!baseUrl) {
     return undefined;
   }
-  const base = (process.env.TOKVISTA_PREVIEW_BASE_URL || "").trim();
-  if (base) {
-    const separator = base.includes("?") ? "&" : "?";
-    return `${base}${separator}source=${encodeURIComponent(rawUrl)}`;
+  return `${baseUrl}/preview`;
+}
+
+function appendPreviewParams(base, params) {
+  if (!base) {
+    return undefined;
   }
-  return undefined;
+  const separator = base.includes("?") ? "&" : "?";
+  const query = new URLSearchParams();
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (typeof value === "string" && value.trim()) {
+      query.set(key, value.trim());
+    }
+  });
+  return query.toString() ? `${base}${separator}${query.toString()}` : base;
+}
+
+function buildProjectPreviewUrl(req, projectId, environment) {
+  return appendPreviewParams(buildPreviewBaseUrl(req), {
+    projectId,
+    environment: environment || "dev"
+  });
+}
+
+function buildGitHubPreviewUrl(req, owner, repo, ref, path) {
+  return appendPreviewParams(buildPreviewBaseUrl(req), {
+    owner,
+    repo,
+    ref,
+    path
+  });
 }
 
 function getQuery(req) {
@@ -78,21 +108,6 @@ function buildApiBaseUrl(req) {
     return undefined;
   }
   return `${proto}://${host}`;
-}
-
-function buildPreviewUrlForRequest(rawUrl, req) {
-  if (!rawUrl) {
-    return undefined;
-  }
-  const configured = buildPreviewUrl(rawUrl);
-  if (configured) {
-    return configured;
-  }
-  const baseUrl = buildApiBaseUrl(req);
-  if (!baseUrl) {
-    return undefined;
-  }
-  return `${baseUrl}/preview?source=${encodeURIComponent(rawUrl)}`;
 }
 
 function parseRawGitHubSource(sourceUrl) {
@@ -141,7 +156,44 @@ function normalizeSourceUrl(input) {
   return parsed.toString();
 }
 
+function readGitHubTargetFromQuery(query) {
+  const owner = (query.get("owner") || "").trim();
+  const repo = (query.get("repo") || "").trim();
+  const ref = (query.get("ref") || "").trim();
+  const filePath = (query.get("path") || "").trim();
+  if (!owner && !repo && !ref && !filePath) {
+    return null;
+  }
+  if (!owner || !repo || !ref || !filePath) {
+    return { error: "owner, repo, ref, and path are required together." };
+  }
+  return {
+    owner,
+    repo,
+    ref,
+    filePath
+  };
+}
+
 function resolveTargetFromQuery(query) {
+  const githubTarget = readGitHubTargetFromQuery(query);
+  if (githubTarget && githubTarget.error) {
+    return githubTarget;
+  }
+  if (githubTarget) {
+    return {
+      source: "",
+      projectId: "",
+      environment: "github",
+      owner: githubTarget.owner,
+      repo: githubTarget.repo,
+      branch: githubTarget.ref,
+      path: githubTarget.filePath,
+      githubToken: process.env.TOKVISTA_GITHUB_TOKEN || "",
+      mode: "github"
+    };
+  }
+
   const sourceRaw = normalizeSourceUrl(query.get("source"));
   if (sourceRaw) {
     const parsedSource = parseRawGitHubSource(sourceRaw);
@@ -207,6 +259,14 @@ function buildResponseMeta(target) {
       path: target.path
     };
   }
+  if (target.mode === "github") {
+    return {
+      owner: target.owner,
+      repo: target.repo,
+      ref: target.branch,
+      path: target.path
+    };
+  }
   return {
     projectId: target.projectId,
     environment: target.environment,
@@ -249,7 +309,11 @@ function mapCommitItems(commits, target, req) {
           ? commitItem.commit.author.date
           : "";
     const rawUrl = buildRawUrl(target.owner, target.repo, sha, target.path);
-    const previewUrl = buildPreviewUrlForRequest(rawUrl, req);
+    const previewUrl =
+      target.mode === "project"
+        ? buildProjectPreviewUrl(req, target.projectId, target.environment)
+        : buildGitHubPreviewUrl(req, target.owner, target.repo, target.branch, target.path);
+    const snapshotPreviewUrl = buildGitHubPreviewUrl(req, target.owner, target.repo, sha || target.branch, target.path);
     const referenceUrl = typeof commitItem?.html_url === "string" ? commitItem.html_url : "";
     const versionId = extractVersionId(message, sha);
     return {
@@ -262,6 +326,7 @@ function mapCommitItems(commits, target, req) {
       path: target.path,
       rawUrl,
       previewUrl,
+      snapshotPreviewUrl,
       referenceUrl
     };
   });

@@ -6,6 +6,16 @@ const { getTargetPath, handleOptions, parseProjectsConfig } = require("./_shared
 
 const TOKVISTA_MARK_DARK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 88" fill="none" aria-label="Tokvista mark dark"><rect x="30" y="30" width="52" height="52" rx="13" stroke="#FFFFFF" stroke-width="5" opacity="0.26"/><rect x="6" y="6" width="52" height="52" rx="13" fill="#FFFFFF"/></svg>`;
 const TOKVISTA_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 88" fill="none" aria-label="Tokvista icon"><rect width="88" height="88" rx="18" fill="#0A0A0A"/><rect x="30" y="30" width="52" height="52" rx="13" stroke="#FFFFFF" stroke-width="5" opacity="0.26"/><rect x="6" y="6" width="52" height="52" rx="13" fill="#FFFFFF"/></svg>`;
+const PREVIEW_CSS_OVERRIDES = `
+html,
+body {
+  color-scheme: dark;
+}
+
+.ftd-header-actions > :not(.ftd-format-selector):not(.ftd-header-action-btn):not(.ftd-header-search-btn) {
+  display: none !important;
+}
+`;
 
 function decodeBase64ToUtf8(input) {
   const sanitized = String(input || "").replace(/[^A-Za-z0-9+/=]/g, "");
@@ -102,6 +112,49 @@ function normalizeSourceUrl(input) {
   return parsed.toString();
 }
 
+function normalizeRelayApiUrl(input) {
+  const value = String(input || "").trim().replace(/\/+$/, "");
+  if (!value) {
+    return "";
+  }
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error("Invalid relay URL");
+  }
+  if (parsed.protocol !== "https:") {
+    throw new Error("relay must be an https URL");
+  }
+  const allowedOrigins = getAllowedSourceOrigins();
+  if (!allowedOrigins.has(parsed.origin)) {
+    throw new Error(
+      `relay origin is not allowed. Allowed origins: ${[...allowedOrigins].sort().join(", ")}`
+    );
+  }
+  parsed.hash = "";
+  return parsed.toString().replace(/\/+$/, "");
+}
+
+function readGitHubTargetFromQuery(query) {
+  const owner = (query.get("owner") || "").trim();
+  const repo = (query.get("repo") || "").trim();
+  const ref = (query.get("ref") || "").trim();
+  const filePath = (query.get("path") || "").trim();
+  if (!owner && !repo && !ref && !filePath) {
+    return null;
+  }
+  if (!owner || !repo || !ref || !filePath) {
+    throw new Error("owner, repo, ref, and path are required together");
+  }
+  return {
+    owner,
+    repo,
+    ref,
+    filePath
+  };
+}
+
 function parseRawGitHubSource(sourceUrl) {
   let parsed;
   try {
@@ -131,43 +184,48 @@ function parseRawGitHubSource(sourceUrl) {
   };
 }
 
-async function fetchTokensFromSource(sourceUrl) {
-  const parsedRawSource = parseRawGitHubSource(sourceUrl);
-  if (parsedRawSource) {
-    const encodedPath = parsedRawSource.filePath
-      .split("/")
-      .map((segment) => encodeURIComponent(segment))
-      .join("/");
-    const contentsApiUrl = `https://api.github.com/repos/${encodeURIComponent(
-      parsedRawSource.owner
-    )}/${encodeURIComponent(parsedRawSource.repo)}/contents/${encodedPath}?ref=${encodeURIComponent(
-      parsedRawSource.ref
-    )}`;
-    const githubToken = process.env.TOKVISTA_GITHUB_TOKEN;
-    const response = await githubRequest(contentsApiUrl, githubToken);
-    if (!response.ok) {
-      throw new Error(`Source read failed (${response.status})`);
-    }
-    const payload = await response.json();
-    const content =
-      typeof payload.content === "string" && payload.encoding === "base64"
-        ? decodeBase64ToUtf8(payload.content.replace(/\n/g, ""))
-        : "";
-    if (!content.trim()) {
-      throw new Error("Source response did not include token content");
-    }
-    const parsed = JSON.parse(content);
-    if (typeof parsed !== "object" || parsed === null) {
-      throw new Error("Invalid token data format");
-    }
-    return parsed;
-  }
+function buildRawGitHubSource({ owner, repo, ref, filePath }) {
+  return `https://raw.githubusercontent.com/${encodeURIComponent(owner)}/${encodeURIComponent(
+    repo
+  )}/${encodeURIComponent(ref)}/${filePath
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/")}`;
+}
 
-  const response = await fetch(sourceUrl, { method: "GET", headers: { Accept: "application/json" } });
+async function parseJsonResponse(response, emptyMessage) {
   if (!response.ok) {
     throw new Error(`Source read failed (${response.status})`);
   }
   const content = await response.text();
+  if (!content.trim()) {
+    throw new Error(emptyMessage);
+  }
+  const parsed = JSON.parse(content);
+  if (typeof parsed !== "object" || parsed === null) {
+    throw new Error("Invalid token data format");
+  }
+  return parsed;
+}
+
+async function fetchTokensFromGitHubTarget(target) {
+  const encodedPath = target.filePath
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+  const contentsApiUrl = `https://api.github.com/repos/${encodeURIComponent(target.owner)}/${encodeURIComponent(
+    target.repo
+  )}/contents/${encodedPath}?ref=${encodeURIComponent(target.ref)}`;
+  const githubToken = process.env.TOKVISTA_GITHUB_TOKEN;
+  const response = await githubRequest(contentsApiUrl, githubToken);
+  if (!response.ok) {
+    throw new Error(`Source read failed (${response.status})`);
+  }
+  const payload = await response.json();
+  const content =
+    typeof payload.content === "string" && payload.encoding === "base64"
+      ? decodeBase64ToUtf8(payload.content.replace(/\n/g, ""))
+      : "";
   if (!content.trim()) {
     throw new Error("Source response did not include token content");
   }
@@ -176,6 +234,25 @@ async function fetchTokensFromSource(sourceUrl) {
     throw new Error("Invalid token data format");
   }
   return parsed;
+}
+
+async function fetchTokensFromSource(sourceUrl) {
+  const parsedRawSource = parseRawGitHubSource(sourceUrl);
+  if (parsedRawSource) {
+    return fetchTokensFromGitHubTarget(parsedRawSource);
+  }
+  const response = await fetch(sourceUrl, { method: "GET", headers: { Accept: "application/json" } });
+  return parseJsonResponse(response, "Source response did not include token content");
+}
+
+async function fetchTokensFromRelay(relayApiUrl, projectId, environment, versionId) {
+  const endpoint = versionId
+    ? `${relayApiUrl}/version-tokens?projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(versionId)}`
+    : `${relayApiUrl}/live-tokens?projectId=${encodeURIComponent(projectId)}&environment=${encodeURIComponent(
+        environment || "dev"
+      )}`;
+  const response = await fetch(endpoint, { method: "GET", headers: { Accept: "application/json" } });
+  return parseJsonResponse(response, "Relay response did not include token content");
 }
 
 async function githubRequest(url, token) {
@@ -220,6 +297,7 @@ function buildRuntimeConfig({ projectId, environment, sourceUrl, historyApiUrl, 
     subtitle: buildPreviewSubtitle({ sourceUrl, projectId, environment, version }),
     logo: svgToDataUrl(TOKVISTA_MARK_DARK_SVG),
     theme: "dark",
+    enableModeToggle: false,
     themeColors: {
       primary: "#d4a84b",
       background: "#141210",
@@ -256,7 +334,8 @@ function buildHtml(tokensJson, configJson, css, appBundle) {
     <link rel="icon" type="image/svg+xml" href="${faviconUrl}">
     <link rel="shortcut icon" href="${faviconUrl}">
     <link rel="apple-touch-icon" href="${faviconUrl}">
-    <style>${css}</style>
+    <style>${css}
+${PREVIEW_CSS_OVERRIDES}</style>
   </head>
   <body>
     <div id="tokvista-root"></div>
@@ -279,12 +358,62 @@ async function handler(req, res) {
   const query = getQuery(req);
   const projectId = (query.get("projectId") || "").trim();
   const environment = (query.get("environment") || "dev").trim() || "dev";
+  const versionId = (query.get("versionId") || "").trim();
+  const relayRaw = (query.get("relay") || "").trim();
   const sourceRaw = (query.get("source") || "").trim();
+  let githubTarget = null;
+  try {
+    githubTarget = readGitHubTargetFromQuery(query);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    res.status(400).send(message);
+    return;
+  }
   let historyApiUrl = "";
   let snapshotSourceUrl = "";
 
   let tokens;
-  if (sourceRaw) {
+  if (relayRaw) {
+    if (!projectId) {
+      res.status(400).send("Missing projectId parameter");
+      return;
+    }
+    let relayApiUrl;
+    try {
+      relayApiUrl = normalizeRelayApiUrl(relayRaw);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      res.status(400).send(message);
+      return;
+    }
+    historyApiUrl = `${relayApiUrl}/version-history?projectId=${encodeURIComponent(projectId)}&environment=${encodeURIComponent(
+      environment
+    )}`;
+    try {
+      tokens = await fetchTokensFromRelay(relayApiUrl, projectId, environment, versionId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const statusMatch = typeof message === "string" ? message.match(/\((\d{3})\)/) : null;
+      const statusCode = statusMatch ? Number(statusMatch[1]) : 502;
+      res.status(statusCode).send(`Failed to fetch relay tokens: ${message}`);
+      return;
+    }
+  } else if (githubTarget) {
+    snapshotSourceUrl = buildRawGitHubSource(githubTarget);
+    historyApiUrl =
+      `/api/version-history?owner=${encodeURIComponent(githubTarget.owner)}&repo=${encodeURIComponent(
+        githubTarget.repo
+      )}&ref=${encodeURIComponent(githubTarget.ref)}&path=${encodeURIComponent(githubTarget.filePath)}`;
+    try {
+      tokens = await fetchTokensFromGitHubTarget(githubTarget);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const statusMatch = typeof message === "string" ? message.match(/\((\d{3})\)/) : null;
+      const statusCode = statusMatch ? Number(statusMatch[1]) : 502;
+      res.status(statusCode).send(`Failed to fetch GitHub tokens: ${message}`);
+      return;
+    }
+  } else if (sourceRaw) {
     let sourceUrl;
     try {
       sourceUrl = normalizeSourceUrl(sourceRaw);
@@ -401,7 +530,10 @@ async function handler(req, res) {
 module.exports = handler;
 module.exports.__test = {
   buildHtml,
+  buildRuntimeConfig,
   escapeJsonForScript,
   getAllowedSourceOrigins,
-  normalizeSourceUrl
+  normalizeRelayApiUrl,
+  normalizeSourceUrl,
+  readGitHubTargetFromQuery
 };

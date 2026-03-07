@@ -3996,8 +3996,23 @@ function setPreviewLinkState(payload) {
 }
 function buildPreviewFromRaw(rawUrl) {
   if (typeof rawUrl !== 'string' || !rawUrl.trim()) return '';
-  if (!state.latestPreviewUrl) return '';
   try {
+    const parsedRaw = new URL(rawUrl.trim());
+    if (parsedRaw.origin === 'https://raw.githubusercontent.com') {
+      const parts = parsedRaw.pathname.split('/').filter(Boolean);
+      if (parts.length >= 4) {
+        const previewBase = state.latestPreviewUrl
+          ? new URL(state.latestPreviewUrl).origin + new URL(state.latestPreviewUrl).pathname
+          : `${window.location.origin}/preview`;
+        const preview = new URL(previewBase);
+        preview.searchParams.set('owner', decodeURIComponent(parts[0]));
+        preview.searchParams.set('repo', decodeURIComponent(parts[1]));
+        preview.searchParams.set('ref', decodeURIComponent(parts[2]));
+        preview.searchParams.set('path', parts.slice(3).map(part => decodeURIComponent(part)).join('/'));
+        return preview.toString();
+      }
+    }
+    if (!state.latestPreviewUrl) return '';
     const live = new URL(state.latestPreviewUrl);
     live.searchParams.set('source', rawUrl.trim());
     return live.toString();
@@ -4017,20 +4032,6 @@ function updatePreviewLinkUi() {
   refs.snapshotPreviewBtn.setAttribute('data-tip', snapshotTip);
   refs.snapshotPreviewBtn.setAttribute('aria-label', snapshotTip);
   refs.previewLiveBadge?.classList.toggle('on', hasPreview);
-}
-function withSourceCacheBust(previewUrl) {
-  if (typeof previewUrl !== 'string' || !previewUrl.trim()) return previewUrl;
-  try {
-    const u = new URL(previewUrl);
-    const src = u.searchParams.get('source');
-    if (!src) return previewUrl;
-    const srcUrl = new URL(src);
-    srcUrl.searchParams.set('__tokvista_cb', String(Date.now()));
-    u.searchParams.set('source', srcUrl.toString());
-    return u.toString();
-  } catch {
-    return previewUrl;
-  }
 }
 function legacyCopyText(text) {
   try {
@@ -4065,9 +4066,8 @@ function copyText(text) {
   return Promise.resolve(false);
 }
 function openAndCopyPreview(url) {
-  const finalUrl = withSourceCacheBust(url);
-  post({ type: 'open-external-url', payload: { url: finalUrl } });
-  copyText(finalUrl).then(ok => {
+  post({ type: 'open-external-url', payload: { url } });
+  copyText(url).then(ok => {
     setStatus(ok ? 'Developer preview opened and link copied.' : 'Developer preview opened.', false);
   });
 }

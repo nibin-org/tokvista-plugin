@@ -45,6 +45,16 @@ function buildPreviewUrl(req, projectId, environment) {
   return `${base}/preview?projectId=${encodeURIComponent(projectId)}&environment=${encodeURIComponent(environment)}`;
 }
 
+function buildGitHubPreviewUrl(req, owner, repo, ref, tokenPath) {
+  const base = buildApiBaseUrl(req);
+  if (!base || !owner || !repo || !ref || !tokenPath) {
+    return undefined;
+  }
+  return `${base}/preview?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}&ref=${encodeURIComponent(
+    ref
+  )}&path=${encodeURIComponent(tokenPath)}`;
+}
+
 function buildApiBaseUrl(req) {
   const protoHeader = req.headers["x-forwarded-proto"];
   const hostHeader = req.headers["x-forwarded-host"] || req.headers.host;
@@ -54,16 +64,6 @@ function buildApiBaseUrl(req) {
     return undefined;
   }
   return `${proto}://${host}`;
-}
-
-function buildLiveSourceUrl(req, projectId, environment) {
-  const baseUrl = buildApiBaseUrl(req);
-  if (!baseUrl || !projectId) {
-    return undefined;
-  }
-  return `${baseUrl}/api/live-tokens?projectId=${encodeURIComponent(projectId)}&environment=${encodeURIComponent(
-    environment || "dev"
-  )}`;
 }
 
 function normalizeCommitMessage(input, fallback) {
@@ -173,7 +173,7 @@ module.exports = async function handler(req, res) {
     if (!githubResult.changed) {
       const rawUrl = buildBranchRawUrl(owner, repo, branch, path);
       const previewUrl = buildPreviewUrl(req, projectId, environment);
-      const snapshotPreviewUrl = previewUrl;
+      const snapshotPreviewUrl = buildGitHubPreviewUrl(req, owner, repo, branch, path);
       sendJson(res, 200, {
         message: "No changes to publish.",
         commitMessage,
@@ -196,7 +196,7 @@ module.exports = async function handler(req, res) {
         : undefined;
     const rawUrl = buildRawUrl(owner, repo, commitSha, path);
     const previewUrl = buildPreviewUrl(req, projectId, environment);
-    const snapshotPreviewUrl = previewUrl;
+    const snapshotPreviewUrl = buildGitHubPreviewUrl(req, owner, repo, commitSha || branch, path);
 
     sendJson(res, 200, {
       versionId,

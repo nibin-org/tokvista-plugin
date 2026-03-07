@@ -286,12 +286,19 @@ function buildBranchRawUrl(owner, repo, branch, path) {
   )}/${encodeURIComponent(branch)}/${encodePathForRaw(path)}`;
 }
 
-function buildPreviewUrl(rawUrl) {
-  if (!rawUrl || !PREVIEW_BASE_URL) {
+function buildPreviewUrl(params) {
+  if (!PREVIEW_BASE_URL) {
     return undefined;
   }
   const normalizedBase = PREVIEW_BASE_URL.endsWith("/") ? PREVIEW_BASE_URL : `${PREVIEW_BASE_URL}/`;
-  return `${normalizedBase}?source=${encodeURIComponent(rawUrl)}`;
+  const search = new URLSearchParams();
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (typeof value === "string" && value.trim()) {
+      search.set(key, value.trim());
+    }
+  });
+  const query = search.toString();
+  return query ? `${normalizedBase}?${query}` : normalizedBase;
 }
 
 function pruneRateLimitBuckets(now) {
@@ -395,6 +402,24 @@ function buildLiveSourceUrl(req, projectId, environment) {
   return `${baseUrl}/live-tokens?projectId=${encodeURIComponent(projectId)}&environment=${encodeURIComponent(
     environment || "dev"
   )}`;
+}
+
+function buildRelayPreviewUrl(req, projectId, environment, versionId = "") {
+  return buildPreviewUrl({
+    relay: buildServerBaseUrl(req),
+    projectId,
+    environment: environment || "dev",
+    versionId
+  });
+}
+
+function buildGitHubPreviewUrl(owner, repo, ref, path) {
+  return buildPreviewUrl({
+    owner,
+    repo,
+    ref,
+    path
+  });
 }
 
 function setNoStoreHeaders(res) {
@@ -521,8 +546,8 @@ async function handlePublish(req, res) {
       });
       if (!githubResult.changed) {
         const rawUrl = buildBranchRawUrl(owner, repo, branch, path);
-        const snapshotPreviewUrl = buildPreviewUrl(rawUrl);
-        const previewUrl = buildPreviewUrl(buildLiveSourceUrl(req, projectId, environment) || rawUrl);
+        const snapshotPreviewUrl = buildGitHubPreviewUrl(owner, repo, branch, path);
+        const previewUrl = buildRelayPreviewUrl(req, projectId, environment);
         sendJson(res, 200, {
           message: "No changes to publish.",
           commitMessage,
@@ -543,10 +568,8 @@ async function handlePublish(req, res) {
           ? githubPayload.commit.html_url
           : undefined;
       const rawUrl = buildRawUrl(owner, repo, commitSha, path);
-      const previewSource =
-        buildLiveSourceUrl(req, projectId, environment) || rawUrl || buildBranchRawUrl(owner, repo, branch, path);
-      const previewUrl = buildPreviewUrl(previewSource);
-      const snapshotPreviewUrl = buildPreviewUrl(rawUrl || buildBranchRawUrl(owner, repo, branch, path));
+      const previewUrl = buildRelayPreviewUrl(req, projectId, environment);
+      const snapshotPreviewUrl = buildGitHubPreviewUrl(owner, repo, commitSha || branch, path);
       await persistVersion(projectId, versionId, {
         versionId,
         projectId,
@@ -642,8 +665,8 @@ async function handlePreviewLink(req, res) {
   }
 
   const rawUrl = buildBranchRawUrl(owner, repo, branch, path);
-  const snapshotPreviewUrl = buildPreviewUrl(rawUrl);
-  const previewUrl = buildPreviewUrl(buildLiveSourceUrl(req, projectId, environment) || rawUrl);
+  const snapshotPreviewUrl = buildGitHubPreviewUrl(owner, repo, branch, path);
+  const previewUrl = buildRelayPreviewUrl(req, projectId, environment);
   sendJson(res, 200, {
     projectId,
     environment,
@@ -653,6 +676,45 @@ async function handlePreviewLink(req, res) {
     previewUrl,
     snapshotPreviewUrl
   });
+}
+
+async function handleVersionTokens(req, res) {
+  const requestUrl = new URL(req.url || "/version-tokens", `http://${req.headers.host || `localhost:${PORT}`}`);
+  const projectId = (requestUrl.searchParams.get("projectId") || "").trim();
+  const versionId = (requestUrl.searchParams.get("versionId") || "").trim();
+  if (!projectId || !versionId) {
+    sendJson(res, 400, { error: "projectId and versionId are required." });
+    return;
+  }
+
+  const projectConfig = getProjectConfig(projectId);
+  if (!projectConfig) {
+    sendJson(res, 404, { error: "Unknown projectId." });
+    return;
+  }
+
+  try {
+    const versionFilePath = join(DATA_DIR, projectId, `${versionId}.json`);
+    if (!isPathWithinRoot(versionFilePath, DATA_DIR)) {
+      throw new Error("Version path resolved outside DATA_DIR.");
+    }
+    const raw = await readFile(versionFilePath, "utf8");
+    const parsed = JSON.parse(raw);
+    const payload = parsed && typeof parsed === "object" ? parsed.payload : null;
+    if (!payload || typeof payload !== "object") {
+      sendJson(res, 404, { error: "Version payload not found." });
+      return;
+    }
+    setNoStoreHeaders(res);
+    sendJson(res, 200, payload);
+  } catch (error) {
+    if (error && error.code === "ENOENT") {
+      sendJson(res, 404, { error: "Version not found." });
+      return;
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    sendJson(res, 502, { error: message });
+  }
 }
 
 async function handleLiveTokens(req, res) {
@@ -770,9 +832,13 @@ async function handleVersionHistory(req, res) {
             ? commitItem.commit.author.date
             : "";
       const rawUrl = buildRawUrl(owner, repo, sha, path);
-      const previewUrl = buildPreviewUrl(rawUrl);
+      const previewUrl = buildRelayPreviewUrl(req, projectId, environment);
       const referenceUrl = typeof commitItem?.html_url === "string" ? commitItem.html_url : "";
       const versionId = extractVersionId(message, sha);
+      const snapshotPreviewUrl =
+        versionId.startsWith("v")
+          ? buildRelayPreviewUrl(req, projectId, environment, versionId)
+          : buildGitHubPreviewUrl(owner, repo, sha || branch, path);
       return {
         id: `${sha || versionId || index}`,
         versionId,
@@ -783,6 +849,7 @@ async function handleVersionHistory(req, res) {
         path,
         rawUrl,
         previewUrl,
+        snapshotPreviewUrl,
         referenceUrl
       };
     });
@@ -826,7 +893,7 @@ const requestHandler = async (req, res) => {
       ok: true,
       service: "tokvista-relay",
       status: "running",
-      endpoints: ["/health", "/config-example", "/publish-tokens", "/preview-link", "/live-tokens", "/version-history", "/ai-guide"],
+      endpoints: ["/health", "/config-example", "/publish-tokens", "/preview-link", "/live-tokens", "/version-tokens", "/version-history", "/ai-guide"],
       projectsLoaded: Object.keys(PROJECTS).length
     });
     return;
@@ -876,6 +943,11 @@ const requestHandler = async (req, res) => {
 
   if (req.method === "GET" && req.url && req.url.startsWith("/live-tokens")) {
     await handleLiveTokens(req, res);
+    return;
+  }
+
+  if (req.method === "GET" && req.url && req.url.startsWith("/version-tokens")) {
+    await handleVersionTokens(req, res);
     return;
   }
 
