@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 2.5.0 - 2026-03-07
+
 - Documented all relay and AI environment variables in `.env.example`.
 - Fixed the local relay preview base URL default to the hosted Tokvista preview page.
 - Added request rate limiting for publish and AI endpoints plus AI message length validation.

@@ -3,7 +3,7 @@
 If you find a bug or need help:
 
 - Email: `nibin.lab.99@gmail.com`
-- Support page: `https://raw.githubusercontent.com/nibin-org/tokvista-plugin/main/docs/support.md`
+- Support page: `https://github.com/nibin-org/tokvista-plugin/blob/main/docs/support.md`
 - Issue tracker: `https://github.com/nibin-org/tokvista-plugin/issues`
 
 When reporting issues, include:

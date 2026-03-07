@@ -1,5 +1,11 @@
 ﻿# Tokvista Figma Plugin (Scaffold)
 
+## Ownership
+- Copyright (c) 2026 Nibin. All rights reserved.
+- This repository is public for product visibility and evaluation only.
+- No permission is granted to copy, modify, redistribute, or create derivative works without prior written permission.
+- See [LICENSE](LICENSE).
+
 ## Quick start
 1. Install dependencies:
    `npm install`
