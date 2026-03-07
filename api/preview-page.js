@@ -15,6 +15,32 @@ body {
 .ftd-header-actions > :not(.ftd-format-selector):not(.ftd-header-action-btn):not(.ftd-header-search-btn) {
   display: none !important;
 }
+
+.ftd-snapshot-actions .ftd-search-button,
+.ftd-snapshot-links .ftd-search-button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--ftd-border);
+  border-radius: 8px;
+  color: var(--ftd-text-sub);
+  font-size: 0.76rem;
+  font-weight: 600;
+  font-family: var(--ftd-font-sans);
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.ftd-snapshot-header p,
+.ftd-snapshot-lock-note,
+.ftd-snapshot-item-lock,
+.ftd-snapshot-locked-teaser {
+  display: none !important;
+}
 `;
 
 function decodeBase64ToUtf8(input) {

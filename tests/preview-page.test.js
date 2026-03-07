@@ -46,6 +46,9 @@ describe("preview-page security", () => {
     expect(html).toContain(
       ".ftd-header-actions > :not(.ftd-format-selector):not(.ftd-header-action-btn):not(.ftd-header-search-btn)"
     );
+    expect(html).toContain(".ftd-snapshot-actions .ftd-search-button");
+    expect(html).toContain(".ftd-snapshot-header p");
+    expect(html).toContain(".ftd-snapshot-lock-note");
   });
 
   it("parses structured GitHub preview targets from query params", () => {
