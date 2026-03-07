@@ -2344,9 +2344,12 @@
     }
     .ai-shell.is-compact .ai-head {
       padding: 12px 14px 10px;
-      min-height: 54px;
+      min-height: 0;
     }
     .ai-shell.is-compact .ai-prompt-list {
+      display: none;
+    }
+    .ai-shell.is-compact .ai-disclaimer {
       display: none;
     }
     .ai-shell.is-compact .ai-head-row { margin-bottom: 4px; }
@@ -2390,7 +2393,7 @@
     .ai-head-actions {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
       flex-shrink: 0;
     }
     .ai-title {
@@ -3055,6 +3058,7 @@
         <div class="ai-head-row">
           <div class="ai-title"><span class="ai-title-spark">✦</span> Tokvista AI</div>
           <div class="ai-head-actions">
+            <button id="aiNewChatBtn" class="ai-history-btn" type="button">New chat</button>
             <button id="aiHistoryBtn" class="ai-history-btn" type="button">
               History
               <span id="aiHistoryCount" class="ai-history-count">0</span>
@@ -3591,6 +3595,7 @@ const refs = {
   downloadTriggerBtn: $('downloadTriggerBtn'), downloadMenu: $('downloadMenu'),
   downloadCurrent: $('downloadCurrent'), clearLoadedBtn: $('clearLoadedBtn'),
   aiShell: document.querySelector('#tab-ai .ai-shell'),
+  aiNewChatBtn: $('aiNewChatBtn'),
   aiHistoryBtn: $('aiHistoryBtn'),
   aiHistoryCount: $('aiHistoryCount'),
   aiBudget: $('aiBudget'),
@@ -5772,6 +5777,23 @@ function addAiMessage(role, content, options = {}) {
   }
   renderAiMessages();
 }
+function resetAiChat() {
+  if (state.aiPending) return;
+  state.aiMessages = [];
+  state.aiHistory = [];
+  state.aiGeneratedTokens = null;
+  state.aiLastGeneration = null;
+  state.aiImportPending = false;
+  state.aiTokensImported = false;
+  if (refs.aiInput) {
+    refs.aiInput.value = '';
+    resizeAiInput();
+  }
+  setAiImportButton();
+  addAiMessage('assistant', AI_WELCOME_MESSAGE);
+  refs.aiInput?.focus();
+  setStatus('Started a new AI chat.', false);
+}
 function setAiPending(next) {
   state.aiPending = !!next;
   if (refs.aiSendBtn) refs.aiSendBtn.disabled = state.aiPending;
@@ -5981,6 +6003,7 @@ document.querySelectorAll('[data-provider-choice]').forEach(btn => {
 });
 refs.closeHistoryModalBtn.addEventListener('click', closeHistoryModal);
 refs.historyModal.addEventListener('click', e => { if (e.target === refs.historyModal) closeHistoryModal(); });
+refs.aiNewChatBtn?.addEventListener('click', resetAiChat);
 refs.aiHistoryBtn?.addEventListener('click', openAiHistoryModal);
 refs.closeAiHistoryModalBtn?.addEventListener('click', closeAiHistoryModal);
 refs.aiHistoryModal?.addEventListener('click', e => { if (e.target === refs.aiHistoryModal) closeAiHistoryModal(); });
