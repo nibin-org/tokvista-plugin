@@ -6,6 +6,19 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant";
 const MAX_MESSAGE_LENGTH = 2000;
 
+function toRateLimitPayload(rateLimit) {
+  return {
+    approximate: true,
+    scope: "current-minute",
+    limit: Number(rateLimit?.limit || 0),
+    used: Number(rateLimit?.used || 0),
+    remaining: Number(rateLimit?.remaining || 0),
+    usedPercent: Number(rateLimit?.usedPercent || 0),
+    retryAfterSeconds: Number(rateLimit?.retryAfterSeconds || 0),
+    windowSeconds: Math.max(1, Math.round(Number(rateLimit?.windowMs || 0) / 1000))
+  };
+}
+
 const SYSTEM_PROMPT = [
   "You are Tokvista AI, a friendly design token expert inside a Figma plugin.",
   "",
@@ -31,9 +44,67 @@ const SYSTEM_PROMPT = [
   "",
   'Token format to use: { "type": "color", "value": "#3b82f6" }',
   "",
+  "When you generate tokens, prefer this exact top-level shape:",
+  '{ "collections": [ { "collection": "Foundation", "tokens": { ... } }, { "collection": "Semantic", "tokens": { ... } } ] }',
+  "",
+  "Foundation collection must include these groups:",
+  "- colors",
+  "- typography",
+  "- spacing",
+  "- radius",
+  "- shadow",
+  "",
+  "Semantic collection must include these groups:",
+  "- background",
+  "- surface",
+  "- text",
+  "- border",
+  "- primary",
+  "- success",
+  "- warning",
+  "- danger",
+  "- focusRing",
+  "",
+  "Semantic values should alias Foundation tokens whenever possible.",
+  "If the user asks for light and dark themes, semantic groups should contain light and dark values.",
+  "Do not output partial token sets when you have enough information. Output a complete import-ready bundle.",
+  "",
   "Keep conversation friendly and short.",
   "Ask questions if you need more info before generating.",
   "After generating explain what you created in 2-3 simple sentences."
+].join("\n");
+
+const REPAIR_SYSTEM_PROMPT = [
+  "You are Tokvista AI repair mode.",
+  "Your task is to rewrite design-token JSON into a complete, production-ready bundle for Tokvista import.",
+  "",
+  "Return only one JSON code block and no explanation.",
+  "",
+  "Use this exact top-level structure:",
+  '{ "collections": [ { "collection": "Foundation", "tokens": { ... } }, { "collection": "Semantic", "tokens": { ... } } ] }',
+  "",
+  "Foundation collection must include:",
+  "- colors",
+  "- typography",
+  "- spacing",
+  "- radius",
+  "- shadow",
+  "",
+  "Semantic collection must include:",
+  "- background",
+  "- surface",
+  "- text",
+  "- border",
+  "- primary",
+  "- success",
+  "- warning",
+  "- danger",
+  "- focusRing",
+  "",
+  "Use valid token leaf format only: { \"type\": \"color\", \"value\": \"#3b82f6\" }",
+  "Semantic values should alias Foundation tokens whenever possible.",
+  "If the user or prior answer implies dark mode, include light and dark semantic values.",
+  "Do not omit required groups. Fill sensible defaults from the user's intent where details are missing."
 ].join("\n");
 
 function isObjectLike(value) {
@@ -508,11 +579,38 @@ function buildCollectionBundle(tokensRoot) {
   return collections;
 }
 
+function normalizeCollectionEntries(entries) {
+  if (!Array.isArray(entries)) {
+    return [];
+  }
+  return entries
+    .map((entry) => {
+      if (!isObjectLike(entry)) {
+        return null;
+      }
+      const collection = typeof entry.collection === "string" ? entry.collection.trim() : "";
+      const rawTokens = isObjectLike(entry.tokens) ? entry.tokens : null;
+      if (!collection || !rawTokens) {
+        return null;
+      }
+      const normalizedTokens = normalizeTokenTree(rawTokens, []);
+      if (!isObjectLike(normalizedTokens) || countTokenLeaves(normalizedTokens) === 0) {
+        return null;
+      }
+      return { collection, tokens: normalizedTokens };
+    })
+    .filter(Boolean);
+}
+
 function normalizeGeneratedTokens(payload) {
   if (!isObjectLike(payload)) {
     return null;
   }
   const root = isObjectLike(payload.tokens) ? payload.tokens : payload;
+  const collectionEntries = normalizeCollectionEntries(root.collections);
+  if (collectionEntries.length) {
+    return collectionEntries.length === 1 ? collectionEntries[0] : { collections: collectionEntries };
+  }
   const normalizedTokens = normalizeTokenTree(root, []);
   if (!isObjectLike(normalizedTokens) || countTokenLeaves(normalizedTokens) === 0) {
     return null;
@@ -525,6 +623,70 @@ function normalizeGeneratedTokens(payload) {
     return collections[0];
   }
   return { collections };
+}
+
+function toCollectionArray(tokens) {
+  if (!tokens || !isObjectLike(tokens)) {
+    return [];
+  }
+  if (Array.isArray(tokens.collections)) {
+    return tokens.collections.filter((entry) => isObjectLike(entry));
+  }
+  return [tokens];
+}
+
+function findCollection(tokens, expectedName) {
+  const target = String(expectedName || "").trim().toLowerCase();
+  return toCollectionArray(tokens).find((entry) => {
+    const collectionName = typeof entry.collection === "string" ? entry.collection.trim().toLowerCase() : "";
+    return collectionName === target && isObjectLike(entry.tokens);
+  }) || null;
+}
+
+function hasGroup(node, candidates) {
+  if (!isObjectLike(node)) {
+    return false;
+  }
+  const keys = new Set(Object.keys(node).map((key) => String(key || "").trim().toLowerCase()));
+  return candidates.some((candidate) => keys.has(String(candidate || "").trim().toLowerCase()));
+}
+
+function countGeneratedLeaves(tokens) {
+  return toCollectionArray(tokens).reduce((total, entry) => {
+    const node = isObjectLike(entry.tokens) ? entry.tokens : null;
+    return total + (node ? countTokenLeaves(node) : 0);
+  }, 0);
+}
+
+function isProductionReadyTokenBundle(tokens) {
+  if (!tokens || !isObjectLike(tokens)) {
+    return false;
+  }
+  const foundation = findCollection(tokens, "Foundation");
+  const semantic = findCollection(tokens, "Semantic");
+  if (!foundation || !semantic) {
+    return false;
+  }
+  const foundationTokens = foundation.tokens;
+  const semanticTokens = semantic.tokens;
+  const hasFoundationGroups =
+    hasGroup(foundationTokens, ["colors", "color"]) &&
+    hasGroup(foundationTokens, ["typography", "font", "fonts"]) &&
+    hasGroup(foundationTokens, ["spacing", "space"]) &&
+    hasGroup(foundationTokens, ["radius", "borderRadius"]) &&
+    hasGroup(foundationTokens, ["shadow", "shadows"]);
+  const hasSemanticGroups = [
+    ["background"],
+    ["surface"],
+    ["text"],
+    ["border"],
+    ["primary"],
+    ["success"],
+    ["warning"],
+    ["danger"],
+    ["focusRing", "focusring", "focus-ring"]
+  ].every((candidates) => hasGroup(semanticTokens, candidates));
+  return hasFoundationGroups && hasSemanticGroups && countGeneratedLeaves(tokens) >= 18;
 }
 
 function extractTokensFromAnswer(answer) {
@@ -572,6 +734,67 @@ function normalizeHistory(input) {
     .slice(-6);
 }
 
+async function requestGroqChat({ apiKey, model, messages }) {
+  const response = await fetch(GROQ_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.4,
+      messages
+    })
+  });
+
+  let payload = {};
+  try {
+    payload = await response.json();
+  } catch {
+    payload = {};
+  }
+
+  if (!response.ok) {
+    const detail = typeof payload?.error?.message === "string"
+      ? payload.error.message
+      : `Groq request failed (${response.status}).`;
+    throw new Error(detail);
+  }
+
+  const answer = typeof payload?.choices?.[0]?.message?.content === "string"
+    ? payload.choices[0].message.content.trim()
+    : "";
+  if (!answer) {
+    throw new Error("Groq returned an empty response.");
+  }
+  return answer;
+}
+
+async function repairTokenBundle({ apiKey, model, message, history, originalAnswer }) {
+  const repairPrompt = [
+    "Original user request:",
+    message,
+    "",
+    "Conversation history:",
+    history.map((item) => `${item.role}: ${item.content}`).join("\n") || "(none)",
+    "",
+    "Previous AI answer:",
+    originalAnswer || "(none)",
+    "",
+    "Rewrite this into a complete Foundation + Semantic token JSON bundle for Tokvista import."
+  ].join("\n");
+
+  return requestGroqChat({
+    apiKey,
+    model,
+    messages: [
+      { role: "system", content: REPAIR_SYSTEM_PROMPT },
+      { role: "user", content: repairPrompt }
+    ]
+  });
+}
+
 module.exports = async function handler(req, res) {
   if (handleOptions(req, res)) {
     return;
@@ -612,7 +835,8 @@ module.exports = async function handler(req, res) {
   if (!rateLimit.allowed) {
     sendJson(res, 429, {
       error: "Rate limit exceeded for this IP. Try again shortly.",
-      retryAfterSeconds: rateLimit.retryAfterSeconds
+      retryAfterSeconds: rateLimit.retryAfterSeconds,
+      rateLimit: toRateLimitPayload(rateLimit)
     });
     return;
   }
@@ -624,44 +848,30 @@ module.exports = async function handler(req, res) {
   ];
 
   try {
-    const response = await fetch(GROQ_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.4,
-        messages
-      })
+    const answer = await requestGroqChat({ apiKey, model, messages });
+    let tokens = extractTokensFromAnswer(answer);
+    if (!isProductionReadyTokenBundle(tokens)) {
+      try {
+        const repairedAnswer = await repairTokenBundle({
+          apiKey,
+          model,
+          message,
+          history,
+          originalAnswer: answer
+        });
+        const repairedTokens = extractTokensFromAnswer(repairedAnswer);
+        if (isProductionReadyTokenBundle(repairedTokens)) {
+          tokens = repairedTokens;
+        }
+      } catch {
+        // Keep the first-pass answer/tokens if repair fails.
+      }
+    }
+    sendJson(res, 200, {
+      answer,
+      tokens: tokens || null,
+      rateLimit: toRateLimitPayload(rateLimit)
     });
-
-    let payload = {};
-    try {
-      payload = await response.json();
-    } catch {
-      payload = {};
-    }
-
-    if (!response.ok) {
-      const detail = typeof payload?.error?.message === "string"
-        ? payload.error.message
-        : `Groq request failed (${response.status}).`;
-      sendJson(res, response.status, { error: detail });
-      return;
-    }
-
-    const answer = typeof payload?.choices?.[0]?.message?.content === "string"
-      ? payload.choices[0].message.content.trim()
-      : "";
-    if (!answer) {
-      sendJson(res, 502, { error: "Groq returned an empty response." });
-      return;
-    }
-
-    const tokens = extractTokensFromAnswer(answer);
-    sendJson(res, 200, { answer, tokens: tokens || null });
   } catch (error) {
     const messageText = error instanceof Error ? error.message : String(error);
     sendJson(res, 502, { error: messageText });

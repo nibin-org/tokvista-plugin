@@ -243,7 +243,15 @@ describe("importSingleCollectionTokens", () => {
       created: 1,
       updated: 0,
       replaced: 0,
-      skipped: 0
+      skipped: 0,
+      createdNames: ["button/background"],
+      updatedNames: [],
+      replacedNames: [],
+      skippedNames: [],
+      createdRefs: ["Semantic::button/background"],
+      updatedRefs: [],
+      replacedRefs: [],
+      skippedRefs: []
     });
 
     const importedVariable = variables.find(

@@ -22,6 +22,14 @@ export type ImportResult = {
   replaced: number;
   skipped: number;
   warnings: string[];
+  createdNames: string[];
+  updatedNames: string[];
+  replacedNames: string[];
+  skippedNames: string[];
+  createdRefs: string[];
+  updatedRefs: string[];
+  replacedRefs: string[];
+  skippedRefs: string[];
 };
 
 type CollectionImportPayload = {
@@ -118,6 +126,10 @@ function sanitizeVariablePathSegment(segment: string): string {
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^[-./\s]+|[-./\s]+$/g, "") || "token";
+}
+
+function toCollectionScopedRef(collectionName: string, variableName: string): string {
+  return `${String(collectionName || "").trim()}::${String(variableName || "").trim()}`;
 }
 
 export function sanitizeVariablePath(path: string[]): string[] {
@@ -716,6 +728,14 @@ export async function importSingleCollectionTokens<
   }
 
   const warnings: string[] = [];
+  const createdNames: string[] = [];
+  const updatedNames: string[] = [];
+  const replacedNames: string[] = [];
+  const skippedNames: string[] = [];
+  const createdRefs: string[] = [];
+  const updatedRefs: string[] = [];
+  const replacedRefs: string[] = [];
+  const skippedRefs: string[] = [];
   const pendingAliases: PendingAliasToken[] = [];
   let created = 0;
   let updated = 0;
@@ -737,6 +757,8 @@ export async function importSingleCollectionTokens<
     const resolvedType = inferTokenValueType(token.rawType, token.value, resolvedOptions.remBasePx);
     if (!resolvedType) {
       skipped += 1;
+      skippedNames.push(token.name);
+      skippedRefs.push(toCollectionScopedRef(collection.name, token.name));
       const unsupportedType = token.rawType === undefined ? "unknown" : token.rawType;
       warnings.push(`Skipped ${token.name}: unsupported type "${unsupportedType}".`);
       continue;
@@ -748,12 +770,16 @@ export async function importSingleCollectionTokens<
     if (resolvedType === "COLOR") {
       if (typeof token.value !== "string") {
         skipped += 1;
+        skippedNames.push(token.name);
+        skippedRefs.push(toCollectionScopedRef(collection.name, token.name));
         warnings.push(`Skipped ${token.name}: color value must be a string.`);
         continue;
       }
       const color = parseColor(token.value);
       if (!color) {
         skipped += 1;
+        skippedNames.push(token.name);
+        skippedRefs.push(toCollectionScopedRef(collection.name, token.name));
         warnings.push(`Skipped ${token.name}: could not parse color "${token.value}".`);
         continue;
       }
@@ -767,6 +793,8 @@ export async function importSingleCollectionTokens<
       }
       if (numericValue === null) {
         skipped += 1;
+        skippedNames.push(token.name);
+        skippedRefs.push(toCollectionScopedRef(collection.name, token.name));
         warnings.push(
           `Skipped ${token.name}: number value must be numeric (e.g. 8, "8", "8px", "0.5rem").`
         );
@@ -786,6 +814,8 @@ export async function importSingleCollectionTokens<
           isComplexJsonValue = true;
         } catch (error) {
           skipped += 1;
+          skippedNames.push(token.name);
+          skippedRefs.push(toCollectionScopedRef(collection.name, token.name));
           const message = error instanceof Error ? error.message : String(error);
           warnings.push(`Skipped ${token.name}: could not serialize complex value. ${message}`);
           continue;
@@ -808,12 +838,16 @@ export async function importSingleCollectionTokens<
           variableByNameInTarget.set(token.name, replacedVariable);
           variableByScopedName.set(toScopedVariableKey(collection.name, token.name), replacedVariable);
           replaced += 1;
+          replacedNames.push(token.name);
+          replacedRefs.push(toCollectionScopedRef(collection.name, token.name));
           warnings.push(
             `Replaced ${token.name}: variable type changed from ${existing.resolvedType} to ${resolvedType}.`
           );
           continue;
         } catch (error) {
           skipped += 1;
+          skippedNames.push(token.name);
+          skippedRefs.push(toCollectionScopedRef(collection.name, token.name));
           const message = error instanceof Error ? error.message : String(error);
           warnings.push(
             `Skipped ${token.name}: type mismatch (${existing.resolvedType} vs ${resolvedType}) and replacement failed. ${message}`
@@ -829,10 +863,22 @@ export async function importSingleCollectionTokens<
         resolvedOptions
       );
       updated += 1;
+      updatedNames.push(token.name);
+      updatedRefs.push(toCollectionScopedRef(collection.name, token.name));
       continue;
     }
 
-    const createdVariable = variablesApi.createVariable(token.name, collection, resolvedType);
+    let createdVariable: VariableT;
+    try {
+      createdVariable = variablesApi.createVariable(token.name, collection, resolvedType);
+    } catch (error) {
+      skipped += 1;
+      skippedNames.push(token.name);
+      skippedRefs.push(toCollectionScopedRef(collection.name, token.name));
+      const message = error instanceof Error ? error.message : String(error);
+      warnings.push(`Skipped ${token.name}: createVariable failed. ${message}`);
+      continue;
+    }
     createdVariable.setValueForMode(modeId, nextValue);
     setVariableTokenMetadata(
       createdVariable,
@@ -843,6 +889,8 @@ export async function importSingleCollectionTokens<
     variableByNameInTarget.set(token.name, createdVariable);
     variableByScopedName.set(toScopedVariableKey(collection.name, token.name), createdVariable);
     created += 1;
+    createdNames.push(token.name);
+    createdRefs.push(toCollectionScopedRef(collection.name, token.name));
   }
 
   let unresolvedAliases = pendingAliases;
@@ -870,6 +918,8 @@ export async function importSingleCollectionTokens<
       const sourceType = variableTypeToTokenValueType(sourceVariable.resolvedType);
       if (!sourceType) {
         skipped += 1;
+        skippedNames.push(token.name);
+        skippedRefs.push(toCollectionScopedRef(collection.name, token.name));
         warnings.push(
           `Skipped ${token.name}: alias source "${token.rawReference}" has unsupported variable type ${sourceVariable.resolvedType}.`
         );
@@ -879,6 +929,8 @@ export async function importSingleCollectionTokens<
       const explicitType = inferTokenTypeFromRawType(token.rawType);
       if (explicitType && explicitType !== sourceType) {
         skipped += 1;
+        skippedNames.push(token.name);
+        skippedRefs.push(toCollectionScopedRef(collection.name, token.name));
         warnings.push(
           `Skipped ${token.name}: alias type "${explicitType}" does not match source type "${sourceType}".`
         );
@@ -891,7 +943,16 @@ export async function importSingleCollectionTokens<
       let replacedInThisStep = false;
 
       if (!targetVariable) {
-        targetVariable = variablesApi.createVariable(token.name, collection, targetType);
+        try {
+          targetVariable = variablesApi.createVariable(token.name, collection, targetType);
+        } catch (error) {
+          skipped += 1;
+          skippedNames.push(token.name);
+          skippedRefs.push(toCollectionScopedRef(collection.name, token.name));
+          const message = error instanceof Error ? error.message : String(error);
+          warnings.push(`Skipped ${token.name}: createVariable failed during alias import. ${message}`);
+          continue;
+        }
         variableByNameInTarget.set(token.name, targetVariable);
         variableByScopedName.set(toScopedVariableKey(collection.name, token.name), targetVariable);
         createdInThisStep = true;
@@ -904,11 +965,15 @@ export async function importSingleCollectionTokens<
           variableByScopedName.set(toScopedVariableKey(collection.name, token.name), targetVariable);
           replacedInThisStep = true;
           replaced += 1;
+          replacedNames.push(token.name);
+          replacedRefs.push(toCollectionScopedRef(collection.name, token.name));
           warnings.push(
             `Replaced ${token.name}: variable type changed from ${previousType} to ${targetType} for alias import.`
           );
         } catch (error) {
           skipped += 1;
+          skippedNames.push(token.name);
+          skippedRefs.push(toCollectionScopedRef(collection.name, token.name));
           const message = error instanceof Error ? error.message : String(error);
           warnings.push(
             `Skipped ${token.name}: existing variable type ${previousType} does not match alias type ${targetType}. Replacement failed. ${message}`
@@ -920,6 +985,8 @@ export async function importSingleCollectionTokens<
       try {
         if (targetVariable.id === sourceVariable.id) {
           skipped += 1;
+          skippedNames.push(token.name);
+          skippedRefs.push(toCollectionScopedRef(collection.name, token.name));
           warnings.push(`Skipped ${token.name}: alias cannot reference itself (${token.rawReference}).`);
           continue;
         }
@@ -932,12 +999,18 @@ export async function importSingleCollectionTokens<
         );
         if (createdInThisStep) {
           created += 1;
+          createdNames.push(token.name);
+          createdRefs.push(toCollectionScopedRef(collection.name, token.name));
         } else if (!replacedInThisStep) {
           updated += 1;
+          updatedNames.push(token.name);
+          updatedRefs.push(toCollectionScopedRef(collection.name, token.name));
         }
         madeProgress = true;
       } catch (error) {
         skipped += 1;
+        skippedNames.push(token.name);
+        skippedRefs.push(toCollectionScopedRef(collection.name, token.name));
         const message = error instanceof Error ? error.message : String(error);
         warnings.push(`Skipped ${token.name}: failed to set alias ${token.rawReference}. ${message}`);
       }
@@ -948,6 +1021,8 @@ export async function importSingleCollectionTokens<
 
   for (const token of unresolvedAliases) {
     skipped += 1;
+    skippedNames.push(token.name);
+    skippedRefs.push(toCollectionScopedRef(collection.name, token.name));
     warnings.push(`Skipped ${token.name}: unresolved alias reference ${token.rawReference}.`);
   }
 
@@ -958,7 +1033,15 @@ export async function importSingleCollectionTokens<
     updated,
     replaced,
     skipped,
-    warnings
+    warnings,
+    createdNames,
+    updatedNames,
+    replacedNames,
+    skippedNames,
+    createdRefs,
+    updatedRefs,
+    replacedRefs,
+    skippedRefs
   };
 }
 
@@ -981,6 +1064,14 @@ export async function importTokens<
   let replaced = 0;
   let skipped = 0;
   const warnings: string[] = [];
+  const createdNames: string[] = [];
+  const updatedNames: string[] = [];
+  const replacedNames: string[] = [];
+  const skippedNames: string[] = [];
+  const createdRefs: string[] = [];
+  const updatedRefs: string[] = [];
+  const replacedRefs: string[] = [];
+  const skippedRefs: string[] = [];
   const importedCollections: string[] = [];
 
   for (const entry of collectionPayloads) {
@@ -991,6 +1082,14 @@ export async function importTokens<
     replaced += result.replaced;
     skipped += result.skipped;
     warnings.push(...result.warnings);
+    createdNames.push(...result.createdNames);
+    updatedNames.push(...result.updatedNames);
+    replacedNames.push(...result.replacedNames);
+    skippedNames.push(...result.skippedNames);
+    createdRefs.push(...result.createdRefs);
+    updatedRefs.push(...result.updatedRefs);
+    replacedRefs.push(...result.replacedRefs);
+    skippedRefs.push(...result.skippedRefs);
     importedCollections.push(result.collection);
   }
 
@@ -1001,6 +1100,14 @@ export async function importTokens<
     updated,
     replaced,
     skipped,
-    warnings
+    warnings,
+    createdNames,
+    updatedNames,
+    replacedNames,
+    skippedNames,
+    createdRefs,
+    updatedRefs,
+    replacedRefs,
+    skippedRefs
   };
 }

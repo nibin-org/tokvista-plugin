@@ -22,6 +22,7 @@ const RELAY_SETTINGS_KEY = "tokvista_relay_settings";
 const LAST_PUBLISHED_PAYLOAD_KEY = "tokvista_last_published_payload";
 const LAST_PUBLISHED_LINKS_KEY = "tokvista_last_published_links";
 const PUBLISH_HISTORY_KEY = "tokvista_publish_history";
+const AI_IMPORT_HISTORY_KEY = "tokvista_ai_import_history";
 const DEFAULT_RELAY_URL = "https://tokvista-plugin.vercel.app/api";
 const DEFAULT_RELAY_ENVIRONMENT = "dev";
 const DEFAULT_TOKVISTA_PREVIEW_BASE_URL = "https://tokvista-plugin.vercel.app/preview";
@@ -39,6 +40,7 @@ type UiMessage =
   | { type: "export-tokens" }
   | { type: "load-relay-settings" }
   | { type: "load-publish-history" }
+  | { type: "load-ai-history" }
   | { type: "preview-publish-changes" }
   | { type: "resolve-preview-link" }
   | { type: "save-relay-settings"; payload: unknown }
@@ -46,6 +48,8 @@ type UiMessage =
   | { type: "delete-sync-profile"; payload: unknown }
   | { type: "reset-publish-baseline" }
   | { type: "publish-tokvista"; payload: unknown }
+  | { type: "import-ai-tokens"; payload: unknown }
+  | { type: "revert-ai-history-entry"; payload: { id: string } }
   | { type: "open-external-url"; payload: { url: string } };
 
 type ObjectLike = Record<string, unknown>;
@@ -58,6 +62,14 @@ type ImportResult = {
   replaced: number;
   skipped: number;
   warnings: string[];
+  createdNames: string[];
+  updatedNames: string[];
+  replacedNames: string[];
+  skippedNames: string[];
+  createdRefs: string[];
+  updatedRefs: string[];
+  replacedRefs: string[];
+  skippedRefs: string[];
 };
 
 type RelaySettings = {
@@ -128,6 +140,34 @@ type PublishChangeLog = {
   removed: number;
 };
 
+type AiImportHistoryEntry = {
+  id: string;
+  importedAt: string;
+  generatedAt?: string;
+  prompt: string;
+  answer?: string;
+  collection: string;
+  tokenCount: number;
+  imported: number;
+  created: number;
+  updated: number;
+  replaced: number;
+  skipped: number;
+  warnings: string[];
+  createdNames: string[];
+  updatedNames: string[];
+  replacedNames: string[];
+  skippedNames: string[];
+  createdRefs: string[];
+  updatedRefs: string[];
+  replacedRefs: string[];
+  skippedRefs: string[];
+  revertedAt?: string;
+  revertedRemoved?: number;
+  revertedMissing?: number;
+  revertedFailedRefs?: string[];
+};
+
 type ExportTokensOptions = {
   allowEmpty?: boolean;
   modeName?: string;
@@ -135,6 +175,9 @@ type ExportTokensOptions = {
 
 const MAX_CHANGE_LOG_LINES = 40;
 const MAX_PUBLISH_HISTORY_ITEMS = 80;
+const MAX_AI_IMPORT_HISTORY_ITEMS = 40;
+const MAX_AI_HISTORY_TEXT_LENGTH = 400;
+const MAX_AI_HISTORY_NAME_ITEMS = 60;
 const DEFAULT_STORAGE_SCOPE_ID = "default";
 
 function buildScopedStorageKey(baseKey: string, scopeId: string): string {
@@ -145,6 +188,12 @@ function buildScopedStorageKey(baseKey: string, scopeId: string): string {
 async function getActiveStorageScopeId(): Promise<string> {
   const store = await getStoredRelaySettingsStore();
   return store.activeProfileId || DEFAULT_STORAGE_SCOPE_ID;
+}
+
+function getDocumentStorageScopeId(): string {
+  return typeof figma.fileKey === "string" && figma.fileKey.trim()
+    ? figma.fileKey.trim()
+    : DEFAULT_STORAGE_SCOPE_ID;
 }
 
 function isObjectLike(value: unknown): value is ObjectLike {
@@ -845,6 +894,45 @@ function toNonNegativeInteger(input: unknown): number {
   return 0;
 }
 
+function normalizeShortText(input: unknown, fallback: string): string {
+  if (typeof input !== "string") {
+    return fallback;
+  }
+  const trimmed = input.trim();
+  if (!trimmed) {
+    return fallback;
+  }
+  return trimmed.slice(0, MAX_AI_HISTORY_TEXT_LENGTH);
+}
+
+function normalizeStringList(input: unknown, maxItems = MAX_AI_HISTORY_NAME_ITEMS): string[] {
+  if (!Array.isArray(input)) {
+    return [];
+  }
+  return input
+    .filter((item): item is string => typeof item === "string" && Boolean(item.trim()))
+    .map((item) => item.trim())
+    .slice(0, maxItems);
+}
+
+function normalizeCollectionScopedRefs(input: unknown, maxItems = MAX_AI_HISTORY_NAME_ITEMS): string[] {
+  return normalizeStringList(input, maxItems).filter((item) => item.includes("::"));
+}
+
+function parseCollectionScopedRef(input: string): { collection: string; name: string } | null {
+  const raw = String(input || "");
+  const splitIndex = raw.indexOf("::");
+  if (splitIndex <= 0) {
+    return null;
+  }
+  const collection = raw.slice(0, splitIndex).trim();
+  const name = raw.slice(splitIndex + 2).trim();
+  if (!collection || !name) {
+    return null;
+  }
+  return { collection, name };
+}
+
 function normalizePublishHistoryEntry(input: unknown): PublishHistoryEntry | null {
   if (!isObjectLike(input)) {
     return null;
@@ -895,6 +983,66 @@ function normalizePublishHistory(input: unknown): PublishHistoryEntry[] {
   return out.slice(0, MAX_PUBLISH_HISTORY_ITEMS);
 }
 
+function normalizeAiImportHistoryEntry(input: unknown): AiImportHistoryEntry | null {
+  if (!isObjectLike(input)) {
+    return null;
+  }
+  const importedAt =
+    typeof input.importedAt === "string" && input.importedAt.trim()
+      ? input.importedAt.trim()
+      : new Date().toISOString();
+  const prompt = normalizeShortText(input.prompt, "AI token import");
+  const idRaw =
+    typeof input.id === "string" && input.id.trim()
+      ? input.id.trim()
+      : `${importedAt}:${prompt.slice(0, 32)}`;
+  const generatedAt =
+    typeof input.generatedAt === "string" && input.generatedAt.trim() ? input.generatedAt.trim() : "";
+  const answer = normalizeShortText(input.answer, "");
+  return {
+    id: idRaw,
+    importedAt,
+    generatedAt: generatedAt || undefined,
+    prompt,
+    answer: answer || undefined,
+    collection: normalizeShortText(input.collection, "Tokvista"),
+    tokenCount: toNonNegativeInteger(input.tokenCount),
+    imported: toNonNegativeInteger(input.imported),
+    created: toNonNegativeInteger(input.created),
+    updated: toNonNegativeInteger(input.updated),
+    replaced: toNonNegativeInteger(input.replaced),
+    skipped: toNonNegativeInteger(input.skipped),
+    warnings: normalizeStringList(input.warnings, 20),
+    createdNames: normalizeStringList(input.createdNames),
+    updatedNames: normalizeStringList(input.updatedNames),
+    replacedNames: normalizeStringList(input.replacedNames),
+    skippedNames: normalizeStringList(input.skippedNames),
+    createdRefs: normalizeCollectionScopedRefs(input.createdRefs),
+    updatedRefs: normalizeCollectionScopedRefs(input.updatedRefs),
+    replacedRefs: normalizeCollectionScopedRefs(input.replacedRefs),
+    skippedRefs: normalizeCollectionScopedRefs(input.skippedRefs),
+    revertedAt:
+      typeof input.revertedAt === "string" && input.revertedAt.trim() ? input.revertedAt.trim() : undefined,
+    revertedRemoved: toNonNegativeInteger(input.revertedRemoved),
+    revertedMissing: toNonNegativeInteger(input.revertedMissing),
+    revertedFailedRefs: normalizeCollectionScopedRefs(input.revertedFailedRefs)
+  };
+}
+
+function normalizeAiImportHistory(input: unknown): AiImportHistoryEntry[] {
+  if (!Array.isArray(input)) {
+    return [];
+  }
+  const out: AiImportHistoryEntry[] = [];
+  for (const item of input) {
+    const normalized = normalizeAiImportHistoryEntry(item);
+    if (normalized) {
+      out.push(normalized);
+    }
+  }
+  return out.slice(0, MAX_AI_IMPORT_HISTORY_ITEMS);
+}
+
 async function getStoredPublishHistory(): Promise<PublishHistoryEntry[]> {
   const scopeId = await getActiveStorageScopeId();
   const scopedKey = buildScopedStorageKey(PUBLISH_HISTORY_KEY, scopeId);
@@ -939,6 +1087,148 @@ async function appendPublishHistoryEntry(entry: PublishHistoryEntry): Promise<Pu
   const next = [entry, ...deduped].slice(0, MAX_PUBLISH_HISTORY_ITEMS);
   await setStoredPublishHistory(next);
   return next;
+}
+
+async function getStoredAiImportHistory(): Promise<AiImportHistoryEntry[]> {
+  const scopedKey = buildScopedStorageKey(AI_IMPORT_HISTORY_KEY, getDocumentStorageScopeId());
+  const scopedRaw = await figma.clientStorage.getAsync(scopedKey);
+  if (Array.isArray(scopedRaw)) {
+    return normalizeAiImportHistory(scopedRaw);
+  }
+  const legacyRaw = await figma.clientStorage.getAsync(AI_IMPORT_HISTORY_KEY);
+  if (Array.isArray(legacyRaw)) {
+    const migrated = normalizeAiImportHistory(legacyRaw);
+    await figma.clientStorage.setAsync(scopedKey, migrated);
+    return migrated;
+  }
+  return [];
+}
+
+async function setStoredAiImportHistory(history: AiImportHistoryEntry[]): Promise<void> {
+  const scopedKey = buildScopedStorageKey(AI_IMPORT_HISTORY_KEY, getDocumentStorageScopeId());
+  const normalized = normalizeAiImportHistory(history);
+  await figma.clientStorage.setAsync(scopedKey, normalized);
+  await figma.clientStorage.deleteAsync(AI_IMPORT_HISTORY_KEY);
+}
+
+function postAiImportHistoryToUi(history: AiImportHistoryEntry[]): void {
+  figma.ui.postMessage({
+    type: "ai-history",
+    payload: history
+  });
+}
+
+async function appendAiImportHistoryEntry(entry: AiImportHistoryEntry): Promise<AiImportHistoryEntry[]> {
+  const existing = await getStoredAiImportHistory();
+  const deduped = existing.filter((item) => item.id !== entry.id);
+  const next = [entry, ...deduped].slice(0, MAX_AI_IMPORT_HISTORY_ITEMS);
+  await setStoredAiImportHistory(next);
+  return next;
+}
+
+async function updateAiImportHistoryEntry(
+  entryId: string,
+  updater: (entry: AiImportHistoryEntry) => AiImportHistoryEntry
+): Promise<AiImportHistoryEntry[]> {
+  const existing = await getStoredAiImportHistory();
+  const next = existing.map((entry) => (entry.id === entryId ? normalizeAiImportHistoryEntry(updater(entry)) || entry : entry));
+  await setStoredAiImportHistory(next);
+  return next;
+}
+
+function collectRevertableAiRefs(entry: AiImportHistoryEntry): string[] {
+  const refs = [
+    ...entry.createdRefs,
+    ...entry.updatedRefs,
+    ...entry.replacedRefs
+  ];
+  return [...new Set(refs)];
+}
+
+function sortAiRefsForRemoval(refs: string[]): string[] {
+  const priority = (collection: string): number => {
+    const normalized = collection.toLowerCase();
+    if (normalized === "components") return 0;
+    if (normalized === "semantic") return 1;
+    if (normalized === "foundation") return 2;
+    return 3;
+  };
+  return [...refs].sort((left, right) => {
+    const leftParsed = parseCollectionScopedRef(left);
+    const rightParsed = parseCollectionScopedRef(right);
+    const leftCollection = leftParsed?.collection || "";
+    const rightCollection = rightParsed?.collection || "";
+    const leftPriority = priority(leftCollection);
+    const rightPriority = priority(rightCollection);
+    if (leftPriority !== rightPriority) {
+      return leftPriority - rightPriority;
+    }
+    const leftDepth = (leftParsed?.name || "").split("/").length;
+    const rightDepth = (rightParsed?.name || "").split("/").length;
+    if (leftDepth !== rightDepth) {
+      return rightDepth - leftDepth;
+    }
+    return left.localeCompare(right);
+  });
+}
+
+async function revertAiImportHistoryEntry(entry: AiImportHistoryEntry): Promise<{
+  removed: number;
+  missing: number;
+  failedRefs: string[];
+}> {
+  const refs = sortAiRefsForRemoval(collectRevertableAiRefs(entry));
+  if (!refs.length) {
+    return { removed: 0, missing: 0, failedRefs: [] };
+  }
+
+  const collections = await figma.variables.getLocalVariableCollectionsAsync();
+  const collectionById = new Map(collections.map((item) => [item.id, item]));
+  const variables = await figma.variables.getLocalVariablesAsync();
+  const variableByScopedRef = new Map<string, Variable>();
+  for (const variable of variables) {
+    const collection = collectionById.get(variable.variableCollectionId);
+    if (!collection) {
+      continue;
+    }
+    variableByScopedRef.set(`${collection.name}::${variable.name}`, variable);
+  }
+
+  let removed = 0;
+  let missing = 0;
+  let pending = refs.filter((ref) => {
+    if (variableByScopedRef.has(ref)) {
+      return true;
+    }
+    missing += 1;
+    return false;
+  });
+
+  let progressed = true;
+  const failedRefs: string[] = [];
+  while (pending.length > 0 && progressed) {
+    progressed = false;
+    const nextPending: string[] = [];
+    for (const ref of pending) {
+      const variable = variableByScopedRef.get(ref);
+      if (!variable) {
+        missing += 1;
+        continue;
+      }
+      try {
+        variable.remove();
+        variableByScopedRef.delete(ref);
+        removed += 1;
+        progressed = true;
+      } catch {
+        nextPending.push(ref);
+      }
+    }
+    pending = nextPending;
+  }
+
+  failedRefs.push(...pending);
+  return { removed, missing, failedRefs };
 }
 
 async function getStoredPublishedLinks(): Promise<PublishedLinks | null> {
@@ -1036,6 +1326,11 @@ async function loadAndPostPublishedLinks(): Promise<void> {
 async function loadAndPostPublishHistory(): Promise<void> {
   const history = await getStoredPublishHistory();
   postPublishHistoryToUi(history);
+}
+
+async function loadAndPostAiImportHistory(): Promise<void> {
+  const history = await getStoredAiImportHistory();
+  postAiImportHistoryToUi(history);
 }
 
 async function refreshPublishUiState(): Promise<void> {
@@ -1827,6 +2122,55 @@ async function importTokensFromUrl(urlValue: unknown): Promise<ImportResult> {
   });
 }
 
+function readAiImportPayload(input: unknown): {
+  tokens: unknown;
+  prompt: string;
+  answer: string;
+  tokenCount: number;
+  generatedAt: string;
+} {
+  if (!isObjectLike(input)) {
+    throw new Error("Invalid AI import payload.");
+  }
+  return {
+    tokens: input.tokens,
+    prompt: normalizeShortText(input.prompt, "AI token import"),
+    answer: normalizeShortText(input.answer, ""),
+    tokenCount: toNonNegativeInteger(input.tokenCount),
+    generatedAt: typeof input.generatedAt === "string" && input.generatedAt.trim() ? input.generatedAt.trim() : ""
+  };
+}
+
+function buildAiImportHistoryEntry(
+  meta: { prompt: string; answer: string; tokenCount: number; generatedAt: string },
+  result: ImportResult
+): AiImportHistoryEntry {
+  const importedAt = new Date().toISOString();
+  return {
+    id: `${importedAt}:${meta.prompt.slice(0, 32)}`,
+    importedAt,
+    generatedAt: meta.generatedAt || undefined,
+    prompt: meta.prompt,
+    answer: meta.answer || undefined,
+    collection: result.collection,
+    tokenCount: meta.tokenCount,
+    imported: result.imported,
+    created: result.created,
+    updated: result.updated,
+    replaced: result.replaced,
+    skipped: result.skipped,
+    warnings: result.warnings,
+    createdNames: result.createdNames,
+    updatedNames: result.updatedNames,
+    replacedNames: result.replacedNames,
+    skippedNames: result.skippedNames,
+    createdRefs: result.createdRefs,
+    updatedRefs: result.updatedRefs,
+    replacedRefs: result.replacedRefs,
+    skippedRefs: result.skippedRefs
+  };
+}
+
 async function loadAndPostRelaySettings(): Promise<void> {
   const store = await getStoredRelaySettingsStore();
   postRelaySettingsToUi(store);
@@ -1836,6 +2180,7 @@ async function initializeUiState(): Promise<void> {
   await loadAndPostRelaySettings();
   await loadAndPostPublishedLinks();
   await loadAndPostPublishHistory();
+  await loadAndPostAiImportHistory();
   await postPublishChangePreview();
 }
 
@@ -1866,6 +2211,36 @@ figma.ui.onmessage = async (msg: UiMessage) => {
     return;
   }
 
+  if (msg.type === "import-ai-tokens") {
+    try {
+      const aiImport = readAiImportPayload(msg.payload);
+      const result = await importTokensFromPayload(aiImport.tokens, figma.variables, {
+        defaultCollectionName: DEFAULT_COLLECTION_NAME,
+        remBasePx: REM_BASE_PX,
+        rawTypePluginKey: RAW_TYPE_PLUGIN_KEY,
+        complexJsonPluginKey: COMPLEX_JSON_PLUGIN_KEY
+      });
+      const historyEntry = normalizeAiImportHistoryEntry(buildAiImportHistoryEntry(aiImport, result));
+      if (historyEntry) {
+        const history = await appendAiImportHistoryEntry(historyEntry);
+        postAiImportHistoryToUi(history);
+      }
+      await postPublishChangePreview();
+      figma.ui.postMessage({
+        type: "import-result",
+        payload: result
+      });
+      figma.notify(
+        `AI import complete: ${result.imported} applied (${result.created} created, ${result.updated} updated, ${result.replaced} replaced), ${result.skipped} skipped in "${result.collection}".`
+      );
+    } catch (error) {
+      const message = toErrorMessage(error);
+      figma.ui.postMessage({ type: "error", payload: message });
+      figma.notify(`AI import failed: ${message}`);
+    }
+    return;
+  }
+
   if (msg.type === "export-tokens") {
     try {
       const settings = await getStoredRelaySettings();
@@ -1891,6 +2266,7 @@ figma.ui.onmessage = async (msg: UiMessage) => {
       await loadAndPostRelaySettings();
       await loadAndPostPublishedLinks();
       await loadAndPostPublishHistory();
+      await loadAndPostAiImportHistory();
     } catch (error) {
       const message = toErrorMessage(error);
       figma.ui.postMessage({ type: "error", payload: message });
@@ -1921,6 +2297,65 @@ figma.ui.onmessage = async (msg: UiMessage) => {
 
   if (msg.type === "load-publish-history") {
     await loadAndPostPublishHistory();
+    return;
+  }
+
+  if (msg.type === "load-ai-history") {
+    await loadAndPostAiImportHistory();
+    return;
+  }
+
+  if (msg.type === "revert-ai-history-entry") {
+    try {
+      const entryId =
+        isObjectLike(msg.payload) && typeof msg.payload.id === "string" ? msg.payload.id.trim() : "";
+      if (!entryId) {
+        throw new Error("AI history entry id is required.");
+      }
+      const history = await getStoredAiImportHistory();
+      const entry = history.find((item) => item.id === entryId);
+      if (!entry) {
+        throw new Error("AI history entry not found.");
+      }
+      if (entry.revertedAt) {
+        throw new Error("This AI import has already been reverted.");
+      }
+      const revertResult = await revertAiImportHistoryEntry(entry);
+      const nextHistory = await updateAiImportHistoryEntry(entryId, (current) => ({
+        ...current,
+        revertedAt: new Date().toISOString(),
+        revertedRemoved: revertResult.removed,
+        revertedMissing: revertResult.missing,
+        revertedFailedRefs: revertResult.failedRefs
+      }));
+      postAiImportHistoryToUi(nextHistory);
+      await postPublishChangePreview();
+      const settings = await getStoredRelaySettings();
+      const exported = await exportTokens({
+        allowEmpty: true,
+        modeName: settings?.environment
+      });
+      figma.ui.postMessage({
+        type: "export-result",
+        payload: exported
+      });
+      figma.ui.postMessage({
+        type: "ai-history-revert-result",
+        payload: {
+          id: entryId,
+          removed: revertResult.removed,
+          missing: revertResult.missing,
+          failed: revertResult.failedRefs.length
+        }
+      });
+      figma.notify(
+        `AI import reverted: ${revertResult.removed} removed, ${revertResult.missing} missing, ${revertResult.failedRefs.length} failed.`
+      );
+    } catch (error) {
+      const message = toErrorMessage(error);
+      figma.ui.postMessage({ type: "error", payload: message });
+      figma.notify(`AI revert failed: ${message}`);
+    }
     return;
   }
 

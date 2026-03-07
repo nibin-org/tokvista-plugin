@@ -74,7 +74,15 @@ function takeRateLimit(key, options) {
   const limit = Number(options?.limit || 0);
   const windowMs = Number(options?.windowMs || 0);
   if (!key || !Number.isFinite(limit) || limit <= 0 || !Number.isFinite(windowMs) || windowMs <= 0) {
-    return { allowed: true, remaining: limit, retryAfterSeconds: 0 };
+    return {
+      allowed: true,
+      limit,
+      used: 0,
+      remaining: limit,
+      usedPercent: 0,
+      retryAfterSeconds: 0,
+      windowMs
+    };
   }
 
   const now = Date.now();
@@ -89,16 +97,24 @@ function takeRateLimit(key, options) {
   if (bucket.count >= limit) {
     return {
       allowed: false,
+      limit,
+      used: limit,
       remaining: 0,
-      retryAfterSeconds: Math.max(1, Math.ceil((bucket.resetAt - now) / 1000))
+      usedPercent: 100,
+      retryAfterSeconds: Math.max(1, Math.ceil((bucket.resetAt - now) / 1000)),
+      windowMs
     };
   }
 
   bucket.count += 1;
   return {
     allowed: true,
+    limit,
+    used: bucket.count,
     remaining: Math.max(0, limit - bucket.count),
-    retryAfterSeconds: 0
+    usedPercent: Math.max(0, Math.min(100, Math.round((bucket.count / limit) * 100))),
+    retryAfterSeconds: 0,
+    windowMs
   };
 }
 

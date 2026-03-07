@@ -1921,6 +1921,47 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .ai-history-prompt {
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(212,168,75,0.12);
+      background: rgba(212,168,75,0.05);
+      display: grid;
+      gap: 4px;
+    }
+    .ai-history-prompt-title {
+      color: var(--t1);
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+    .ai-history-prompt-note {
+      color: var(--t3);
+      font-size: 11px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .ai-history-meta {
+      margin-top: 8px;
+      color: var(--t4);
+      font-size: 11px;
+    }
+    .ai-history-groups {
+      display: grid;
+      gap: 8px;
+    }
+    .ai-history-group {
+      display: grid;
+      gap: 5px;
+    }
+    .ai-history-group-title {
+      color: var(--t2);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
 
     .hide { display: none !important; }
 
@@ -2213,6 +2254,12 @@
       margin-bottom: 6px;
       position: relative;
     }
+    .ai-head-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
     .ai-title {
       font-size: 16px;
       font-weight: 700;
@@ -2230,6 +2277,58 @@
       line-height: 1.5;
       max-width: 280px;
     }
+    .ai-budget {
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 18px;
+      color: var(--t2);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      position: relative;
+    }
+    .ai-budget.hide { display: none; }
+    .ai-head .ai-budget {
+      margin-top: 10px;
+    }
+    .ai-input-meta .ai-budget {
+      margin-left: auto;
+      justify-content: flex-end;
+      min-height: 0;
+      flex-wrap: wrap;
+    }
+    .ai-budget-meter {
+      width: 88px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.05);
+      box-shadow: inset 0 1px 1px rgba(0,0,0,0.24);
+      flex-shrink: 0;
+    }
+    .ai-budget-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, rgba(78,201,148,0.95) 0%, rgba(212,168,75,0.92) 72%, rgba(230,106,106,0.95) 100%);
+      transition: width 0.2s ease;
+    }
+    .ai-budget-copy {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+    .ai-budget-copy strong {
+      color: var(--t1);
+      font-weight: 700;
+    }
+    .ai-budget-note {
+      color: var(--t4);
+      font-weight: 500;
+    }
     .ai-online {
       display: inline-flex;
       align-items: center;
@@ -2242,6 +2341,41 @@
       font-size: 11px;
       font-weight: 700;
       letter-spacing: 0.01em;
+    }
+    .ai-history-btn {
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.16);
+      color: var(--t2);
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      transition: all 0.15s;
+    }
+    .ai-history-btn:hover {
+      color: var(--t1);
+      border-color: var(--a-brd);
+      background: rgba(212,168,75,0.08);
+    }
+    .ai-history-count {
+      min-width: 18px;
+      height: 18px;
+      padding: 0 6px;
+      border-radius: 999px;
+      border: 1px solid var(--a-brd);
+      background: rgba(212,168,75,0.12);
+      color: var(--a);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: var(--mono);
     }
     .ai-online-dot {
       width: 5px; height: 5px; border-radius: 50%;
@@ -2507,18 +2641,6 @@
     .ai-shell.is-compact .ai-input-meta {
       margin-bottom: 6px;
     }
-    .ai-input-label {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--t4);
-    }
-    .ai-input-hint {
-      font-size: 11px;
-      color: var(--t4);
-    }
-    .ai-shell.is-compact .ai-input-hint { display: none; }
     .ai-input-row {
       display: flex;
       align-items: flex-end;
@@ -2816,7 +2938,13 @@
       <div class="ai-head">
         <div class="ai-head-row">
           <div class="ai-title"><span class="ai-title-spark">✦</span> Tokvista AI</div>
-          <span class="ai-online"><span class="ai-online-dot"></span>Online</span>
+          <div class="ai-head-actions">
+            <button id="aiHistoryBtn" class="ai-history-btn" type="button">
+              History
+              <span id="aiHistoryCount" class="ai-history-count">0</span>
+            </button>
+            <span class="ai-online"><span class="ai-online-dot"></span>Online</span>
+          </div>
         </div>
         <div class="ai-subtitle">Describe your product, brand direction, and dark mode needs. Tokvista AI will return an import-ready token system.</div>
         <div class="ai-head-badges">
@@ -2853,8 +2981,7 @@
 
       <div class="ai-input-wrap">
         <div class="ai-input-meta">
-          <span class="ai-input-label">Prompt</span>
-          <span class="ai-input-hint">Enter to send, Shift+Enter for newline</span>
+          <div id="aiBudget" class="ai-budget hide" aria-live="polite"></div>
         </div>
         <div class="ai-input-row">
           <textarea id="aiInput" class="ai-input" rows="1" placeholder="Describe your product, colors, typography mood, spacing scale, and whether you need dark mode..."></textarea>
@@ -3085,6 +3212,42 @@
     </div>
   </div>
 </div>
+<div id="aiHistoryModal" class="modal-wrap">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <span class="modal-title">AI Import History</span>
+      <button id="closeAiHistoryModalBtn" class="modal-close" type="button">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div class="sec mt-0">Prompts and imported variables</div>
+      <div id="aiHistoryList" class="history-list">
+        <div class="history-empty">No AI imports yet.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="aiRevertModal" class="modal-wrap">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <span class="modal-title">Reverse AI Import</span>
+      <button id="closeAiRevertModalBtn" class="modal-close" type="button">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div class="sec mt-0">This action removes imported variables</div>
+      <div class="history-empty" style="text-align:left;">
+        This will remove the variables associated with this AI import from the current Figma file.
+        Changes made by this reversal cannot be automatically restored.
+      </div>
+      <div id="aiRevertModalSummary" class="ai-history-meta" style="margin-top:12px;">—</div>
+    </div>
+    <div class="modal-foot">
+      <button id="cancelAiRevertBtn" class="btn-mc" type="button">Cancel</button>
+      <button id="confirmAiRevertBtn" class="btn-mp btn-danger-fill" type="button">Reverse Import</button>
+    </div>
+  </div>
+</div>
 <div id="providerModal" class="modal-wrap">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -3179,10 +3342,16 @@ const state = {
   changeLog: { summary: '', lines: [], added: 0, changed: 0, removed: 0 },
   aiMessages: [],
   aiHistory: [],
+  aiImportHistory: [],
   aiGeneratedTokens: null,
+  aiLastGeneration: null,
   aiImportPending: false,
+  aiHistoryConfirmEntryId: '',
+  aiHistoryRevertPendingId: '',
   aiTokensImported: false,
-  aiPending: false
+  aiPending: false,
+  aiRateLimit: null,
+  aiRateLimitWindowStartedAt: 0
 };
 const SAVED_SECRET_MASK = '••••••••••••••••';
 let currentViewMode = 'visual';
@@ -3221,6 +3390,13 @@ const refs = {
   settingsMeta: $('settingsMeta'), modal: $('publishModal'),
   historyModal: $('historyModal'), historyList: $('historyList'),
   closeHistoryModalBtn: $('closeHistoryModalBtn'),
+  aiHistoryModal: $('aiHistoryModal'), aiHistoryList: $('aiHistoryList'),
+  closeAiHistoryModalBtn: $('closeAiHistoryModalBtn'),
+  aiRevertModal: $('aiRevertModal'),
+  aiRevertModalSummary: $('aiRevertModalSummary'),
+  closeAiRevertModalBtn: $('closeAiRevertModalBtn'),
+  cancelAiRevertBtn: $('cancelAiRevertBtn'),
+  confirmAiRevertBtn: $('confirmAiRevertBtn'),
   modalAdded: $('modalAdded'), modalChanged: $('modalChanged'),
   modalRemoved: $('modalRemoved'), modalChanges: $('modalChanges'),
   modalEndpoint: $('modalEndpoint'), modalProject: $('modalProject'),
@@ -3235,6 +3411,9 @@ const refs = {
   downloadTriggerBtn: $('downloadTriggerBtn'), downloadMenu: $('downloadMenu'),
   downloadCurrent: $('downloadCurrent'), clearLoadedBtn: $('clearLoadedBtn'),
   aiShell: document.querySelector('#tab-ai .ai-shell'),
+  aiHistoryBtn: $('aiHistoryBtn'),
+  aiHistoryCount: $('aiHistoryCount'),
+  aiBudget: $('aiBudget'),
   aiImportWrap: $('aiImportWrap'),
   aiMessages: $('aiMessages'), aiInput: $('aiInput'),
   aiImportMeta: $('aiImportMeta'),
@@ -3846,6 +4025,263 @@ function renderPublishHistory(items) {
 
     card.appendChild(body);
     refs.historyList.appendChild(card);
+  });
+}
+function updateAiHistoryButton() {
+  const count = Array.isArray(state.aiImportHistory) ? state.aiImportHistory.length : 0;
+  if (refs.aiHistoryCount) refs.aiHistoryCount.textContent = String(count);
+  if (refs.aiHistoryBtn) {
+    const label = count ? `Open AI import history (${count})` : 'Open AI import history';
+    refs.aiHistoryBtn.setAttribute('aria-label', label);
+    refs.aiHistoryBtn.title = count ? `${count} AI import${count === 1 ? '' : 's'}` : 'No AI imports yet';
+  }
+}
+function openAiHistoryModal() {
+  refs.aiHistoryModal?.classList.add('on');
+  post({ type: 'load-ai-history' });
+}
+function closeAiHistoryModal() {
+  refs.aiHistoryModal?.classList.remove('on');
+}
+function getAiHistoryEntryById(entryId) {
+  return (Array.isArray(state.aiImportHistory) ? state.aiImportHistory : []).find(item => item?.id === entryId) || null;
+}
+function openAiRevertModal(entryId) {
+  const entry = getAiHistoryEntryById(entryId);
+  if (!entry || entry.revertedAt) return;
+  state.aiHistoryConfirmEntryId = entryId;
+  const imported = Number(entry.imported || 0);
+  const collection = String(entry.collection || 'Tokvista');
+  const title = buildAiHistoryHeadline(entry, [
+    ...(Array.isArray(entry.createdNames) ? entry.createdNames : []),
+    ...(Array.isArray(entry.updatedNames) ? entry.updatedNames : []),
+    ...(Array.isArray(entry.replacedNames) ? entry.replacedNames : [])
+  ]);
+  if (refs.aiRevertModalSummary) {
+    refs.aiRevertModalSummary.textContent = `${title} in ${collection}. ${imported} variable${imported === 1 ? '' : 's'} will be targeted for removal.`;
+  }
+  refs.aiRevertModal?.classList.add('on');
+}
+function closeAiRevertModal() {
+  state.aiHistoryConfirmEntryId = '';
+  refs.aiRevertModal?.classList.remove('on');
+}
+function renderAiHistoryNameGroup(container, title, names) {
+  const list = Array.isArray(names) ? names.filter(name => typeof name === 'string' && name.trim()) : [];
+  if (!list.length) return;
+  const group = document.createElement('div');
+  group.className = 'ai-history-group';
+  const heading = document.createElement('div');
+  heading.className = 'ai-history-group-title';
+  heading.textContent = title;
+  const ul = document.createElement('ul');
+  ul.className = 'history-lines';
+  list.forEach(name => {
+    const li = document.createElement('li');
+    li.textContent = name;
+    ul.appendChild(li);
+  });
+  group.appendChild(heading);
+  group.appendChild(ul);
+  container.appendChild(group);
+}
+function isMeaningfulAiHistoryPrompt(prompt) {
+  const text = squeezeWhitespace(prompt).toLowerCase();
+  if (!text || text === 'ai token import') return false;
+  if (text.length < 12) return false;
+  if (text.split(/\s+/).length < 3) return false;
+  return !new Set([
+    'do it',
+    'do this',
+    'make it',
+    'generate it',
+    'generate',
+    'create it',
+    'create',
+    'use this',
+    'go ahead',
+    'go',
+    'yes',
+    'ok',
+    'okay',
+    'again',
+    'same',
+    'continue'
+  ]).has(text);
+}
+function summarizeAiHistoryAreas(names) {
+  const list = Array.isArray(names) ? names : [];
+  const counts = new Map();
+  list.forEach(name => {
+    const key = String(name || '').split('/').filter(Boolean)[0];
+    if (!key) return;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  });
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 3)
+    .map(entry => entry[0]);
+}
+function formatAiHistoryAreaSummary(areas) {
+  if (!areas.length) return '';
+  if (areas.length === 1) return areas[0];
+  if (areas.length === 2) return `${areas[0]} and ${areas[1]}`;
+  return `${areas[0]}, ${areas[1]}, and ${areas[2]}`;
+}
+function buildAiHistoryHeadline(item, names) {
+  const created = Number(item.created || 0);
+  const updated = Number(item.updated || 0);
+  const replaced = Number(item.replaced || 0);
+  const imported = Number(item.imported || 0);
+  const collection = String(item.collection || '').trim();
+  const areas = formatAiHistoryAreaSummary(summarizeAiHistoryAreas(names));
+  let action = 'Imported';
+  if (created > 0 && updated === 0 && replaced === 0) action = 'Created';
+  else if (updated > 0 && created === 0 && replaced === 0) action = 'Updated';
+  else if (replaced > 0 && created === 0 && updated === 0) action = 'Replaced';
+  const objectLabel = imported === 1 ? 'variable' : 'variables';
+  if (areas) {
+    return `${action} ${imported} ${areas} ${objectLabel}`;
+  }
+  if (collection) {
+    return `${action} ${imported} ${collection} ${objectLabel}`;
+  }
+  return `${action} ${imported} ${objectLabel}`;
+}
+function buildAiHistoryRevertNote(item) {
+  if (!item || !item.revertedAt) return '';
+  const removed = Number(item.revertedRemoved || 0);
+  const missing = Number(item.revertedMissing || 0);
+  const failed = Array.isArray(item.revertedFailedRefs) ? item.revertedFailedRefs.length : 0;
+  return `Reverted ${fmtTimestamp(item.revertedAt)} • ${removed} removed • ${missing} missing • ${failed} failed`;
+}
+function renderAiImportHistory(items) {
+  const history = Array.isArray(items) ? items : [];
+  state.aiImportHistory = history;
+  updateAiHistoryButton();
+  if (!refs.aiHistoryList) return;
+  refs.aiHistoryList.innerHTML = '';
+  if (!history.length) {
+    refs.aiHistoryList.innerHTML = '<div class="history-empty">No AI imports yet.</div>';
+    return;
+  }
+
+  history.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'history-card';
+
+    const importedAt = fmtTimestamp(item.importedAt || '');
+    const tokenCount = Number(item.tokenCount || 0);
+    const created = Number(item.created || 0);
+    const updated = Number(item.updated || 0);
+    const replaced = Number(item.replaced || 0);
+    const skipped = Number(item.skipped || 0);
+    const createdNames = Array.isArray(item.createdNames) ? item.createdNames : [];
+    const updatedNames = Array.isArray(item.updatedNames) ? item.updatedNames : [];
+    const replacedNames = Array.isArray(item.replacedNames) ? item.replacedNames : [];
+    const skippedNames = Array.isArray(item.skippedNames) ? item.skippedNames : [];
+    const createdRefs = Array.isArray(item.createdRefs) ? item.createdRefs : [];
+    const updatedRefs = Array.isArray(item.updatedRefs) ? item.updatedRefs : [];
+    const replacedRefs = Array.isArray(item.replacedRefs) ? item.replacedRefs : [];
+    const activeNames = [...createdNames, ...updatedNames, ...replacedNames];
+    const revertableVariableCount = createdRefs.length + updatedRefs.length + replacedRefs.length;
+    const visibleVariableCount = activeNames.length + skippedNames.length;
+    const promptText = String(item.prompt || 'AI token import');
+    const isReverted = typeof item.revertedAt === 'string' && !!item.revertedAt;
+
+    const head = document.createElement('div');
+    head.className = 'history-head';
+    head.innerHTML = `
+      <div class="history-head-main">
+        <span class="history-kicker">AI import</span>
+        <span class="history-time">${escapeHtml(importedAt)}</span>
+      </div>
+      <span class="history-ver">${escapeHtml(String(item.collection || 'Tokvista'))}</span>
+    `;
+    card.appendChild(head);
+
+    const body = document.createElement('div');
+    body.className = 'history-body';
+
+    const prompt = document.createElement('div');
+    prompt.className = 'ai-history-prompt';
+    prompt.innerHTML = `
+      <div class="ai-history-prompt-title">${escapeHtml(buildAiHistoryHeadline(item, activeNames))}</div>
+      ${isMeaningfulAiHistoryPrompt(promptText) ? `<div class="ai-history-prompt-note">Prompt: ${escapeHtml(promptText)}</div>` : ''}
+    `;
+    body.appendChild(prompt);
+
+    const meta = document.createElement('div');
+    meta.className = 'ai-history-meta';
+    const baseMeta = tokenCount > 0
+      ? `${tokenCount} generated token${tokenCount === 1 ? '' : 's'} • ${Number(item.imported || 0)} applied`
+      : `${Number(item.imported || 0)} variables applied`;
+    meta.textContent = isReverted
+      ? `${baseMeta} • ${buildAiHistoryRevertNote(item)}`
+      : baseMeta;
+    body.appendChild(meta);
+
+    const pills = document.createElement('div');
+    pills.className = 'pills history-pills';
+    pills.innerHTML = `
+      <span class="pill pill-g">+${created} Created</span>
+      <span class="pill pill-y">~${updated} Updated</span>
+      <span class="pill pill-n">↺${replaced} Replaced</span>
+      <span class="pill pill-r">−${skipped} Skipped</span>
+    `;
+    body.appendChild(pills);
+
+    if (visibleVariableCount > 0) {
+      const bottom = document.createElement('div');
+      bottom.className = 'history-bottom';
+      const toggle = document.createElement('button');
+      toggle.className = 'history-toggle-btn';
+      toggle.type = 'button';
+      toggle.textContent = `View variables (${visibleVariableCount})`;
+      toggle.setAttribute('aria-expanded', 'false');
+      bottom.appendChild(toggle);
+      if (revertableVariableCount > 0 || isReverted || state.aiHistoryRevertPendingId === item.id) {
+        const revertBtn = document.createElement('button');
+        revertBtn.className = 'history-link-btn';
+        revertBtn.type = 'button';
+        if (state.aiHistoryRevertPendingId === item.id) {
+          revertBtn.textContent = 'Reverting…';
+          revertBtn.disabled = true;
+        } else if (isReverted) {
+          revertBtn.textContent = 'Reverted';
+          revertBtn.disabled = true;
+        } else {
+          revertBtn.textContent = 'Reverse Import';
+          revertBtn.addEventListener('click', () => openAiRevertModal(item.id));
+        }
+        bottom.appendChild(revertBtn);
+      }
+      body.appendChild(bottom);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'history-lines-wrap';
+      wrap.hidden = true;
+
+      const groups = document.createElement('div');
+      groups.className = 'ai-history-groups';
+      renderAiHistoryNameGroup(groups, 'Created', createdNames);
+      renderAiHistoryNameGroup(groups, 'Updated', updatedNames);
+      renderAiHistoryNameGroup(groups, 'Replaced', replacedNames);
+      renderAiHistoryNameGroup(groups, 'Skipped', skippedNames);
+      wrap.appendChild(groups);
+
+      toggle.addEventListener('click', () => {
+        const nextHidden = !wrap.hidden;
+        wrap.hidden = nextHidden;
+        toggle.setAttribute('aria-expanded', nextHidden ? 'false' : 'true');
+        toggle.textContent = nextHidden ? `View variables (${visibleVariableCount})` : 'Hide variables';
+      });
+
+      body.appendChild(wrap);
+    }
+
+    card.appendChild(body);
+    refs.aiHistoryList.appendChild(card);
   });
 }
 function rows(payload) {
@@ -4460,11 +4896,120 @@ const AI_WELCOME_MESSAGE =
   "Tell me what you're building, your brand colors, typography tone, and whether you need dark mode.\n" +
   "I'll generate a foundation + semantic token structure you can import straight into Figma.";
 const AI_MESSAGE_PREVIEW_LIMIT = 200;
+const AI_RATE_LIMIT_DEFAULT = Object.freeze({
+  approximate: true,
+  scope: 'current-minute',
+  limit: 20,
+  used: 0,
+  remaining: 20,
+  usedPercent: 0,
+  retryAfterSeconds: 0,
+  windowSeconds: 60
+});
+
+function buildAiRateLimitSnapshot(info, windowStartedAt) {
+  return {
+    approximate: info.approximate !== false,
+    scope: typeof info.scope === 'string' && info.scope.trim() ? info.scope.trim() : 'current-minute',
+    limit: Number(info.limit || AI_RATE_LIMIT_DEFAULT.limit),
+    used: Number(info.used || 0),
+    remaining: Number(info.remaining || 0),
+    usedPercent: Number(info.usedPercent || 0),
+    retryAfterSeconds: Number(info.retryAfterSeconds || 0),
+    windowSeconds: Number(info.windowSeconds || AI_RATE_LIMIT_DEFAULT.windowSeconds),
+    windowStartedAt: Number(windowStartedAt || 0)
+  };
+}
 
 function trimAiHistory() {
   state.aiHistory = (Array.isArray(state.aiHistory) ? state.aiHistory : [])
     .filter(item => item && (item.role === 'user' || item.role === 'assistant') && typeof item.content === 'string')
     .slice(-6);
+}
+function normalizeAiRateLimit(input) {
+  if (!isObj(input)) return null;
+  const limit = Number(input.limit);
+  const remaining = Number(input.remaining);
+  const used = Number.isFinite(Number(input.used)) ? Number(input.used) : Math.max(0, limit - remaining);
+  const usedPercentRaw = Number(input.usedPercent);
+  const usedPercent = Number.isFinite(usedPercentRaw)
+    ? Math.max(0, Math.min(100, Math.round(usedPercentRaw)))
+    : limit > 0 ? Math.max(0, Math.min(100, Math.round((used / limit) * 100))) : 0;
+  const retryAfterSeconds = Number.isFinite(Number(input.retryAfterSeconds)) ? Number(input.retryAfterSeconds) : 0;
+  const windowSeconds = Number.isFinite(Number(input.windowSeconds)) ? Number(input.windowSeconds) : 60;
+  if (!Number.isFinite(limit) || limit <= 0 || !Number.isFinite(remaining) || remaining < 0) return null;
+  return {
+    approximate: input.approximate !== false,
+    scope: typeof input.scope === 'string' && input.scope.trim() ? input.scope.trim() : 'current-minute',
+    limit,
+    used: Math.max(0, Math.min(limit, used)),
+    remaining: Math.max(0, Math.min(limit, remaining)),
+    usedPercent,
+    retryAfterSeconds: Math.max(0, Math.round(retryAfterSeconds)),
+    windowSeconds: Math.max(1, Math.round(windowSeconds))
+  };
+}
+function setAiRateLimit(next) {
+  const normalized = normalizeAiRateLimit(next);
+  if (!normalized) {
+    state.aiRateLimit = { ...AI_RATE_LIMIT_DEFAULT };
+    state.aiRateLimitWindowStartedAt = Date.now();
+    renderAiRateLimit();
+    return;
+  }
+  const now = Date.now();
+  if (normalized.used <= 1 || !state.aiRateLimitWindowStartedAt) {
+    state.aiRateLimitWindowStartedAt = now;
+  }
+  state.aiRateLimit = normalized;
+  renderAiRateLimit();
+}
+function getActiveAiRateLimitInfo() {
+  const info = normalizeAiRateLimit(state.aiRateLimit) || { ...AI_RATE_LIMIT_DEFAULT };
+  const windowStartedAt = Number(state.aiRateLimitWindowStartedAt || 0);
+  const windowMs = Math.max(1, Number(info.windowSeconds || AI_RATE_LIMIT_DEFAULT.windowSeconds)) * 1000;
+  const now = Date.now();
+  if (!windowStartedAt || now - windowStartedAt >= windowMs) {
+    state.aiRateLimitWindowStartedAt = now;
+    state.aiRateLimit = { ...AI_RATE_LIMIT_DEFAULT };
+    return buildAiRateLimitSnapshot(AI_RATE_LIMIT_DEFAULT, now);
+  }
+  return buildAiRateLimitSnapshot(info, windowStartedAt);
+}
+function bumpAiRateLimitFallback() {
+  const current = getActiveAiRateLimitInfo();
+  const nextUsed = Math.min(current.limit, current.used + 1);
+  const next = {
+    ...current,
+    approximate: true,
+    used: nextUsed,
+    remaining: Math.max(0, current.limit - nextUsed),
+    usedPercent: current.limit > 0 ? Math.max(0, Math.min(100, Math.round((nextUsed / current.limit) * 100))) : 0,
+    retryAfterSeconds: 0
+  };
+  state.aiRateLimitWindowStartedAt = current.windowStartedAt || Date.now();
+  state.aiRateLimit = normalizeAiRateLimit(next) || { ...AI_RATE_LIMIT_DEFAULT };
+  renderAiRateLimit();
+}
+function renderAiRateLimit() {
+  if (!refs.aiBudget) return;
+  const info = getActiveAiRateLimitInfo();
+  const note = info.retryAfterSeconds > 0
+    ? `retry in ${info.retryAfterSeconds}s`
+    : info.approximate
+      ? 'approx.'
+      : '';
+  refs.aiBudget.classList.remove('hide');
+  refs.aiBudget.innerHTML = `
+    <span class="ai-budget-meter" aria-hidden="true">
+      <span class="ai-budget-fill" style="width:${info.usedPercent}%"></span>
+    </span>
+    <span class="ai-budget-copy">
+      <strong>${info.usedPercent}% used</strong>
+      <span>${info.used}/${info.limit} requests this minute</span>
+      ${note ? `<span class="ai-budget-note">• ${note}</span>` : ''}
+    </span>
+  `;
 }
 function getAiEndpoint() {
   const base = (refs.relayUrlInput?.value || '').trim() || 'https://tokvista-plugin.vercel.app/api';
@@ -4522,7 +5067,8 @@ function sanitizeAiTokenKey(key) {
     .trim()
     .replace(/['"`]/g, '')
     .replace(/&/g, 'and')
-    .replace(/[^\w.-]+/g, '-')
+    .replace(/\./g, '-')
+    .replace(/[^\w-]+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^[-_.]+|[-_.]+$/g, '') || 'token';
 }
@@ -4791,9 +5337,27 @@ function buildAiCollectionBundle(tokensRoot) {
   }
   return collections;
 }
+function normalizeAiCollectionEntries(entries) {
+  if (!Array.isArray(entries)) return [];
+  return entries
+    .map(entry => {
+      if (!isObj(entry)) return null;
+      const collection = typeof entry.collection === 'string' ? entry.collection.trim() : '';
+      const rawTokens = isObj(entry.tokens) ? entry.tokens : null;
+      if (!collection || !rawTokens) return null;
+      const normalizedTokens = normalizeAiTokenTree(rawTokens, []);
+      if (!isObj(normalizedTokens) || countAiTokenLeaves(normalizedTokens) === 0) return null;
+      return { collection, tokens: normalizedTokens };
+    })
+    .filter(Boolean);
+}
 function normalizeAiGeneratedTokens(payload) {
   if (!isObj(payload)) return null;
   const root = isObj(payload.tokens) ? payload.tokens : payload;
+  const collectionEntries = normalizeAiCollectionEntries(root.collections);
+  if (collectionEntries.length) {
+    return collectionEntries.length === 1 ? collectionEntries[0] : { collections: collectionEntries };
+  }
   const normalizedTokens = normalizeAiTokenTree(root, []);
   if (!isObj(normalizedTokens) || countAiTokenLeaves(normalizedTokens) === 0) return null;
   const collections = buildAiCollectionBundle(normalizedTokens);
@@ -4970,6 +5534,7 @@ async function sendAiMessage() {
   if (!message) return;
 
   state.aiGeneratedTokens = null;
+  state.aiLastGeneration = null;
   state.aiImportPending = false;
   state.aiTokensImported = false;
   setAiImportButton();
@@ -4995,9 +5560,16 @@ async function sendAiMessage() {
     }
     if (!response.ok) {
       const detail = typeof payload.error === 'string' ? payload.error : `AI request failed (${response.status})`;
-      throw new Error(detail);
+      const nextError = new Error(detail);
+      nextError.aiRateLimit = normalizeAiRateLimit(payload.rateLimit);
+      throw nextError;
     }
 
+    if (normalizeAiRateLimit(payload.rateLimit)) {
+      setAiRateLimit(payload.rateLimit);
+    } else {
+      bumpAiRateLimitFallback();
+    }
     const answer = typeof payload.answer === 'string' && payload.answer.trim()
       ? payload.answer.trim()
       : 'I need a bit more detail. Tell me your brand color and whether you want dark mode.';
@@ -5006,6 +5578,14 @@ async function sendAiMessage() {
       ? (stripAiCodeBlocks(answer) || 'I generated a complete token structure for your project. Review it and import when ready.')
       : answer;
     addAiMessage('assistant', displayAnswer, { tokens });
+    state.aiLastGeneration = tokens
+      ? {
+          prompt: message,
+          answer: displayAnswer,
+          tokenCount: countAiTokens(tokens),
+          generatedAt: new Date().toISOString()
+        }
+      : null;
     if (tokens) {
       setStatus('Tokvista AI generated import-ready tokens.', false);
     } else {
@@ -5013,6 +5593,9 @@ async function sendAiMessage() {
     }
   } catch (error) {
     const messageText = error instanceof Error ? error.message : String(error);
+    if (error && error.aiRateLimit) {
+      setAiRateLimit(error.aiRateLimit);
+    }
     addAiMessage('assistant', `I couldn't reach Tokvista AI right now. ${truncateStatusMessage(messageText, 140)}`);
     setStatus(messageText, true);
   } finally {
@@ -5023,11 +5606,14 @@ async function sendAiMessage() {
 function initAiAssistant() {
   if (!refs.aiMessages || !refs.aiInput || !refs.aiSendBtn || !refs.aiImportBtn) return;
 
+  setAiRateLimit(AI_RATE_LIMIT_DEFAULT);
+  updateAiHistoryButton();
   if (!state.aiMessages.length) {
     addAiMessage('assistant', AI_WELCOME_MESSAGE);
   } else {
     renderAiMessages();
   }
+  renderAiRateLimit();
   setAiImportButton();
   resizeAiInput();
 
@@ -5051,7 +5637,16 @@ function initAiAssistant() {
     }
     state.aiImportPending = true;
     setAiImportButton();
-    post({ type: 'import-tokens', payload: state.aiGeneratedTokens });
+    post({
+      type: 'import-ai-tokens',
+      payload: {
+        tokens: state.aiGeneratedTokens,
+        prompt: state.aiLastGeneration?.prompt || refs.aiInput?.value?.trim() || 'AI token import',
+        answer: state.aiLastGeneration?.answer || '',
+        tokenCount: state.aiLastGeneration?.tokenCount || countAiTokens(state.aiGeneratedTokens),
+        generatedAt: state.aiLastGeneration?.generatedAt || ''
+      }
+    });
     setStatus('AI token import sent to Figma.', false);
   });
 }
@@ -5133,6 +5728,21 @@ document.querySelectorAll('[data-provider-choice]').forEach(btn => {
 });
 refs.closeHistoryModalBtn.addEventListener('click', closeHistoryModal);
 refs.historyModal.addEventListener('click', e => { if (e.target === refs.historyModal) closeHistoryModal(); });
+refs.aiHistoryBtn?.addEventListener('click', openAiHistoryModal);
+refs.closeAiHistoryModalBtn?.addEventListener('click', closeAiHistoryModal);
+refs.aiHistoryModal?.addEventListener('click', e => { if (e.target === refs.aiHistoryModal) closeAiHistoryModal(); });
+refs.closeAiRevertModalBtn?.addEventListener('click', closeAiRevertModal);
+refs.cancelAiRevertBtn?.addEventListener('click', closeAiRevertModal);
+refs.aiRevertModal?.addEventListener('click', e => { if (e.target === refs.aiRevertModal) closeAiRevertModal(); });
+refs.confirmAiRevertBtn?.addEventListener('click', () => {
+  const entryId = state.aiHistoryConfirmEntryId;
+  if (!entryId || state.aiHistoryRevertPendingId) return;
+  state.aiHistoryRevertPendingId = entryId;
+  closeAiRevertModal();
+  renderAiImportHistory(state.aiImportHistory);
+  setStatus('Reversing AI import…', false);
+  post({ type: 'revert-ai-history-entry', payload: { id: entryId } });
+});
 $('confirmPublishBtn').addEventListener('click', () => {
   closeModal();
   setStatus('Publishing to Tokvista…', false);
@@ -5297,6 +5907,21 @@ window.onmessage = event => {
   if (msg.type === 'publish-history') {
     renderPublishHistory(msg.payload || []);
   }
+  if (msg.type === 'ai-history') {
+    closeAiRevertModal();
+    state.aiHistoryRevertPendingId = '';
+    renderAiImportHistory(msg.payload || []);
+  }
+  if (msg.type === 'ai-history-revert-result') {
+    closeAiRevertModal();
+    const p = msg.payload || {};
+    state.aiHistoryRevertPendingId = '';
+    const removed = Number(p.removed || 0);
+    const missing = Number(p.missing || 0);
+    const failed = Number(p.failed || 0);
+    setStatus(`AI import reversed: ${removed} removed, ${missing} missing, ${failed} failed.`, failed > 0);
+    renderAiImportHistory(state.aiImportHistory);
+  }
   if (msg.type === 'publish-change-preview') {
     const p = msg.payload || {};
     if (p.changeLog && typeof p.changeLog === 'object') { state.changeLog = p.changeLog; renderChangeLog(state.changeLog); }
@@ -5335,6 +5960,13 @@ window.onmessage = event => {
       state.aiImportPending = false;
       state.aiTokensImported = false;
       setAiImportButton();
+    }
+    if (state.aiHistoryRevertPendingId) {
+      state.aiHistoryRevertPendingId = '';
+      renderAiImportHistory(state.aiImportHistory);
+    }
+    if (state.aiHistoryConfirmEntryId) {
+      closeAiRevertModal();
     }
     setStatus(msg.payload || 'Unknown error', true);
   }
@@ -5420,6 +6052,7 @@ renderSnapshot(null);
 initAiAssistant();
 post({ type: 'load-relay-settings' });
 post({ type: 'load-publish-history' });
+post({ type: 'load-ai-history' });
 post({ type: 'preview-publish-changes' });
 post({ type: 'export-tokens' });
 
