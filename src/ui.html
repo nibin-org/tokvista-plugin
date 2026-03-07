@@ -4,6 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Tokvista</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     /* ╔══════════════════════════════════════╗
        ║  DESIGN SYSTEM                       ║
@@ -42,10 +44,15 @@
       --bl-dim:  rgba(107,159,232,0.10);
       --bl-brd:  rgba(107,159,232,0.25);
 
-      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --font: 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
       --mono: 'Consolas', 'Courier New', monospace;
-      --r:  10px;
-      --rs: 7px;
+      --r:  12px;
+      --rs: 8px;
+
+      /* Premium shadows */
+      --shadow-card: 0 1px 3px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.03) inset;
+      --shadow-btn: 0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05) inset;
+      --shadow-header: 0 4px 24px rgba(0,0,0,0.5);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -87,11 +94,12 @@
     /* ── STICKY HEADER ── */
     .top {
       position: sticky; top: 0; z-index: 20;
-      background: rgba(20,18,16,0.94);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: rgba(20,18,16,0.97);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
       border-bottom: 1px solid var(--border);
-      padding: 13px 16px 0;
+      box-shadow: var(--shadow-header);
+      padding: 0 14px 0;
       flex: 0 0 auto;
     }
 
@@ -99,45 +107,89 @@
     .header-row {
       display: flex; align-items: center;
       justify-content: space-between; gap: 10px;
-      margin-bottom: 12px;
+      margin-bottom: 6px;
+      margin-top: 0;
+    }
+    .header-accent {
+      height: 1px;
+      margin: -10px -14px 10px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(212,168,75,0.35) 18%,
+        rgba(212,168,75,0.75) 50%,
+        rgba(212,168,75,0.35) 82%,
+        transparent 100%
+      );
+      pointer-events: none;
     }
 
-    .brand { display: flex; align-items: center; gap: 9px; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .header-refresh-btn {
+      height: 30px;
+      padding: 0 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--t4);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      font-size: 12px;
+      font-weight: 500;
+      font-family: var(--font);
+      transition: all 0.15s;
+    }
+    .header-refresh-btn:hover {
+      background: var(--raised);
+      color: var(--t2);
+      border-color: var(--border-hi);
+    }
+    .header-refresh-btn svg { width: 14px; height: 14px; display: block; }
+    .header-refresh-btn.is-spinning svg {
+      animation: header-refresh-spin 0.8s linear infinite;
+    }
+    @keyframes header-refresh-spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
 
     .brand-mark {
-      width: 28px; height: 28px; border-radius: 7px;
-      background: var(--t1); flex-shrink: 0;
+      width: 30px; height: 30px; border-radius: 8px;
+      background: linear-gradient(145deg, #2a2620 0%, #1a1815 100%);
+      flex-shrink: 0;
       display: grid; place-items: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 0 0 1px rgba(212,168,75,0.2) inset;
     }
     .brand-mark svg { width: 14px; height: 14px; display: block; }
 
     .brand-name {
-      font-size: 18px; font-weight: 700;
-      letter-spacing: -0.03em; color: var(--t1);
+      font-size: 17px; font-weight: 700;
+      letter-spacing: -0.04em; color: var(--t1);
     }
 
     .ver {
-      font-family: var(--mono); font-size: 12px; font-weight: 500;
-      color: var(--t3); background: var(--raised);
+      font-family: var(--mono); font-size: 11px; font-weight: 500;
+      color: var(--t4); background: transparent;
       border: 1px solid var(--border); border-radius: 99px;
-      padding: 3px 9px;
+      padding: 2px 8px;
+      letter-spacing: 0.02em;
     }
 
     /* ── HEADER ACTIONS ── */
-    .header-actions { display: flex; align-items: center; gap: 6px; }
-
     .icon-btn {
-      width: 32px; height: 32px; border-radius: var(--rs);
-      border: 1px solid var(--border); background: var(--surface);
-      color: var(--t3); display: grid; place-items: center;
+      width: 30px; height: 30px; border-radius: 7px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--t4); display: grid; place-items: center;
       transition: all 0.15s;
     }
     .icon-btn:hover {
-      background: var(--overlay); color: var(--t1);
+      background: var(--raised); color: var(--t2);
       border-color: var(--border-hi);
     }
-    .icon-btn svg { width: 15px; height: 15px; display: block; }
+    .icon-btn svg { width: 14px; height: 14px; display: block; }
     .preview-live-wrap {
       position: relative;
       display: inline-flex;
@@ -227,29 +279,38 @@
 
     /* ── TABS ── */
     .nav-tabs {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 10px;
+      display: flex;
+      align-items: stretch;
       margin-bottom: -1px;
+      margin-top: -1px;
     }
-    .nav-tabs-left { display: flex; gap: 2px; }
-    .nav-actions .icon-btn { width: 30px; height: 30px; }
+    .nav-tabs-left {
+      display: flex;
+      flex: 1;
+      gap: 0;
+    }
 
     .tab {
-      width: 38px; height: 34px; padding: 0;
+      flex: 1;
+      height: 32px; padding: 0 8px;
       display: inline-flex; align-items: center; justify-content: center;
+      gap: 5px;
       border: none;
-      background: transparent; color: var(--t3);
+      background: transparent; color: var(--t4);
       border-bottom: 2px solid transparent;
       margin-bottom: -1px; position: relative;
       transition: color 0.15s, background 0.15s;
-      border-radius: 6px 6px 0 0;
+      border-radius: 0;
+      font-size: 12px; font-weight: 600; font-family: var(--font);
+      letter-spacing: -0.01em;
+      white-space: nowrap;
     }
-    .tab svg { width: 15px; height: 15px; display: block; flex-shrink: 0; }
-    .tab:hover { color: var(--t2); }
+    .tab svg { width: 13px; height: 13px; display: block; flex-shrink: 0; }
+    .tab-label { display: inline; }
+    .tab:hover { color: var(--t3); background: rgba(255,255,255,0.02); }
     .tab.on {
       color: var(--t1);
       border-bottom-color: var(--a);
-      background: rgba(255,255,255,0.02);
     }
 
     .chg-badge {
@@ -263,9 +324,10 @@
 
     /* ── LAYOUT ── */
     .main {
-      flex: 1 1 auto;
+      flex: 1 1 0;
+      height: 0;
       min-height: 0;
-      padding: 14px 16px 0;
+      padding: 16px 16px 0;
       background: var(--bg);
       overflow-y: auto;
       overflow-x: hidden;
@@ -277,11 +339,24 @@
       display: flex;
       flex-direction: column;
     }
+    .main.ai-scroll-lock {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
     .main.home-scroll-lock > #tab-home {
       display: flex;
       flex-direction: column;
       flex: 1 1 auto;
       min-height: 0;
+      overflow: hidden;
+    }
+    .main.ai-scroll-lock > #tab-ai {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
     }
     .main.home-scroll-lock > #tab-home .explorer-card {
       flex: 1 1 auto;
@@ -334,12 +409,15 @@
 
     /* ── STICKY PUBLISH FOOTER ── */
     .publish-footer {
+      position: sticky;
+      bottom: 0;
+      z-index: 25;
       flex: 0 0 auto;
-      background: rgba(20,18,16,0.96);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: rgba(20,18,16,0.97);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
       border-top: 1px solid var(--border);
-      padding: 8px 10px 10px;
+      padding: 10px 12px 12px;
       display: flex;
       flex-direction: column;
       gap: 6px;
@@ -347,34 +425,46 @@
     .publish-footer-row {
       display: flex; align-items: stretch; gap: 8px;
     }
+    /* Calm neutral "no changes" state */
     .publish-footer-hint {
       display: flex; align-items: center; gap: 10px;
       flex: 1; min-width: 0;
-      min-height: 42px;
-      padding: 8px 10px;
-      background: var(--yn-dim); border: 1px solid var(--yn-brd);
+      min-height: 40px;
+      padding: 0 8px;
+      background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--rs);
     }
-    .publish-footer-hint svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--yellow); }
+    .publish-footer-hint svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--t4); }
     .publish-footer-hint span {
-      font-size: 13px; color: var(--yellow); flex: 1; font-weight: 500;
+      font-size: 13px; color: var(--t3); flex: 1; font-weight: 500;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    /* Warning state — only shown when there ARE changes */
+    .publish-footer-hint.has-changes {
+      background: var(--yn-dim); border-color: var(--yn-brd);
+    }
+    .publish-footer-hint.has-changes svg { color: var(--yellow); }
+    .publish-footer-hint.has-changes span { color: var(--yellow); }
     .publish-footer-hint .btn-warn {
-      height: 30px; padding: 0 12px;
-      border-radius: 8px;
+      height: 28px; padding: 0 12px;
+      border-radius: 6px; flex-shrink: 0;
     }
+    /* Labeled publish button */
     .publish-fab {
-      width: 40px; min-width: 40px; height: auto;
-      border-radius: 10px; border: none;
-      background: var(--t1); color: var(--bg);
+      height: auto; min-width: 0;
+      padding: 0 12px;
+      border-radius: var(--rs); border: none;
+      background: var(--a); color: #141210;
       display: inline-flex; align-items: center; justify-content: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-      transition: all 0.15s;
+      gap: 7px;
+      font-size: 13px; font-weight: 700; font-family: var(--font);
+      letter-spacing: -0.01em;
+      box-shadow: 0 2px 12px rgba(212,168,75,0.25);
+      transition: all 0.18s; white-space: nowrap;
     }
-    .publish-fab:hover { opacity: 0.86; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+    .publish-fab:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(212,168,75,0.4); }
     .publish-fab:active { transform: scale(0.98); }
-    .publish-fab svg { width: 16px; height: 16px; display: block; }
+    .publish-fab svg { width: 14px; height: 14px; display: block; flex-shrink: 0; }
     .publish-footer .status {
       display: none;
       margin-top: 0;
@@ -406,9 +496,9 @@
     /* ── SECTION LABELS ── */
     .sec {
       display: flex; align-items: center; gap: 8px;
-      font-size: 12px; font-weight: 700;
-      letter-spacing: 0.08em; text-transform: uppercase;
-      color: var(--t3); margin: 18px 0 8px;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--t4); margin: 20px 0 10px;
     }
     .sec::after { content: ''; flex: 1; height: 1px; background: var(--border); }
     .sec-first { margin-top: 2px; }
@@ -420,36 +510,56 @@
       border-radius: var(--r);
       overflow: hidden;
       margin-bottom: 10px;
+      box-shadow: var(--shadow-card);
     }
 
     /* ── SYNC BLOCK ── */
     .sync-block {
       display: flex; align-items: center;
       justify-content: space-between; gap: 12px;
-      padding: 13px 15px;
+      padding: 16px 16px;
+      border-bottom: none;
+      background: transparent;
     }
-    .sync-left { display: flex; align-items: center; gap: 11px; min-width: 0; }
+    .sync-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
     .sync-icon {
-      width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
-      background: var(--raised); border: 1px solid var(--border);
-      display: grid; place-items: center; color: var(--t2);
+      width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+      background: linear-gradient(145deg, var(--overlay), var(--raised));
+      border: 1px solid var(--border);
+      display: grid; place-items: center; color: var(--a);
     }
-    .sync-icon svg { width: 16px; height: 16px; display: block; }
-    .sync-title { font-size: 16px; font-weight: 600; color: var(--t1); letter-spacing: -0.01em; }
-    .sync-meta  { font-size: 14px; color: var(--t3); margin-top: 1px; }
+    .sync-icon svg { width: 17px; height: 17px; display: block; }
+    .sync-title { font-size: 16px; line-height: 20px; font-weight: 700; color: var(--t1); letter-spacing: -0.03em; }
+    .sync-meta  { font-size: 12px; line-height: 16px; color: var(--t3); margin-top: 2px; }
+    /* Gold-bordered Sync button matching screenshot */
+    #syncBtn {
+      height: 34px; padding: 0 16px;
+      border: 1px solid var(--a-brd) !important;
+      background: rgba(212,168,75,0.08) !important;
+      color: var(--a) !important;
+      font-size: 13px; font-weight: 600;
+      border-radius: var(--rs);
+      box-shadow: none;
+    }
+    #syncBtn:hover { background: rgba(212,168,75,0.15) !important; }
 
     /* ══════════════════════════════════════
        UNIFIED TOKEN EXPLORER CARD
        Layers + counts + preview in one shell
        ══════════════════════════════════════ */
 
-    /* The outer unified card wrapping layers + preview */
+    /* The outer unified card - flat/open like screenshot */
     .explorer-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--r);
       overflow: hidden;
       margin-bottom: 10px;
+      box-shadow: var(--shadow-card);
+    }
+    /* Thin divider between sync and toggle */
+    .explorer-card .sync-block {
+      border-bottom: 1px solid var(--border);
     }
 
     /* ── EXPLORER HEADER: total count + view toggle ── */
@@ -578,69 +688,144 @@
     .layers-add-row:hover { background: var(--raised); color: var(--a); }
     .layers-add-row svg { width: 11px; height: 11px; }
 
-    /* ── VIEW SEGMENT BAR ── */
+    /* ── VIEW SEGMENT BAR — full width toggle matching screenshot ── */
     .preview-seg-bar {
       display: flex; align-items: center;
-      justify-content: space-between;
-      padding: 8px 14px;
-      border-bottom: 1px solid var(--border);
-      background: var(--raised);
+      justify-content: center;
+      padding: 10px 14px 0;
+      background: transparent;
+      gap: 0;
+    }
+    .psb-left { display: none; } /* hide label, let toggle take full width */
+    .preview-toolbar {
+      display: flex;
+      align-items: center;
       gap: 10px;
+      padding: 12px 14px 0;
     }
-    .psb-left {
-      display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1;
-    }
-    .psb-label {
-      font-size: 11px; font-weight: 700;
-      letter-spacing: 0.08em; text-transform: uppercase;
-      color: var(--t3); white-space: nowrap; flex-shrink: 0;
-    }
-    .view-seg {
-      display: flex; gap: 0;
-      border: 1px solid var(--border);
-      border-radius: 5px; overflow: hidden;
-    }
-    .vseg-btn {
-      height: 22px; padding: 0 10px;
-      border: none; background: transparent; color: var(--t3);
-      font-family: var(--mono); font-size: 10px; font-weight: 700;
-      letter-spacing: 0.06em; text-transform: uppercase;
-      cursor: pointer; transition: all 0.12s;
-      border-right: 1px solid var(--border);
+    .preview-search {
+      flex: 1 1 auto;
+      min-width: 0;
       position: relative;
     }
-    .vseg-btn:last-child { border-right: none; }
-    .vseg-btn:hover { color: var(--t2); background: var(--overlay); }
-    .vseg-btn.on { background: var(--a-dim); color: var(--a); }
-    .vseg-btn.on::after {
-      content: ''; position: absolute;
-      bottom: 0; left: 0; right: 0;
-      height: 2px; background: var(--a);
+    .preview-search input {
+      width: 100%;
+      height: 34px;
+      padding: 0 12px 0 34px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      color: var(--t1);
+      font-size: 12px;
+      font-family: var(--font);
+      outline: none;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
     }
+    .preview-search input::placeholder { color: var(--t4); }
+    .preview-search input:focus {
+      border-color: var(--a-brd);
+      box-shadow: 0 0 0 3px rgba(212,168,75,0.08);
+      background: rgba(255,255,255,0.03);
+    }
+    .preview-search svg {
+      position: absolute;
+      top: 50%;
+      left: 11px;
+      width: 14px;
+      height: 14px;
+      transform: translateY(-50%);
+      color: var(--t4);
+      pointer-events: none;
+    }
+    .preview-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 0 0 auto;
+    }
+    .preview-actions .icon-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    /* Full-width gold pill toggle */
+    .view-seg {
+      display: flex;
+      width: 100%;
+      background: var(--raised);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 3px;
+      gap: 2px;
+      margin-bottom: 10px;
+    }
+    .vseg-btn {
+      flex: 1;
+      height: 28px; padding: 0;
+      border: none; background: transparent; color: var(--t3);
+      font-family: var(--font); font-size: 12px; font-weight: 600;
+      letter-spacing: -0.01em;
+      cursor: pointer; transition: all 0.18s;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .vseg-btn:hover { color: var(--t2); }
+    .vseg-btn.on {
+      background: var(--a);
+      color: #141210;
+      font-weight: 700;
+      box-shadow: 0 1px 4px rgba(212,168,75,0.3);
+    }
+
+    /* ── RICH EMPTY STATE ── */
+    .explorer-empty-state {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px 20px; text-align: center; gap: 12px;
+    }
+    .ees-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      background: linear-gradient(145deg, var(--overlay), var(--raised));
+      border: 1px solid var(--border);
+      display: grid; place-items: center;
+      color: var(--t4);
+      box-shadow: var(--shadow-card);
+    }
+    .ees-icon svg { width: 22px; height: 22px; }
+    .ees-title { font-size: 14px; font-weight: 600; color: var(--t2); letter-spacing: -0.02em; }
+    .ees-sub { font-size: 12px; color: var(--t4); line-height: 1.5; max-width: 180px; }
 
     /* token table inside explorer — no extra border needed */
     .explorer-table { width: 100%; border-collapse: collapse; }
     .explorer-table th {
-      font-size: 11px; font-weight: 700; letter-spacing: 0.07em;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.09em;
       text-transform: uppercase; color: var(--t4);
       padding: 8px 14px; text-align: left;
       border-bottom: 1px solid var(--border);
+      background: var(--raised);
     }
     .explorer-table th:last-child { text-align: right; }
     .explorer-table td {
       padding: 9px 14px; border-bottom: 1px solid var(--border);
-      font-size: 14px; vertical-align: middle;
+      font-size: 13px; vertical-align: middle; position: relative;
     }
     .explorer-table tr:last-child td { border-bottom: none; }
     .explorer-table tbody tr { transition: background 0.1s; }
     .explorer-table tbody tr:hover td { background: var(--raised); }
-
-    /* empty state */
-    .explorer-empty {
-      padding: 24px 14px; text-align: center;
-      font-size: 13px; color: var(--t4);
-      font-family: var(--mono);
+    /* hover copy chip */
+    .explorer-table tbody tr .copy-chip {
+      display: none; position: absolute; right: 12px; top: 50%;
+      transform: translateY(-50%);
+      height: 20px; padding: 0 8px; border-radius: 4px;
+      border: 1px solid var(--border-hi); background: var(--overlay);
+      color: var(--t3); font-size: 10px; font-weight: 600;
+      font-family: var(--mono); cursor: pointer; transition: all 0.1s;
+      align-items: center;
     }
+    .explorer-table tbody tr:hover .copy-chip { display: inline-flex; }
+    .explorer-table tbody tr .copy-chip:hover { color: var(--t1); border-color: var(--a-brd); }
 
     /* JSON terminal — same as before, but now lives inside explorer card */
     .json-terminal {
@@ -741,25 +926,26 @@
     .btn {
       height: 34px; padding: 0 14px; border-radius: var(--rs);
       border: 1px solid var(--border-hi); background: var(--raised);
-      color: var(--t1); font-size: 15px; font-weight: 500;
+      color: var(--t1); font-size: 14px; font-weight: 600;
       font-family: var(--font); display: inline-flex;
       align-items: center; gap: 6px; transition: all 0.15s;
       white-space: nowrap; letter-spacing: -0.01em;
+      box-shadow: var(--shadow-btn);
     }
     .btn svg { width: 14px; height: 14px; display: block; }
     .btn:hover { background: var(--overlay); border-color: var(--border-hi); }
     .btn:active { transform: scale(0.98); }
 
     .btn-primary {
-      width: 100%; height: 40px; border-radius: var(--rs);
+      width: 100%; height: 42px; border-radius: var(--rs);
       background: var(--t1); color: var(--bg);
       border: none; font-size: 15px; font-weight: 700;
       font-family: var(--font); display: flex;
       align-items: center; justify-content: center; gap: 7px;
-      transition: all 0.15s; letter-spacing: -0.02em;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      transition: all 0.18s; letter-spacing: -0.02em;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.08) inset;
     }
-    .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.45); }
     .btn-primary:active { transform: scale(0.99); opacity: 0.9; }
     .btn-primary svg { width: 15px; height: 15px; display: block; }
 
@@ -773,11 +959,55 @@
     }
     .btn-save:hover { background: var(--raised); }
     .btn-save svg { width: 15px; height: 15px; display: block; }
+    .settings-tab { padding-bottom: 14px; }
+    .settings-top-card {
+      background: rgba(255,255,255,0.015);
+    }
+    .settings-top-card .status-bar,
+    .settings-top-card .provider-row {
+      padding: 11px 12px;
+    }
+    .settings-top-card .provider-row {
+      border-top: 1px solid var(--border);
+    }
+    .settings-tab .sec {
+      margin: 14px 0 8px;
+    }
+    .settings-tab .sec-first {
+      margin-top: 0;
+    }
+    .settings-subsec {
+      color: var(--t4);
+      margin-top: 10px;
+      margin-bottom: 6px;
+    }
+    .settings-kicker {
+      margin-bottom: 6px;
+      color: var(--t4);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .settings-savebar {
+      position: sticky;
+      bottom: 0;
+      z-index: 5;
+      margin: 6px -4px 10px;
+      padding: 12px 4px 2px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      background: linear-gradient(180deg, rgba(20,18,16,0) 0%, rgba(20,18,16,0.82) 22%, rgba(20,18,16,0.96) 54%, rgba(20,18,16,0.99) 100%);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .settings-savebar .btn-save {
+      box-shadow: 0 10px 24px rgba(0,0,0,0.28);
+    }
 
     .btn-import {
       width: 100%; height: 38px; border-radius: var(--rs);
       border: 1px solid var(--border); background: var(--surface);
-      color: var(--t1); font-size: 15px; font-weight: 600;
+      color: var(--t1); font-size: 14px; font-weight: 600;
       font-family: var(--font); transition: all 0.15s;
     }
     .btn-import:hover:not(:disabled) { background: var(--raised); border-color: var(--border-hi); }
@@ -835,6 +1065,13 @@
     .pill-y { color: var(--yellow); background: var(--yn-dim); border-color: var(--yn-brd); }
     .pill-r { color: var(--red);    background: var(--rd-dim); border-color: var(--rd-brd); }
     .pill-n { color: var(--t2);     background: var(--raised); border-color: var(--border); }
+    .pills.is-muted .pill-g,
+    .pills.is-muted .pill-y,
+    .pills.is-muted .pill-r {
+      color: var(--t3);
+      background: rgba(255,255,255,0.02);
+      border-color: var(--border);
+    }
 
     .pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
 
@@ -843,6 +1080,12 @@
       display: flex; align-items: center;
       justify-content: space-between; gap: 10px;
       margin-bottom: 8px;
+    }
+    .changes-subhint {
+      margin: -2px 0 10px;
+      color: var(--t4);
+      font-size: 11px;
+      letter-spacing: 0.03em;
     }
 
     .changes-list {
@@ -894,21 +1137,21 @@
     }
     .snap-head {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 11px 14px; border-bottom: 1px solid var(--border);
+      padding: 10px 12px; border-bottom: 1px solid var(--border);
       background: var(--raised);
     }
     .snap-title { font-size: 15px; font-weight: 600; color: var(--t1); }
-    .snap-time  { font-family: var(--mono); font-size: 13px; color: var(--t3); }
+    .snap-time  { font-family: var(--mono); font-size: 12px; color: var(--t3); }
 
     .snap-row {
       display: flex; align-items: center; justify-content: space-between;
-      gap: 10px; padding: 11px 14px;
+      gap: 10px; padding: 10px 12px;
       border-bottom: 1px solid var(--border);
     }
     .snap-row:last-of-type { border-bottom: none; }
-    .snap-label { font-size: 15px; color: var(--t2); }
+    .snap-label { font-size: 14px; color: var(--t2); }
     .snap-val {
-      font-family: var(--mono); font-size: 14px; font-weight: 500;
+      font-family: var(--mono); font-size: 13px; font-weight: 500;
       color: var(--t1); text-align: right;
       max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
@@ -934,7 +1177,6 @@
     .status-bar {
       display: flex; align-items: center;
       justify-content: space-between; gap: 12px;
-      padding: 13px 15px;
     }
     .status-host {
       font-size: 16px; font-weight: 600; color: var(--t1);
@@ -959,7 +1201,6 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
-      padding: 13px 15px;
     }
     .provider-main {
       min-width: 0;
@@ -1017,7 +1258,8 @@
     }
     .sync-profiles-wrap {
       border-top: 1px solid var(--border);
-      padding: 10px 12px 12px;
+      padding: 7px 10px 8px;
+      background: rgba(255,255,255,0.01);
     }
     .sync-profiles-head {
       display: flex;
@@ -1050,23 +1292,37 @@
       color: var(--t1);
       border-color: var(--border-hi);
     }
+    .btn-new-profile.is-draft {
+      color: var(--yl);
+      border-color: rgba(220,178,76,0.38);
+      background: rgba(220,178,76,0.08);
+    }
+    .btn-new-profile.is-draft:hover {
+      background: rgba(220,178,76,0.14);
+      border-color: rgba(220,178,76,0.52);
+      color: #f6d26a;
+    }
     .sync-profile-list {
       display: grid;
-      gap: 6px;
+      gap: 5px;
     }
     .sync-profile-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      padding: 8px 9px;
+      padding: 7px 8px;
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: rgba(0,0,0,0.18);
+      background: rgba(0,0,0,0.14);
     }
     .sync-profile-row.is-active {
       border-color: var(--gn-brd);
-      background: rgba(69,196,144,0.1);
+      background: rgba(69,196,144,0.08);
+    }
+    .sync-profile-row.is-draft {
+      border-color: rgba(220,178,76,0.34);
+      background: linear-gradient(180deg, rgba(220,178,76,0.09) 0%, rgba(220,178,76,0.03) 100%);
     }
     .sync-profile-main {
       min-width: 0;
@@ -1124,6 +1380,20 @@
       font-size: 12px;
       color: var(--t4);
       padding: 6px 2px;
+    }
+    .sync-profile-chip {
+      display: inline-flex;
+      align-items: center;
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(220,178,76,0.34);
+      background: rgba(220,178,76,0.12);
+      color: #f0c85b;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
     .relay-adv-toggle {
       width: 100%;
@@ -1251,16 +1521,16 @@
     }
 
     /* ── FIELDS ── */
-    .field { margin-bottom: 10px; }
+    .field { margin-bottom: 8px; }
     .field label {
       display: block; font-size: 14px; font-weight: 500;
-      color: var(--t2); margin-bottom: 5px;
+      color: var(--t2); margin-bottom: 4px;
     }
     .field input {
-      width: 100%; height: 38px; padding: 0 12px;
+      width: 100%; height: 36px; padding: 0 12px;
       border: 1px solid var(--border); border-radius: var(--rs);
       background: var(--surface); color: var(--t1);
-      font-family: var(--font); font-size: 15px; outline: none;
+      font-family: var(--font); font-size: 14px; outline: none;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
     .field input:focus {
@@ -1273,7 +1543,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      margin: 8px 0 12px;
+      margin: 6px 0 10px;
       color: var(--t2);
       font-size: 13px;
     }
@@ -1286,27 +1556,27 @@
     /* ── DANGER ROWS ── */
     .danger-row {
       display: flex; align-items: center; justify-content: space-between;
-      gap: 12px; padding: 12px 14px;
+      gap: 12px; padding: 8px 11px;
       border-bottom: 1px solid var(--border);
     }
     .danger-row:last-child { border-bottom: none; }
-    .danger-title { font-size: 15px; font-weight: 500; color: var(--t1); }
-    .danger-meta  { font-size: 14px; color: var(--t3); margin-top: 2px; }
+    .danger-title { font-size: 13px; font-weight: 500; color: var(--t1); }
+    .danger-meta  { font-size: 12px; color: var(--t3); margin-top: 2px; }
 
     /* ── DROP ZONE ── */
     .drop {
       border: 1.5px dashed var(--border-hi); border-radius: var(--r);
-      background: var(--surface); padding: 28px 18px;
+      background: var(--surface); padding: 22px 16px;
       text-align: center; cursor: pointer; transition: all 0.2s;
     }
     .drop:hover { border-color: var(--t3); background: var(--raised); }
     .drop.drag  { border-color: var(--a); background: var(--a-dim); border-style: solid; }
 
-    .drop-ico   { width: 22px; height: 22px; display: block; margin: 0 auto 10px; color: var(--t3); }
-    .drop-title { font-size: 16px; font-weight: 600; color: var(--t1); margin-bottom: 4px; }
-    .drop-sub   { font-size: 14px; color: var(--t3); }
+    .drop-ico   { width: 20px; height: 20px; display: block; margin: 0 auto 8px; color: var(--t3); }
+    .drop-title { font-size: 15px; font-weight: 600; color: var(--t1); margin-bottom: 3px; }
+    .drop-sub   { font-size: 13px; color: var(--t3); }
 
-    .drop-file-row { margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .drop-file-row { margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .drop-file {
       display: inline-flex; align-items: center; max-width: 200px;
       padding: 3px 10px; border-radius: 99px;
@@ -1325,7 +1595,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      margin: 10px 0 12px;
+      margin: 8px 0 10px;
       color: var(--t4);
       font-family: var(--mono);
       font-size: 11px;
@@ -1341,9 +1611,9 @@
     }
     .import-url-row {
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       gap: 8px;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
     .import-url-row .field {
       margin-bottom: 0;
@@ -1357,21 +1627,15 @@
     }
 
     /* ── IMPORT MAP ── */
-    .import-row {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 10px; padding: 11px 14px;
-      border-bottom: 1px solid var(--border);
+    .import-help {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--rs);
+      background: rgba(0,0,0,0.16);
+      color: var(--t2);
+      font-size: 12px;
+      line-height: 1.5;
     }
-    .import-row:last-child { border-bottom: none; }
-    .import-label { font-size: 15px; font-weight: 500; color: var(--t1); }
-    .import-chip {
-      display: inline-flex; align-items: center; gap: 4px;
-      font-family: var(--mono); font-size: 13px;
-      color: var(--green); background: var(--gn-dim);
-      border: 1px solid var(--gn-brd); border-radius: 5px;
-      padding: 3px 9px; white-space: nowrap;
-    }
-    .import-chip::before { content: '→ '; }
 
     /* ── DOWNLOAD POPUP ── */
     .dl-pop { position: relative; }
@@ -1457,6 +1721,22 @@
       flex: 1 1 auto;
       min-height: 0;
     }
+    .modal-copy {
+      margin: 0;
+      color: var(--t2);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .modal-copy strong {
+      color: var(--t1);
+      font-weight: 700;
+    }
+    .btn-mp.btn-danger-fill {
+      background: linear-gradient(180deg, #cf5c5c 0%, #b74343 100%);
+      color: #fff6f6;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .btn-mp.btn-danger-fill:hover { opacity: 0.92; }
 
     .pub-card {
       border: 1px solid var(--border); border-radius: var(--rs);
@@ -1477,24 +1757,24 @@
 
     .modal-foot {
       display: grid; grid-template-columns: 1fr 1fr;
-      gap: 8px; padding: 10px 16px 14px;
+      gap: 8px; padding: 8px 12px 10px;
       border-top: 1px solid var(--border);
       flex: 0 0 auto;
     }
 
     .btn-mc {
-      height: 38px; border-radius: var(--rs);
+      height: 34px; border-radius: var(--rs);
       background: transparent; border: 1px solid var(--border);
       color: var(--t2); font-family: var(--font);
-      font-size: 14px; font-weight: 500; transition: all 0.12s;
+      font-size: 13px; font-weight: 500; transition: all 0.12s;
     }
     .btn-mc:hover { background: var(--raised); color: var(--t1); }
 
     .btn-mp {
-      height: 38px; border-radius: var(--rs);
+      height: 34px; border-radius: var(--rs);
       background: var(--t1); color: var(--bg);
       border: none; font-family: var(--font);
-      font-size: 15px; font-weight: 700;
+      font-size: 14px; font-weight: 700;
       display: flex; align-items: center; justify-content: center; gap: 6px;
       transition: all 0.15s;
     }
@@ -1504,7 +1784,7 @@
     .btn-full-center { width: 100%; justify-content: center; }
     .th-icon-col { width: 28px; padding-left: 14px; }
     .th-value-right { text-align: right; }
-    .tab-import-padded { padding-bottom: 16px; }
+    .tab-import-padded { padding-bottom: 12px; }
     .mt-2 { margin-top: 2px; }
     .mt-0 { margin-top: 0; }
     .mt-12 { margin-top: 12px; }
@@ -1512,8 +1792,8 @@
     .mb-10 { margin-bottom: 10px; }
     .mb-14 { margin-bottom: 14px; }
     .mb-16 { margin-bottom: 16px; }
-    .my-10-16 { margin-top: 10px; margin-bottom: 16px; }
-    .my-12-16 { margin-top: 12px; margin-bottom: 16px; }
+    .my-10-16 { margin-top: 8px; margin-bottom: 12px; }
+    .my-12-16 { margin-top: 10px; margin-bottom: 12px; }
     .sec-flex-fill { margin: 0; flex: 1; }
     .chg-empty-pad { padding: 18px; }
     .history-pills { margin: 0 0 8px; }
@@ -1539,51 +1819,89 @@
       background: rgba(0,0,0,0.2);
     }
     .history-head {
-      padding: 10px 12px;
+      padding: 11px 12px;
       border-bottom: 1px solid var(--border);
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 8px;
-      flex-wrap: wrap;
+    }
+    .history-head-main {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+      flex: 1;
+    }
+    .history-kicker {
+      color: var(--t4);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
     .history-ver {
+      color: var(--t3);
+      font-size: 11px;
+      font-family: var(--mono);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 124px;
+    }
+    .history-time {
       color: var(--t1);
       font-size: 13px;
       font-weight: 700;
-      letter-spacing: 0.01em;
-    }
-    .history-time {
-      color: var(--t4);
-      font-size: 11px;
-      font-family: var(--mono);
+      letter-spacing: -0.01em;
     }
     .history-body { padding: 10px 12px; }
-    .history-summary {
-      color: var(--t2);
-      font-size: 12px;
-      margin-bottom: 8px;
-    }
     .history-links {
       display: flex;
-      gap: 6px;
+      gap: 4px;
       flex-wrap: wrap;
-      margin-bottom: 8px;
     }
     .history-link-btn {
-      height: 28px;
-      padding: 0 10px;
+      height: 26px;
+      padding: 0 8px;
       border-radius: 7px;
-      border: 1px solid var(--border-hi);
-      background: var(--raised);
-      color: var(--t2);
-      font-size: 12px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--t3);
+      font-size: 11px;
       font-weight: 600;
       font-family: var(--font);
     }
     .history-link-btn:hover {
       color: var(--t1);
       border-color: var(--a-brd);
+      background: rgba(255,255,255,0.02);
+    }
+    .history-bottom {
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .history-toggle-btn {
+      height: 24px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: var(--t3);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      font-family: var(--font);
+    }
+    .history-toggle-btn:hover { color: var(--a); }
+    .history-lines[hidden] { display: none; }
+    .history-lines-wrap {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.04);
     }
     .history-lines {
       margin: 0;
@@ -1614,26 +1932,25 @@
     .vseg-btn { min-width: 48px; }
 
     /* ── Layer filter tabs ── */
+    /* ── VISUAL TOKEN PREVIEW — flat row layout matching screenshot ── */
     .vprev-filter-bar {
-      display: flex; gap: 2px; padding: 8px 14px 0;
+      display: flex; gap: 2px; padding: 0 14px 8px;
       border-bottom: 1px solid var(--border);
-      background: var(--raised);
+      background: var(--surface);
       flex-wrap: wrap;
     }
     .vprev-filter-btn {
       display: flex; align-items: center; gap: 5px;
-      padding: 5px 10px; border-radius: 5px 5px 0 0;
-      border: 1px solid transparent; border-bottom: none;
-      background: transparent; color: var(--t3);
-      font-size: 12px; font-weight: 600; font-family: var(--font);
+      padding: 4px 10px; border-radius: 6px;
+      border: 1px solid transparent;
+      background: transparent; color: var(--t4);
+      font-size: 11px; font-weight: 600; font-family: var(--font);
       cursor: pointer; transition: all 0.15s; white-space: nowrap;
-      margin-bottom: -1px;
     }
     .vprev-filter-btn:hover { color: var(--t2); background: var(--overlay); }
     .vprev-filter-btn.on {
-      color: var(--t1); background: var(--bg);
-      border-color: var(--border); border-bottom-color: var(--bg);
-      z-index: 1; position: relative;
+      color: var(--t1); background: var(--raised);
+      border-color: var(--border);
     }
     .vprev-filter-dot {
       width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
@@ -1646,185 +1963,91 @@
     .vprev-filter-dot.c5 { background: #9d7cf0; }
     .vprev-filter-dot.c6 { background: #58b7a1; }
 
-    /* ── Color section ── */
-    .vprev-section {
-      padding: 0;
-      border-bottom: 1px solid var(--border);
+    /* Group label — "FOUNDATION ——" / "SPACING ——" */
+    .vprev-group-label {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 14px 6px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--t4);
+      pointer-events: none;
     }
-    .vprev-section:last-child { border-bottom: none; }
+    .vprev-group-label::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
 
+    /* Category header row — "• Colors  4  >" */
+    .vprev-section { border-bottom: 1px solid var(--border); }
+    .vprev-section:last-child { border-bottom: none; }
     .vprev-sec-head {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 8px 14px; cursor: pointer; -webkit-user-select: none; user-select: none;
+      display: flex; align-items: center; gap: 9px;
+      padding: 9px 14px; cursor: pointer;
+      -webkit-user-select: none; user-select: none;
       transition: background 0.1s;
+      background: var(--raised);
     }
-    .vprev-sec-head:hover { background: var(--raised); }
-    .vprev-sec-body {
-      padding: 0 14px 10px;
+    .vprev-sec-head:hover { background: var(--overlay); }
+
+    /* Colored dot — replaces icon tile */
+    .vprev-sec-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
     }
-    .vprev-section.collapsed .vprev-sec-body { display: none; }
+    .vprev-sec-dot.color   { background: var(--a); }
+    .vprev-sec-dot.spacing { background: var(--blue); }
+    .vprev-sec-dot.sizing  { background: #9d7cf0; }
+    .vprev-sec-dot.radius  { background: var(--green); }
+    .vprev-sec-dot.other   { background: var(--t3); }
+
     .vprev-sec-title {
-      font-size: 12px; font-weight: 600; color: var(--t2);
-      display: flex; align-items: center; gap: 7px;
+      font-size: 13px; font-weight: 700; color: var(--t1);
+      letter-spacing: -0.02em; flex: 1;
     }
-    .vprev-sec-icon {
-      width: 18px; height: 18px; border-radius: 4px;
-      background: var(--overlay); border: 1px solid var(--border);
-      display: grid; place-items: center; flex-shrink: 0; color: var(--t3);
-    }
-    .vprev-sec-icon svg { width: 10px; height: 10px; display: block; }
-    .vprev-sec-right { display: flex; align-items: center; gap: 6px; }
+    .vprev-sec-right { display: flex; align-items: center; gap: 8px; }
     .vprev-count {
-      font-family: var(--mono); font-size: 10px; color: var(--t4);
-      background: var(--overlay); border: 1px solid var(--border);
-      padding: 1px 5px; border-radius: 3px;
+      font-size: 12px; color: var(--t3); font-weight: 500;
     }
     .vprev-chevron {
-      width: 12px; height: 12px; color: var(--t4); transition: transform 0.18s;
-      transform: rotate(-90deg);
+      width: 12px; height: 12px; color: var(--t4); transition: transform 0.18s; flex-shrink: 0;
     }
     .vprev-section.collapsed .vprev-chevron { transform: rotate(-90deg); }
     .vprev-section:not(.collapsed) .vprev-chevron { transform: rotate(0deg); }
+    .vprev-sec-body {}
+    .vprev-section.collapsed .vprev-sec-body { display: none; }
 
-    /* Color palette group */
-    .color-palette-group { margin-bottom: 8px; }
-    .color-palette-group:last-child { margin-bottom: 0; }
-    .color-group-name {
-      font-size: 11px; font-weight: 600; color: var(--t3);
-      margin-bottom: 5px; text-transform: capitalize;
-      letter-spacing: 0.01em;
+    /* Individual token rows */
+    .vprev-tok-row {
+      display: flex; align-items: center; gap: 11px;
+      padding: 7px 14px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
     }
-    .color-strip {
-      display: flex; gap: 3px; flex-wrap: wrap;
+    .vprev-tok-row:last-child { border-bottom: none; }
+    .vprev-tok-row:hover { background: var(--raised); cursor: pointer; }
+    /* color swatch — rounded square */
+    .vprev-tok-swatch {
+      width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.1);
     }
-    .color-swatch {
-      position: relative;
-      width: 26px; height: 26px; border-radius: 6px;
-      border: 1px solid rgba(255,255,255,0.08);
-      cursor: pointer; transition: transform 0.12s, box-shadow 0.12s;
-      flex-shrink: 0;
+    /* number/other swatch — gray square */
+    .vprev-tok-swatch.num {
+      background: var(--overlay);
+      border: 1px solid var(--border);
+      border-radius: 5px;
     }
-    .color-swatch:hover {
-      transform: scale(1.18) translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      z-index: 2;
+    .vprev-tok-name {
+      flex: 1; font-size: 13px; color: var(--t2);
+      font-family: var(--mono);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    /* tooltip on hover */
-    .color-swatch::after {
-      content: attr(data-tip);
-      position: absolute; bottom: calc(100% + 5px); left: 50%;
-      transform: translateX(-50%);
-      background: var(--overlay); border: 1px solid var(--border-hi);
-      color: var(--t1); font-family: var(--mono); font-size: 9px;
-      padding: 2px 5px; border-radius: 4px; white-space: nowrap;
-      pointer-events: none; opacity: 0; transition: opacity 0.12s;
-      z-index: 10;
-    }
-    .color-swatch:hover::after { opacity: 1; }
-
-    /* Alias swatch (references another token) */
-    .color-swatch.is-alias {
-      background: var(--overlay) !important;
-      border: 1px dashed var(--border-hi);
-      display: grid; place-items: center;
-    }
-    .color-swatch.is-alias::before {
-      content: '→'; font-size: 9px; color: var(--t3); font-weight: 700;
+    .vprev-tok-val {
+      font-size: 12px; color: var(--t4);
+      font-family: var(--mono); flex-shrink: 0;
     }
 
-    /* ── Spacing bars ── */
-    .spacing-list { display: flex; flex-direction: column; gap: 5px; }
-    .spacing-row {
-      display: flex; align-items: center; gap: 8px;
+    /* Empty state */
+    .vprev-empty {
+      padding: 28px 14px; text-align: center;
+      color: var(--t4); font-size: 12px;
     }
-    .spacing-label {
-      font-family: var(--mono); font-size: 10px; color: var(--t3);
-      width: 28px; text-align: right; flex-shrink: 0;
-    }
-    .spacing-bar-wrap {
-      flex: 1; height: 8px; background: var(--overlay);
-      border-radius: 2px; overflow: hidden;
-    }
-    .spacing-bar {
-      height: 100%; background: var(--a-brd);
-      border-radius: 2px; transition: width 0.3s ease;
-      min-width: 2px;
-    }
-    .spacing-val {
-      font-family: var(--mono); font-size: 10px; color: var(--t4);
-      width: 36px; flex-shrink: 0;
-    }
-
-    /* ── Typography ── */
-    .typo-list { display: flex; flex-direction: column; gap: 6px; }
-    .typo-row {
-      display: flex; align-items: baseline; gap: 10px;
-      padding: 5px 0; border-bottom: 1px solid var(--border);
-    }
-    .typo-row:last-child { border-bottom: none; }
-    .typo-key {
-      font-family: var(--mono); font-size: 10px; color: var(--t3);
-      width: 52px; flex-shrink: 0;
-    }
-    .typo-sample {
-      flex: 1; color: var(--t1); line-height: 1.2;
-      overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-    }
-    .typo-val {
-      font-family: var(--mono); font-size: 10px; color: var(--t4);
-      flex-shrink: 0;
-    }
-
-    /* ── Border radius ── */
-    .radius-strip { display: flex; gap: 6px; flex-wrap: wrap; align-items: flex-end; }
-    .radius-item {
-      display: flex; flex-direction: column; align-items: center; gap: 4px;
-    }
-    .radius-box {
-      width: 24px; height: 24px;
-      background: var(--a-dim); border: 1.5px solid var(--a-brd);
-    }
-    .radius-key {
-      font-family: var(--mono); font-size: 9px; color: var(--t4);
-    }
-
-    /* ── Shadow preview ── */
-    .shadow-list { display: flex; flex-direction: column; gap: 8px; }
-    .shadow-row {
-      display: flex; align-items: center; gap: 10px;
-    }
-    .shadow-swatch {
-      width: 32px; height: 22px; border-radius: 5px;
-      background: var(--surface); flex-shrink: 0;
-    }
-    .shadow-key {
-      font-family: var(--mono); font-size: 11px; color: var(--t2); flex: 1;
-    }
-    .shadow-val {
-      font-family: var(--mono); font-size: 10px; color: var(--t4);
-      max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-
-    /* ── Border Width ── */
-    .border-list { display: flex; flex-direction: column; gap: 6px; }
-    .border-row {
-      display: flex; align-items: center; gap: 10px;
-    }
-    .border-sample {
-      width: 36px; height: 18px; border-radius: 3px;
-      background: var(--overlay); flex-shrink: 0;
-      border-style: solid; border-color: var(--a-brd);
-    }
-    .border-key {
-      font-family: var(--mono); font-size: 11px; color: var(--t2); flex: 1;
-    }
-    .border-val {
-      font-family: var(--mono); font-size: 10px; color: var(--t4);
-    }
-
-    /* ── Opacity ── */
-    .opacity-list { display: flex; gap: 4px; flex-wrap: wrap; align-items: flex-end; }
-    .opacity-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
     .opacity-swatch {
       width: 22px; height: 22px; border-radius: 4px;
       background: var(--a); flex-shrink: 0;
@@ -1936,7 +2159,7 @@
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
 
-    /* ── TOKVISTA AI ── */
+    /* ── TOKVISTA AI — Premium Glow Treatment ── */
     #tab-ai.tabp.on {
       display: flex;
       flex-direction: column;
@@ -1946,67 +2169,183 @@
       flex: 1 1 auto;
       min-height: 0;
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: 1px solid rgba(212,168,75,0.18);
       border-radius: var(--r);
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      box-shadow: inset 0 0 0 1px rgba(212, 168, 75, 0.05);
+      box-shadow: 0 0 0 1px rgba(212,168,75,0.06) inset, 0 4px 32px rgba(212,168,75,0.06);
     }
+    .ai-shell.is-compact .ai-head {
+      padding: 12px 14px 10px;
+      min-height: 54px;
+    }
+    .ai-shell.is-compact .ai-head-badges,
+    .ai-shell.is-compact .ai-prompt-list {
+      display: none;
+    }
+    .ai-shell.is-compact .ai-subtitle { display: none; }
+    .ai-shell.is-compact .ai-head-row { margin-bottom: 4px; }
+    .ai-shell.is-compact .ai-title { font-size: 15px; }
+    .ai-shell.is-compact .ai-online { padding: 2px 9px; }
     .ai-head {
-      padding: 14px 14px 10px;
-      border-bottom: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(212,168,75,0.08), rgba(212,168,75,0.01));
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid rgba(212,168,75,0.1);
+      background: linear-gradient(160deg, rgba(212,168,75,0.1) 0%, rgba(212,168,75,0.02) 100%);
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+      box-shadow: inset 0 -1px 0 rgba(212,168,75,0.08);
+    }
+    .ai-head::before {
+      content: '';
+      position: absolute; top: -20px; right: -20px;
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(212,168,75,0.15), transparent 70%);
+      pointer-events: none;
     }
     .ai-head-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      margin-bottom: 3px;
+      margin-bottom: 6px;
+      position: relative;
     }
     .ai-title {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 700;
       color: var(--t1);
-      letter-spacing: -0.01em;
+      letter-spacing: -0.03em;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .ai-title-spark {
+      color: var(--a); font-size: 14px;
     }
     .ai-subtitle {
-      font-size: 13px;
-      color: var(--t2);
+      font-size: 12px;
+      color: var(--t3);
+      position: relative;
+      line-height: 1.5;
+      max-width: 280px;
     }
     .ai-online {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 2px 10px;
+      gap: 5px;
+      padding: 3px 10px;
       border-radius: 999px;
-      border: 1px solid var(--gn-brd);
-      background: var(--gn-dim);
+      border: 1px solid rgba(78,201,148,0.3);
+      background: rgba(78,201,148,0.08);
       color: var(--green);
-      font-size: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+    .ai-online-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--green);
+      animation: aiPulse 2s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes aiPulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(78,201,148,0.4); }
+      50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(78,201,148,0); }
+    }
+    .ai-head-badges {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+      position: relative;
+    }
+    .ai-head-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      color: var(--t2);
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .ai-head-badge strong {
+      color: var(--a);
       font-weight: 700;
     }
-    .ai-online::before {
-      content: "";
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: currentColor;
-      box-shadow: 0 0 0 5px rgba(78, 201, 148, 0.15);
+    .ai-prompt-list {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      position: relative;
+      scrollbar-width: none;
+    }
+    .ai-prompt-list::-webkit-scrollbar { display: none; }
+    .ai-prompt-chip {
+      flex: 0 0 auto;
+      min-width: 128px;
+      padding: 10px 11px;
+      border-radius: 12px;
+      border: 1px solid rgba(212,168,75,0.14);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.015) 100%);
+      text-align: left;
+      color: var(--t1);
+      font-family: var(--font);
+      transition: all 0.15s;
+    }
+    .ai-prompt-chip:hover {
+      border-color: rgba(212,168,75,0.32);
+      background: rgba(212,168,75,0.08);
+      transform: translateY(-1px);
+    }
+    .ai-prompt-kicker {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--a);
+      margin-bottom: 4px;
+    }
+    .ai-prompt-copy {
+      display: block;
+      font-size: 12px;
+      line-height: 1.35;
+      color: var(--t2);
     }
     .ai-messages {
+      position: relative;
       flex: 1 1 auto;
       min-height: 200px;
       overflow-y: auto;
-      padding: 12px;
+      padding: 14px 14px 18px;
       display: flex;
       flex-direction: column;
       gap: 10px;
+      scroll-padding-bottom: 18px;
       background:
-        radial-gradient(110% 90% at 100% 0%, rgba(212,168,75,0.08), transparent 58%),
-        radial-gradient(120% 100% at 0% 100%, rgba(212,168,75,0.05), transparent 65%),
+        radial-gradient(110% 80% at 100% 0%, rgba(212,168,75,0.07), transparent 55%),
+        radial-gradient(80% 80% at 0% 100%, rgba(107,159,232,0.05), transparent 60%),
         var(--surface);
+    }
+    .ai-messages::before {
+      content: '';
+      position: sticky;
+      top: 0;
+      display: block;
+      height: 14px;
+      margin: -14px -14px 0;
+      background: linear-gradient(180deg, rgba(27,24,20,0.98) 0%, rgba(27,24,20,0.76) 58%, rgba(27,24,20,0) 100%);
+      pointer-events: none;
+      z-index: 2;
+    }
+    .ai-shell.is-compact .ai-messages {
+      padding-top: 10px;
     }
     .ai-msg {
       display: flex;
@@ -2014,199 +2353,279 @@
     }
     .ai-msg.ai-assistant { justify-content: flex-start; }
     .ai-msg.ai-user { justify-content: flex-end; }
+    .ai-msg-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-width: 86%;
+    }
+    .ai-user .ai-msg-stack { align-items: flex-end; }
+    .ai-msg-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--t4);
+      padding: 0 4px;
+    }
     .ai-bubble {
-      max-width: 85%;
-      padding: 10px 12px;
-      border-radius: 12px;
+      padding: 10px 13px;
+      border-radius: 14px;
       border: 1px solid var(--border);
       background: rgba(255,255,255,0.03);
       color: var(--t1);
       white-space: pre-wrap;
       word-break: break-word;
-      font-size: 14px;
-      line-height: 1.5;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .ai-assistant .ai-bubble {
+      border-radius: 4px 14px 14px 14px;
+      background: linear-gradient(135deg, rgba(212,168,75,0.06), rgba(255,255,255,0.02));
+      border-color: rgba(212,168,75,0.15);
     }
     .ai-user .ai-bubble {
-      background: rgba(107,159,232,0.13);
-      border-color: rgba(107,159,232,0.35);
+      border-radius: 14px 4px 14px 14px;
+      background: rgba(107,159,232,0.12);
+      border-color: rgba(107,159,232,0.28);
     }
     .ai-token-meta {
       margin-top: 6px;
-      font-size: 12px;
+      font-size: 11px;
       color: var(--a);
       font-family: var(--mono);
+      opacity: 0.8;
     }
+    .ai-expand-btn {
+      margin-top: 8px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: var(--a);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      font-family: var(--font);
+    }
+    .ai-expand-btn:hover { color: #f0c85b; }
     .ai-loading {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      min-width: 56px;
+      gap: 4px;
+      min-width: 48px;
       justify-content: center;
     }
     .ai-loading span {
-      width: 6px;
-      height: 6px;
+      width: 5px; height: 5px;
       border-radius: 999px;
       background: var(--a);
-      opacity: 0.45;
+      opacity: 0.4;
       animation: aiDotPulse 1.2s infinite ease-in-out;
     }
     .ai-loading span:nth-child(2) { animation-delay: 0.18s; }
     .ai-loading span:nth-child(3) { animation-delay: 0.36s; }
     @keyframes aiDotPulse {
       0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
-      40% { transform: translateY(-2px); opacity: 1; }
+      40% { transform: translateY(-3px); opacity: 1; }
     }
     .ai-import-wrap {
       padding: 10px 12px 0;
-      border-top: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(212,168,75,0.06), rgba(212,168,75,0.01));
+      border-top: 1px solid rgba(212,168,75,0.1);
+      background: linear-gradient(180deg, rgba(212,168,75,0.05), transparent);
     }
-    .ai-import-btn {
-      width: 100%;
-      height: 38px;
-      border-radius: var(--r);
-      border: 1px solid var(--a-brd);
-      background: rgba(212,168,75,0.10);
-      color: var(--a);
-      font-weight: 700;
-      font-size: 14px;
-      transition: all 0.15s;
+    .ai-import-wrap.is-imported {
+      padding-top: 8px;
+      background: linear-gradient(180deg, rgba(78,201,148,0.07), rgba(78,201,148,0.01));
+      border-top-color: rgba(78,201,148,0.14);
     }
-    .ai-import-btn:hover { background: rgba(212,168,75,0.16); }
-    .ai-input-wrap {
-      border-top: 1px solid var(--border);
-      padding: 10px 12px 12px;
-      background: var(--surface);
-    }
-    .ai-input-row {
+    .ai-ready-card {
       display: flex;
       align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid rgba(212,168,75,0.16);
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(212,168,75,0.08) 0%, rgba(255,255,255,0.015) 100%);
+    }
+    .ai-import-wrap.is-imported .ai-ready-card {
+      padding: 8px 12px;
+      border-color: rgba(78,201,148,0.16);
+      background: linear-gradient(180deg, rgba(78,201,148,0.11) 0%, rgba(255,255,255,0.015) 100%);
+    }
+    .ai-ready-copy {
+      min-width: 0;
+      flex: 1;
+    }
+    .ai-ready-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--t1);
+      letter-spacing: -0.02em;
+    }
+    .ai-ready-meta {
+      margin-top: 3px;
+      font-size: 12px;
+      color: var(--t3);
+      line-height: 1.45;
+    }
+    .ai-import-btn {
+      flex: 0 0 auto;
+      min-width: 136px;
+      height: 36px;
+      padding: 0 12px;
+      border-radius: var(--rs);
+      border: 1px solid var(--a-brd);
+      background: rgba(212,168,75,0.1);
+      color: var(--a);
+      font-weight: 700; font-size: 13px; font-family: var(--font);
+      transition: all 0.15s;
+      letter-spacing: -0.01em;
+    }
+    .ai-import-btn:hover { background: rgba(212,168,75,0.18); box-shadow: 0 2px 12px rgba(212,168,75,0.15); }
+    .ai-import-wrap.is-imported .ai-import-btn {
+      min-width: 96px;
+      border-color: rgba(78,201,148,0.2);
+      background: rgba(78,201,148,0.14);
+      color: #7ef3bc;
+    }
+    .ai-input-wrap {
+      border-top: 1px solid rgba(212,168,75,0.1);
+      padding: 10px 12px 12px;
+      background: linear-gradient(0deg, var(--surface), rgba(212,168,75,0.02));
+    }
+    .ai-shell.is-compact .ai-input-wrap {
+      padding: 8px 12px 10px;
+    }
+    .ai-input-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .ai-shell.is-compact .ai-input-meta {
+      margin-bottom: 6px;
+    }
+    .ai-input-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--t4);
+    }
+    .ai-input-hint {
+      font-size: 11px;
+      color: var(--t4);
+    }
+    .ai-shell.is-compact .ai-input-hint { display: none; }
+    .ai-input-row {
+      display: flex;
+      align-items: flex-end;
       gap: 8px;
     }
     .ai-input {
       flex: 1;
-      height: 42px;
-      border-radius: var(--r);
+      min-height: 44px;
+      max-height: 120px;
+      border-radius: var(--rs);
       border: 1px solid var(--border);
       background: var(--bg);
       color: var(--t1);
-      padding: 0 12px;
-      font-size: 14px;
+      padding: 11px 14px;
+      font-size: 13px;
       font-family: var(--font);
       outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      resize: none;
+      line-height: 1.45;
     }
-    .ai-input::placeholder { color: var(--t3); }
+    .ai-shell.is-compact .ai-input {
+      min-height: 40px;
+      max-height: 96px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+    .ai-shell.is-compact .ai-messages {
+      padding-top: 14px;
+    }
+    .ai-input::placeholder { color: var(--t4); }
     .ai-input:focus {
-      border-color: var(--a-brd);
-      box-shadow: 0 0 0 2px rgba(212,168,75,0.14);
+      border-color: rgba(212,168,75,0.4);
+      box-shadow: 0 0 0 3px rgba(212,168,75,0.1);
     }
     .ai-send-btn {
-      width: 42px;
-      height: 42px;
-      border-radius: var(--r);
+      width: 40px; height: 40px;
+      border-radius: var(--rs);
       border: 1px solid var(--a-brd);
       background: var(--a);
       color: #141210;
       display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      font-weight: 700;
-      transition: filter 0.15s;
+      align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 700;
+      transition: all 0.15s;
+      box-shadow: 0 2px 8px rgba(212,168,75,0.25);
     }
-    .ai-send-btn:hover { filter: brightness(1.05); }
+    .ai-send-btn svg { width: 15px; height: 15px; display: block; }
+    .ai-send-btn:hover { filter: brightness(1.08); box-shadow: 0 4px 14px rgba(212,168,75,0.4); }
+    .ai-send-btn:disabled {
+      opacity: 0.52;
+      box-shadow: none;
+      filter: none;
+    }
 
-    /* empty visual state */
-    .vprev-empty {
-      padding: 28px 14px; text-align: center;
-      color: var(--t4); font-size: 12px; font-family: var(--mono);
-    }
   </style>
 </head>
 <body>
 
 <!-- ══════ HEADER ══════ -->
 <div class="top">
+  <div class="header-accent" aria-hidden="true"></div>
   <div class="header-row">
     <div class="brand">
       <div class="brand-mark">
         <!-- tokvista grid mark -->
         <svg viewBox="0 0 12 12" fill="none">
-          <rect x="1"   y="1"   width="4.5" height="4.5" rx="1"   fill="#141210"/>
-          <rect x="6.5" y="1"   width="4.5" height="4.5" rx="1"   fill="#141210" opacity=".55"/>
-          <rect x="1"   y="6.5" width="4.5" height="4.5" rx="1"   fill="#141210" opacity=".55"/>
-          <rect x="6.5" y="6.5" width="4.5" height="4.5" rx="1"   fill="#141210" opacity=".25"/>
+          <rect x="1"   y="1"   width="4.5" height="4.5" rx="1"   fill="#d4a84b"/>
+          <rect x="6.5" y="1"   width="4.5" height="4.5" rx="1"   fill="#d4a84b" opacity=".55"/>
+          <rect x="1"   y="6.5" width="4.5" height="4.5" rx="1"   fill="#d4a84b" opacity=".55"/>
+          <rect x="6.5" y="6.5" width="4.5" height="4.5" rx="1"   fill="#d4a84b" opacity=".25"/>
         </svg>
       </div>
       <span class="brand-name">tokvista</span>
       <span class="ver">v2.5.0</span>
     </div>
-
-  </div>
-
-  <nav class="nav-tabs" aria-label="Primary navigation">
-    <div class="nav-tabs-left" role="tablist" aria-label="Primary tabs">
-      <button class="tab on has-tip" data-tab="home" type="button" role="tab" aria-label="Home" data-tip="Home" data-tip-pos="bottom">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3L21 10.5V20a1 1 0 0 1-1 1H15V15H9v6H4a1 1 0 0 1-1-1V10.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-      </button>
-      <button class="tab has-tip" data-tab="import" type="button" role="tab" aria-label="Import" data-tip="Import" data-tip-pos="bottom">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V8M9 13l3 3 3-3M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <button class="tab has-tip" data-tab="changes" type="button" role="tab" aria-label="Changes" data-tip="Changes" data-tip-pos="bottom">
-        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <span id="changesBadge" class="chg-badge">0</span>
-      </button>
-      <button class="tab has-tip" data-tab="ai" type="button" role="tab" aria-label="AI" data-tip="AI" data-tip-pos="bottom">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.8 4.5L18 9.3l-4.2 1.8L12 15.6l-1.8-4.5L6 9.3l4.2-1.8L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M18.5 14l.8 2 .9.4-.9.4-.8 2-.8-2-.9-.4.9-.4.8-2ZM6 15.2l.6 1.5.7.3-.7.3-.6 1.5-.6-1.5-.7-.3.7-.3.6-1.5Z" fill="currentColor"/></svg>
-      </button>
-      <button class="tab has-tip" data-tab="settings" type="button" role="tab" aria-label="Settings" data-tip="Settings" data-tip-pos="bottom">
-        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.8"/></svg>
+    <div class="header-actions">
+      <button id="fullRefreshBtn" class="header-refresh-btn" type="button" aria-label="Refresh tokens">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 1 1-2-5.3M20 2v5h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Refresh</span>
       </button>
     </div>
+  </div>
 
-    <div class="header-actions nav-actions">
-      <button id="fullRefreshBtn" class="icon-btn has-tip" type="button" data-tip="Full refresh" data-tip-pos="bottom" aria-label="Full refresh">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 1 1-2-5.3M20 2v5h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <!-- Clean tab row — no action buttons competing here -->
+  <nav class="nav-tabs" aria-label="Primary navigation">
+    <div class="nav-tabs-left" role="tablist" aria-label="Primary tabs">
+      <button class="tab on" data-tab="home" type="button" role="tab" aria-label="Home">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3L21 10.5V20a1 1 0 0 1-1 1H15V15H9v6H4a1 1 0 0 1-1-1V10.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span class="tab-label">Home</span>
       </button>
-      <div class="preview-live-wrap">
-        <button id="devPreviewBtn" class="icon-btn has-tip" type="button" data-tip="Generate developer preview link" data-tip-pos="bottom" aria-label="Developer preview link">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M10 14L21 3M21 3h-6M21 3v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 14.5V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <span id="previewLiveBadge" class="preview-live-badge">Live</span>
-      </div>
-      <button id="snapshotPreviewBtn" class="icon-btn has-tip" type="button" data-tip="Open publish history" data-tip-pos="bottom" aria-label="Open publish history">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.8"/></svg>
+      <button class="tab" data-tab="import" type="button" role="tab" aria-label="Import">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V8M9 13l3 3 3-3M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="tab-label">Import</span>
       </button>
-      <!-- Download -->
-      <div class="dl-pop">
-        <button id="downloadTriggerBtn" class="icon-btn has-tip" type="button" data-tip="Download tokens" data-tip-pos="bottom" aria-label="Download tokens">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M3 12.3v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7.9 12.3 12 16.3 16.1 12.3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/><line x1="12" y1="2.7" x2="12" y2="14.2" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg>
-        </button>
-        <div id="downloadMenu" class="dl-menu hide">
-          <div class="dl-head">
-            <div class="dl-head-label">Download format</div>
-            <div id="downloadCurrent" class="dl-current">tokens.json</div>
-          </div>
-          <button class="dl-option on" data-value="json" type="button">tokens.json — W3C design token format</button>
-          <button class="dl-option"    data-value="css"      type="button">CSS Variables — :root { --token: value }</button>
-          <button class="dl-option"    data-value="scss"     type="button">SCSS Variables — $token: value</button>
-          <button class="dl-option"    data-value="tailwind" type="button">Tailwind Config — theme.extend</button>
-          <div class="dl-action">
-            <button id="downloadTokensBtn" class="btn btn-full-center" type="button">
-              <svg viewBox="0 0 24 24" fill="none"><path d="M3 12.3v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7.9 12.3 12 16.3 16.1 12.3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/><line x1="12" y1="2.7" x2="12" y2="14.2" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg>
-              Download
-            </button>
-          </div>
-        </div>
-      </div>
-      <!-- Clear loaded preview data -->
-      <button id="clearLoadedBtn" class="icon-btn has-tip" type="button" data-tip="Clear loaded data" data-tip-pos="bottom" aria-label="Clear loaded data">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5.8A1.8 1.8 0 0 1 10.8 4h2.4A1.8 1.8 0 0 1 15 5.8V7M8.2 7l.6 11.1A2 2 0 0 0 10.8 20h2.4a2 2 0 0 0 2-1.9L15.8 7M10 10.3v6.2M14 10.3v6.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <button class="tab" data-tab="changes" type="button" role="tab" aria-label="Changes">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span id="changesBadge" class="chg-badge">0</span>
+        <span class="tab-label">Changes</span>
       </button>
-      <!-- Fullscreen -->
-      <button id="fullscreenToggleBtn" class="icon-btn has-tip" type="button" data-tip="Enter fullscreen" data-tip-pos="bottom" aria-label="Enter fullscreen">
-        <svg viewBox="0 0 48 48" fill="none"><path d="M6 6L16 16M6 42L16 32M42 42L32 32M42 6L32 16" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M33 6H42V15M42 33V42H33M15 42H6V33M6 15V6H15" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <button class="tab" data-tab="ai" type="button" role="tab" aria-label="AI">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.8 4.5L18 9.3l-4.2 1.8L12 15.6l-1.8-4.5L6 9.3l4.2-1.8L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M18.5 14l.8 2 .9.4-.9.4-.8 2-.8-2-.9-.4.9-.4.8-2ZM6 15.2l.6 1.5.7.3-.7.3-.6 1.5-.6-1.5-.7-.3.7-.3.6-1.5Z" fill="currentColor"/></svg>
+        <span class="tab-label">AI</span>
+      </button>
+      <button class="tab" data-tab="settings" type="button" role="tab" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.8"/></svg>
+        <span class="tab-label">Settings</span>
       </button>
     </div>
   </nav>
@@ -2218,8 +2637,10 @@
   <!-- ─── HOME ─── -->
   <section id="tab-home" class="tabp on" role="tabpanel">
 
-    <!-- Sync bar -->
-    <div class="card">
+    <!-- ══ UNIFIED EXPLORER CARD (sync + token preview merged) ══ -->
+    <div class="explorer-card">
+
+      <!-- Sync bar lives inside the card now -->
       <div class="sync-block">
         <div class="sync-left">
           <div class="sync-icon">
@@ -2235,13 +2656,50 @@
           Sync
         </button>
       </div>
-    </div>
-
-    <!-- ══ TOKEN EXPLORER CARD ══ -->
-    <div class="explorer-card">
 
       <!-- Preview zone -->
       <div class="explorer-preview">
+        <div class="preview-toolbar">
+          <label class="preview-search" for="previewSearchInput">
+            <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <input id="previewSearchInput" type="search" placeholder="Search tokens"/>
+          </label>
+          <div class="preview-actions" aria-label="Preview actions">
+            <div class="preview-live-wrap">
+              <button id="devPreviewBtn" class="icon-btn has-tip" type="button" data-tip="Generate developer preview link" aria-label="Developer preview link">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M10 14L21 3M21 3h-6M21 3v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 14.5V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <span id="previewLiveBadge" class="preview-live-badge">Live</span>
+            </div>
+            <button id="snapshotPreviewBtn" class="icon-btn has-tip" type="button" data-tip="Open publish history" aria-label="Open publish history">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.8"/></svg>
+            </button>
+            <div class="dl-pop">
+              <button id="downloadTriggerBtn" class="icon-btn has-tip" type="button" data-tip="Download tokens" aria-label="Download tokens">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M3 12.3v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7.9 12.3 12 16.3 16.1 12.3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/><line x1="12" y1="2.7" x2="12" y2="14.2" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg>
+              </button>
+              <div id="downloadMenu" class="dl-menu hide">
+                <div class="dl-head">
+                  <div class="dl-head-label">Download format</div>
+                  <div id="downloadCurrent" class="dl-current">tokens.json</div>
+                </div>
+                <button class="dl-option on" data-value="json" type="button">tokens.json — W3C design token format</button>
+                <button class="dl-option"    data-value="css"      type="button">CSS Variables — :root { --token: value }</button>
+                <button class="dl-option"    data-value="scss"     type="button">SCSS Variables — $token: value</button>
+                <button class="dl-option"    data-value="tailwind" type="button">Tailwind Config — theme.extend</button>
+                <div class="dl-action">
+                  <button id="downloadTokensBtn" class="btn btn-full-center" type="button">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M3 12.3v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7.9 12.3 12 16.3 16.1 12.3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/><line x1="12" y1="2.7" x2="12" y2="14.2" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg>
+                    Download
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button id="clearLoadedBtn" class="icon-btn has-tip" type="button" data-tip="Clear loaded data" aria-label="Clear loaded data">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5.8A1.8 1.8 0 0 1 10.8 4h2.4A1.8 1.8 0 0 1 15 5.8V7M8.2 7l.6 11.1A2 2 0 0 0 10.8 20h2.4a2 2 0 0 0 2-1.9L15.8 7M10 10.3v6.2M14 10.3v6.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+        </div>
 
         <div class="preview-seg-bar">
           <div class="psb-left">
@@ -2263,7 +2721,13 @@
             </button>
           </div>
           <div id="visualContent">
-            <div class="vprev-empty">Sync to load visual preview.</div>
+            <div class="explorer-empty-state">
+              <div class="ees-icon">
+                <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="3" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="13" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="13" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6" opacity=".38"/></svg>
+              </div>
+              <div class="ees-title">No tokens loaded</div>
+              <div class="ees-sub">Hit Sync to pull your Figma variables into the preview</div>
+            </div>
           </div>
         </div>
 
@@ -2278,7 +2742,15 @@
               </tr>
             </thead>
             <tbody id="previewRows">
-              <tr><td colspan="3"><div class="explorer-empty">Sync to load tokens.</div></td></tr>
+              <tr><td colspan="3">
+                <div class="explorer-empty-state">
+                  <div class="ees-icon">
+                    <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="3" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="13" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="13" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6" opacity=".38"/></svg>
+                  </div>
+                  <div class="ees-title">No tokens loaded</div>
+                  <div class="ees-sub">Hit Sync to pull your Figma variables</div>
+                </div>
+              </td></tr>
             </tbody>
           </table>
         </div>
@@ -2335,13 +2807,7 @@
       <button id="importFromUrlBtn" class="btn-import import-url-btn" type="button" disabled>Import URL</button>
     </div>
 
-    <div class="sec">What gets imported</div>
-    <div class="card">
-      <div class="import-row"><span class="import-label">Color tokens</span><span class="import-chip">Figma variables</span></div>
-      <div class="import-row"><span class="import-label">Spacing / radius</span><span class="import-chip">Number variables</span></div>
-      <div class="import-row"><span class="import-label">Typography</span><span class="import-chip">String variables</span></div>
-      <div class="import-row"><span class="import-label">Aliases / references</span><span class="import-chip">Variable aliases</span></div>
-    </div>
+    <div class="import-help">Imports colors, numbers, strings, and aliases into Figma variables. Existing variables are updated when names match.</div>
   </section>
 
   <!-- ─── AI ─── -->
@@ -2349,22 +2815,54 @@
     <div class="ai-shell">
       <div class="ai-head">
         <div class="ai-head-row">
-          <div class="ai-title">✦ Tokvista AI</div>
-          <span class="ai-online">Online</span>
+          <div class="ai-title"><span class="ai-title-spark">✦</span> Tokvista AI</div>
+          <span class="ai-online"><span class="ai-online-dot"></span>Online</span>
         </div>
-        <div class="ai-subtitle">Describe your project, I'll build your token structure</div>
+        <div class="ai-subtitle">Describe your product, brand direction, and dark mode needs. Tokvista AI will return an import-ready token system.</div>
+        <div class="ai-head-badges">
+          <span class="ai-head-badge"><strong>Foundation</strong> raw token scale</span>
+          <span class="ai-head-badge"><strong>Semantic</strong> ready for themes</span>
+        </div>
+        <div class="ai-prompt-list">
+          <button class="ai-prompt-chip" type="button" data-ai-prompt="Create a token system for a fintech mobile app with navy, teal, soft neutrals, clear feedback colors, and dark mode.">
+            <span class="ai-prompt-kicker">Starter</span>
+            <span class="ai-prompt-copy">Fintech app with dark mode</span>
+          </button>
+          <button class="ai-prompt-chip" type="button" data-ai-prompt="Generate tokens for a B2B SaaS dashboard with cobalt primary, amber accents, generous spacing, subtle radius, and no dark mode.">
+            <span class="ai-prompt-kicker">Starter</span>
+            <span class="ai-prompt-copy">SaaS dashboard system</span>
+          </button>
+          <button class="ai-prompt-chip" type="button" data-ai-prompt="Build an ecommerce design token system with warm neutrals, editorial typography, rounded controls, and light and dark themes.">
+            <span class="ai-prompt-kicker">Starter</span>
+            <span class="ai-prompt-copy">Ecommerce with light and dark</span>
+          </button>
+        </div>
       </div>
 
       <div id="aiMessages" class="ai-messages"></div>
 
       <div id="aiImportWrap" class="ai-import-wrap hide">
-        <button id="aiImportBtn" class="ai-import-btn hide" type="button">Import into Figma</button>
+        <div class="ai-ready-card">
+          <div class="ai-ready-copy">
+            <div class="ai-ready-title">Ready to import</div>
+            <div id="aiImportMeta" class="ai-ready-meta">Generated tokens will appear here when Tokvista AI returns a valid token set.</div>
+          </div>
+          <button id="aiImportBtn" class="ai-import-btn hide" type="button">Import into Figma</button>
+        </div>
       </div>
 
       <div class="ai-input-wrap">
+        <div class="ai-input-meta">
+          <span class="ai-input-label">Prompt</span>
+          <span class="ai-input-hint">Enter to send, Shift+Enter for newline</span>
+        </div>
         <div class="ai-input-row">
-          <input id="aiInput" class="ai-input" type="text" placeholder="Ask anything about your tokens..." />
-          <button id="aiSendBtn" class="ai-send-btn" type="button" aria-label="Send">↑</button>
+          <textarea id="aiInput" class="ai-input" rows="1" placeholder="Describe your product, colors, typography mood, spacing scale, and whether you need dark mode..."></textarea>
+          <button id="aiSendBtn" class="ai-send-btn" type="button" aria-label="Send">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 19V5M12 5l-5 5M12 5l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -2374,13 +2872,10 @@
   <section id="tab-changes" class="tabp" role="tabpanel">
     <div class="changes-head mt-2">
       <div class="sec sec-flex-fill">Since last publish</div>
-      <button id="refreshChangesBtn" class="btn-sm" type="button">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 1 1-2-5.3M20 2v5h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Refresh
-      </button>
     </div>
+    <div class="changes-subhint">Compared against your latest published baseline.</div>
 
-    <div class="pills">
+    <div class="pills" id="changesPills">
       <span id="pillAdded"   class="pill pill-g">+0 Added</span>
       <span id="pillChanged" class="pill pill-y">~0 Changed</span>
       <span id="pillRemoved" class="pill pill-r">−0 Removed</span>
@@ -2405,33 +2900,24 @@
       <div class="snap-row"><span class="snap-label">Collections</span><span id="snapshotCollections" class="snap-val">—</span></div>
       <div class="snap-row"><span class="snap-label">Token count</span><span id="snapshotTokenCount" class="snap-val">0</span></div>
       <div class="snap-row"><span class="snap-label">Format</span><span id="snapshotFormat" class="snap-val">—</span></div>
-      <div class="snap-tog-wrap">
-        <button id="snapshotToggleBtn" class="snap-tog" type="button">View raw JSON</button>
-      </div>
-      <div id="snapshotRawWrap" class="snap-raw hide">
-        <pre id="snapshotPre">No export yet.</pre>
-      </div>
     </div>
   </section>
 
   <!-- ─── SETTINGS ─── -->
-  <section id="tab-settings" class="tabp" role="tabpanel">
+  <section id="tab-settings" class="tabp settings-tab" role="tabpanel">
 
-    <div class="sec sec-first">Status</div>
-    <div class="card mb-10">
+    <div class="card mb-10 settings-top-card">
       <div class="status-bar">
         <div>
+          <div class="settings-kicker">Status</div>
           <div id="settingsHost" class="status-host">Not configured</div>
           <div id="settingsMeta" class="status-meta">Last published: never</div>
         </div>
         <span class="pill pill-g">Live</span>
       </div>
-    </div>
-
-    <div class="sec">Sync provider</div>
-    <div class="card mb-10">
       <div class="provider-row">
         <div class="provider-main">
+          <div class="settings-kicker">Sync provider</div>
           <div class="provider-head">
             <div id="providerLabel" class="provider-name">GitHub</div>
             <span id="providerBadge" class="pill pill-n provider-badge">GitHub</span>
@@ -2445,7 +2931,7 @@
       </div>
       <div class="sync-profiles-wrap">
         <div class="sync-profiles-head">
-          <div class="sync-profiles-title">Saved Sync Options</div>
+          <div class="sync-profiles-title">Saved Profiles</div>
           <button id="newSyncProfileBtn" class="btn-new-profile" type="button">New</button>
         </div>
         <div id="syncProfilesList" class="sync-profile-list">
@@ -2480,7 +2966,7 @@
     </div>
 
     <div id="githubSettingsGroup" class="hide">
-      <div class="sec">GitHub</div>
+      <div class="sec settings-subsec">GitHub</div>
       <div class="field">
         <label for="githubTokenInput">Personal Access Token</label>
         <input id="githubTokenInput" class="is-mono" type="password" autocomplete="off" spellcheck="false" placeholder="Leave blank to use saved token"/>
@@ -2498,14 +2984,14 @@
         <input id="githubBranchInput" class="is-mono" type="text" placeholder="main"/>
       </div>
       <div class="field">
-        <label for="githubPathInput">Token file path</label>
+        <label for="githubPathInput">File path</label>
         <input id="githubPathInput" class="is-mono" type="text" placeholder="tokens.json"/>
       </div>
     </div>
 
     <input id="environmentInput" type="hidden" value="dev"/>
 
-    <div class="my-12-16">
+    <div class="settings-savebar">
       <button id="saveRelayBtn" class="btn-save" type="button">
         <svg viewBox="0 0 24 24" fill="none"><path d="M5 4.5H16.7L20 7.8V19.5C20 20.3 19.3 21 18.5 21H5.5C4.7 21 4 20.3 4 19.5V6C4 5.2 4.7 4.5 5.5 4.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 4.5V9.5H15V4.5M8 16H16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Save settings
@@ -2536,13 +3022,14 @@
 <!-- ══════ STICKY PUBLISH FOOTER ══════ -->
 <div class="publish-footer" id="publishFooter">
   <div class="publish-footer-row">
-    <div class="publish-footer-hint">
+    <div class="publish-footer-hint" id="publishHintBar">
       <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5M12 16v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       <span id="homePublishHint">No changes pending since last publish</span>
       <button id="previewPublishBtn" class="btn-warn" type="button">Review</button>
     </div>
-    <button id="openPublishBtn" class="publish-fab has-tip" type="button" aria-label="Publish to Tokvista" data-tip="Publish to Tokvista">
+    <button id="openPublishBtn" class="publish-fab has-tip" type="button" aria-label="Publish to Tokvista" data-tip="Publish tokens">
       <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4M8 8l4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 18v1.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Publish
     </button>
   </div>
   <div id="statusLine" class="status">Ready.</div>
@@ -2596,10 +3083,6 @@
         <div class="history-empty">No publish history yet.</div>
       </div>
     </div>
-    <div class="modal-foot">
-      <button id="historyRefreshBtn" class="btn-mc" type="button">Refresh</button>
-      <button id="historyCloseBtn" class="btn-mp" type="button">Done</button>
-    </div>
   </div>
 </div>
 <div id="providerModal" class="modal-wrap">
@@ -2645,6 +3128,22 @@
     </div>
   </div>
 </div>
+<div id="deleteProfileModal" class="modal-wrap">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <span class="modal-title">Delete saved profile</span>
+      <button id="closeDeleteProfileModalBtn" class="modal-close" type="button">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-copy">Delete <strong id="deleteProfileName">this profile</strong>? This removes the saved sync configuration from this device.</p>
+    </div>
+    <div class="modal-foot">
+      <button id="cancelDeleteProfileBtn" class="btn-mc" type="button">Cancel</button>
+      <button id="confirmDeleteProfileBtn" class="btn-mp btn-danger-fill" type="button">Delete profile</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ══════ UTILS ══════ */
@@ -2661,6 +3160,8 @@ const state = {
   activeProfileId: '',
   draftNewProfile: false,
   pendingDraftSave: false,
+  pendingDeleteProfileId: '',
+  pendingDeleteProfileName: '',
   relayAdvancedOpen: false,
   publishKeySaved: false,
   githubTokenSaved: false,
@@ -2674,12 +3175,13 @@ const state = {
   publishHistory: [],
   previewResolvePending: false,
   downloadFormat: 'json',
-  fullscreen: false,
-  snapshotRawOpen: false,
+  previewSearch: '',
   changeLog: { summary: '', lines: [], added: 0, changed: 0, removed: 0 },
   aiMessages: [],
   aiHistory: [],
   aiGeneratedTokens: null,
+  aiImportPending: false,
+  aiTokensImported: false,
   aiPending: false
 };
 const SAVED_SECRET_MASK = '••••••••••••••••';
@@ -2696,6 +3198,11 @@ const refs = {
   newSyncProfileBtn: $('newSyncProfileBtn'), syncProfilesList: $('syncProfilesList'),
   providerModal: $('providerModal'), closeProviderModalBtn: $('closeProviderModalBtn'),
   providerDoneBtn: $('providerDoneBtn'),
+  deleteProfileModal: $('deleteProfileModal'),
+  closeDeleteProfileModalBtn: $('closeDeleteProfileModalBtn'),
+  cancelDeleteProfileBtn: $('cancelDeleteProfileBtn'),
+  confirmDeleteProfileBtn: $('confirmDeleteProfileBtn'),
+  deleteProfileName: $('deleteProfileName'),
   relaySettingsGroup: $('relaySettingsGroup'), githubSettingsGroup: $('githubSettingsGroup'),
   relayAdvancedToggleBtn: $('relayAdvancedToggleBtn'), relayAdvancedPanel: $('relayAdvancedPanel'),
   githubTokenInput: $('githubTokenInput'), githubRepoInput: $('githubRepoInput'),
@@ -2705,17 +3212,15 @@ const refs = {
   relayUrlInput: $('relayUrlInput'), projectIdInput: $('projectIdInput'),
   environmentInput: $('environmentInput'), publishKeyInput: $('publishKeyInput'),
   previewRows: $('previewRows'), syncInfo: $('syncInfo'), statusLine: $('statusLine'),
-  snapshotPre: $('snapshotPre'), snapshotTimestamp: $('snapshotTimestamp'),
+  snapshotTimestamp: $('snapshotTimestamp'),
   snapshotCollections: $('snapshotCollections'), snapshotTokenCount: $('snapshotTokenCount'),
-  snapshotFormat: $('snapshotFormat'), snapshotToggleBtn: $('snapshotToggleBtn'),
-  snapshotRawWrap: $('snapshotRawWrap'), homePublishHint: $('homePublishHint'),
+  snapshotFormat: $('snapshotFormat'), homePublishHint: $('homePublishHint'),
   changesBadge: $('changesBadge'), pillAdded: $('pillAdded'),
   pillChanged: $('pillChanged'), pillRemoved: $('pillRemoved'),
   changesList: $('changesList'), settingsHost: $('settingsHost'),
   settingsMeta: $('settingsMeta'), modal: $('publishModal'),
   historyModal: $('historyModal'), historyList: $('historyList'),
   closeHistoryModalBtn: $('closeHistoryModalBtn'),
-  historyRefreshBtn: $('historyRefreshBtn'), historyCloseBtn: $('historyCloseBtn'),
   modalAdded: $('modalAdded'), modalChanged: $('modalChanged'),
   modalRemoved: $('modalRemoved'), modalChanges: $('modalChanges'),
   modalEndpoint: $('modalEndpoint'), modalProject: $('modalProject'),
@@ -2723,14 +3228,16 @@ const refs = {
   statColors: $('statColors'), statSpacing: $('statSpacing'),
   statTypography: $('statTypography'), statOther: $('statOther'),
   fullRefreshBtn: $('fullRefreshBtn'),
+  previewSearchInput: $('previewSearchInput'),
   devPreviewBtn: $('devPreviewBtn'),
   snapshotPreviewBtn: $('snapshotPreviewBtn'),
   previewLiveBadge: $('previewLiveBadge'),
   downloadTriggerBtn: $('downloadTriggerBtn'), downloadMenu: $('downloadMenu'),
   downloadCurrent: $('downloadCurrent'), clearLoadedBtn: $('clearLoadedBtn'),
-  fullscreenToggleBtn: $('fullscreenToggleBtn'),
+  aiShell: document.querySelector('#tab-ai .ai-shell'),
   aiImportWrap: $('aiImportWrap'),
   aiMessages: $('aiMessages'), aiInput: $('aiInput'),
+  aiImportMeta: $('aiImportMeta'),
   aiSendBtn: $('aiSendBtn'), aiImportBtn: $('aiImportBtn'),
 };
 
@@ -2738,9 +3245,12 @@ const refs = {
 function setTab(id) {
   tabs.forEach(t => t.classList.toggle('on', t.dataset.tab === id));
   panels.forEach(p => p.classList.toggle('on', p.id === `tab-${id}`));
-  document.querySelector('.main')?.classList.toggle('home-scroll-lock', id === 'home');
+  const main = document.querySelector('.main');
+  main?.classList.toggle('home-scroll-lock', id === 'home');
+  main?.classList.toggle('ai-scroll-lock', id === 'ai');
   const footer = document.getElementById('publishFooter');
   if (footer) footer.classList.toggle('hide', id !== 'home');
+  refs.fullRefreshBtn?.classList.toggle('hide', id !== 'home');
 }
 tabs.forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
 
@@ -2820,14 +3330,34 @@ function normalizeProvider(provider) {
 function providerTitle(provider) {
   return provider === 'github' ? 'GitHub' : 'Relay URL';
 }
+function updateNewSyncProfileButton() {
+  if (!refs.newSyncProfileBtn) return;
+  const isDraft = !!state.draftNewProfile;
+  refs.newSyncProfileBtn.textContent = isDraft ? 'Cancel' : 'New';
+  refs.newSyncProfileBtn.classList.toggle('is-draft', isDraft);
+  refs.newSyncProfileBtn.setAttribute('aria-pressed', isDraft ? 'true' : 'false');
+}
 function renderSyncProfiles() {
   const list = Array.isArray(state.syncProfiles) ? state.syncProfiles : [];
   if (!refs.syncProfilesList) return;
-  if (!list.length) {
+  updateNewSyncProfileButton();
+  if (!list.length && !state.draftNewProfile) {
     refs.syncProfilesList.innerHTML = '<div class="sync-profile-empty">No sync profiles yet.</div>';
     return;
   }
-  refs.syncProfilesList.innerHTML = list.map(profile => {
+  const items = [];
+  if (state.draftNewProfile) {
+    items.push(`<div class="sync-profile-row is-draft">
+      <div class="sync-profile-main">
+        <div class="sync-profile-name">New profile draft</div>
+        <div class="sync-profile-sub">${escapeHtml(providerTitle(state.syncProvider))} · Fill the form below and save settings</div>
+      </div>
+      <div class="sync-profile-actions">
+        <span class="sync-profile-chip">Draft</span>
+      </div>
+    </div>`);
+  }
+  refs.syncProfilesList.innerHTML = items.concat(list.map(profile => {
     const id = String(profile.id || '');
     const name = escapeHtml(profile.name || profile.label || 'Sync profile');
     const provider = String(profile.provider || '').toLowerCase() === 'relay' ? 'Relay' : 'GitHub';
@@ -2848,7 +3378,7 @@ function renderSyncProfiles() {
         <button class="btn-sync-mini danger" type="button" data-profile-action="delete" data-profile-id="${escapeHtml(id)}">Delete</button>
       </div>
     </div>`;
-  }).join('');
+  })).join('');
 }
 function readSyncProfilesFromPayload(payload) {
   if (!payload || !Array.isArray(payload.profiles)) return [];
@@ -2902,6 +3432,14 @@ function applySyncPayload(payload) {
   updateSettingsSummary();
 }
 function beginNewSyncProfile() {
+  if (state.draftNewProfile) {
+    state.draftNewProfile = false;
+    state.pendingDraftSave = false;
+    renderSyncProfiles();
+    setStatus('New sync profile draft canceled.', false);
+    post({ type: 'load-relay-settings' });
+    return;
+  }
   state.draftNewProfile = true;
   state.pendingDraftSave = false;
   state.activeProfileId = '';
@@ -2972,6 +3510,15 @@ function updateSettingsSummary() {
     state.githubTokenMaskLength
   );
   refs.rememberGithubTokenInput.checked = !!state.rememberGithubToken;
+
+  if (state.draftNewProfile) {
+    refs.settingsHost.textContent = 'New profile draft';
+    refs.settingsMeta.textContent = 'Complete the fields below, then save settings to create a reusable sync profile.';
+    refs.clearSecretMeta.textContent = normalizeProvider(state.syncProvider) === 'github'
+      ? 'Removes stored GitHub token from this device'
+      : 'Removes stored publish key from this device';
+    return;
+  }
 
   const provider = normalizeProvider(state.syncProvider);
   if (provider === 'github') {
@@ -3183,6 +3730,11 @@ function openSnapshotPreview() {
 function closeHistoryModal() {
   refs.historyModal?.classList.remove('on');
 }
+function shortHistoryVersion(versionId) {
+  const raw = String(versionId || '').trim();
+  if (!raw) return 'unversioned';
+  return raw.length > 16 ? `${raw.slice(0, 12)}…` : raw;
+}
 function renderPublishHistory(items) {
   const history = Array.isArray(items) ? items : [];
   state.publishHistory = history;
@@ -3202,17 +3754,19 @@ function renderPublishHistory(items) {
     const added = Number(item.added || 0);
     const changed = Number(item.changed || 0);
     const removed = Number(item.removed || 0);
-    const summary = typeof item.summary === 'string' && item.summary.trim() ? item.summary.trim() : 'Publish record';
     const liveUrl = normalizeLinkValue(item.previewUrl);
     const snapshotUrl = normalizeLinkValue(item.snapshotPreviewUrl) || buildPreviewFromRaw(normalizeLinkValue(item.rawUrl));
     const commitUrl = normalizeLinkValue(item.referenceUrl);
-    const lines = Array.isArray(item.lines) ? item.lines.filter(x => typeof x === 'string').slice(0, 6) : [];
+    const lines = Array.isArray(item.lines) ? item.lines.filter(x => typeof x === 'string').slice(0, 12) : [];
 
     const head = document.createElement('div');
     head.className = 'history-head';
     head.innerHTML = `
-      <span class="history-ver">${escapeHtml(versionId)}</span>
-      <span class="history-time">${escapeHtml(publishedAt)}</span>
+      <div class="history-head-main">
+        <span class="history-kicker">Published</span>
+        <span class="history-time">${escapeHtml(publishedAt)}</span>
+      </div>
+      <span class="history-ver">${escapeHtml(shortHistoryVersion(versionId))}</span>
     `;
     card.appendChild(head);
 
@@ -3224,7 +3778,6 @@ function renderPublishHistory(items) {
         <span class="pill pill-y">~${changed} Changed</span>
         <span class="pill pill-r">−${removed} Removed</span>
       </div>
-      <div class="history-summary">${escapeHtml(summary)}</div>
     `;
 
     const links = document.createElement('div');
@@ -3253,9 +3806,21 @@ function renderPublishHistory(items) {
       b.addEventListener('click', () => post({ type: 'open-external-url', payload: { url: commitUrl } }));
       links.appendChild(b);
     }
-    body.appendChild(links);
+    if (links.childElementCount) {
+      body.appendChild(links);
+    }
 
     if (lines.length) {
+      const bottom = document.createElement('div');
+      bottom.className = 'history-bottom';
+      const toggle = document.createElement('button');
+      toggle.className = 'history-toggle-btn';
+      toggle.type = 'button';
+      toggle.textContent = `View changes (${lines.length})`;
+      toggle.setAttribute('aria-expanded', 'false');
+      const wrap = document.createElement('div');
+      wrap.className = 'history-lines-wrap';
+      wrap.hidden = true;
       const ul = document.createElement('ul');
       ul.className = 'history-lines';
       lines.forEach(line => {
@@ -3263,7 +3828,20 @@ function renderPublishHistory(items) {
         li.textContent = line;
         ul.appendChild(li);
       });
-      body.appendChild(ul);
+      wrap.appendChild(ul);
+      toggle.addEventListener('click', () => {
+        const nextHidden = !wrap.hidden;
+        wrap.hidden = nextHidden;
+        toggle.setAttribute('aria-expanded', nextHidden ? 'false' : 'true');
+        toggle.textContent = nextHidden ? `View changes (${lines.length})` : 'Hide changes';
+      });
+      bottom.appendChild(toggle);
+      if (links.childElementCount) {
+        body.removeChild(links);
+        bottom.appendChild(links);
+      }
+      body.appendChild(bottom);
+      body.appendChild(wrap);
     }
 
     card.appendChild(body);
@@ -3289,6 +3867,17 @@ function rows(payload) {
   };
   walk(root, []);
   return out;
+}
+function filteredRows(payload) {
+  const list = rows(payload);
+  const query = String(state.previewSearch || '').trim().toLowerCase();
+  if (!query) return list;
+  return list.filter(item => {
+    const token = String(item.token || '').toLowerCase();
+    const type = String(item.type || '').toLowerCase();
+    const value = fmt(item.value).toLowerCase();
+    return token.includes(query) || type.includes(query) || value.includes(query);
+  });
 }
 function toSlug(input) {
   return String(input || '').trim().replace(/\s+/g,'-').replace(/[^a-zA-Z0-9_-]/g,'-').replace(/-+/g,'-').replace(/^[-_]+|[-_]+$/g,'').toLowerCase() || 'token';
@@ -3373,10 +3962,8 @@ function buildArtifact(format, payload, jsonText) {
 
 /* ── RENDER PREVIEW ── */
 function renderPreview(payload) {
-  const list = rows(payload), cnt = { colors: 0, spacing: 0, typography: 0, other: 0 };
+  const list = filteredRows(payload), cnt = { colors: 0, spacing: 0, typography: 0, other: 0 };
   list.forEach(r => { cnt[categoryForType(r.type)]++; });
-
-  const total = list.length;
   const et = { colors: 'etColors', spacing: 'etSpacing', typography: 'etTypo', other: 'etOther' };
   Object.entries(et).forEach(([k, id]) => { const el = document.getElementById(id); if (el) el.textContent = String(cnt[k]); });
 
@@ -3390,7 +3977,7 @@ function renderPreview(payload) {
 
   refs.previewRows.innerHTML = '';
   if (!list.length) {
-    refs.previewRows.innerHTML = '<tr><td colspan="3"><div class="explorer-empty">No tokens available.</div></td></tr>';
+    refs.previewRows.innerHTML = `<tr><td colspan="3"><div class="explorer-empty">${state.previewSearch ? 'No tokens match your search.' : 'No tokens available.'}</div></td></tr>`;
     return;
   }
   list.slice(0, 10).forEach(r => {
@@ -3538,6 +4125,11 @@ function renderVisualPreview(payload) {
   if (!payload) { container.innerHTML = '<div class="vprev-empty">Sync to load visual preview.</div>'; return; }
 
   const root = tokenRoot(payload);
+  const searchQuery = String(state.previewSearch || '').trim().toLowerCase();
+  const matchesSearch = (...values) => {
+    if (!searchQuery) return true;
+    return values.some(value => String(value || '').toLowerCase().includes(searchQuery));
+  };
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
   const allSets = visualSetEntries(root);
@@ -3545,7 +4137,7 @@ function renderVisualPreview(payload) {
     ? allSets
     : allSets.filter(set => set.key === currentVisualFilter);
   if (!activeSets.length) {
-    container.innerHTML = '<div class="vprev-empty">No visual tokens detected in this layer.</div>';
+    container.innerHTML = `<div class="vprev-empty">${state.previewSearch ? 'No visual tokens match your search.' : 'No visual tokens detected in this layer.'}</div>`;
     return;
   }
 
@@ -3566,6 +4158,7 @@ function renderVisualPreview(payload) {
       const display  = resolved ?? String(val);
       const key = path[path.length - 1];
       const full = path.join('-');
+      if (!matchesSearch(full, key, display, val, setName, type)) return;
 
       const cat = inferVisualCategory(type, path, display);
       if (cat === 'color') {
@@ -3614,30 +4207,11 @@ function renderVisualPreview(payload) {
     if (isObj(set.value)) walk(set.value, [], set.label || set.key);
   }
 
-  // Icon SVGs for section headers
-  const icons = {
-    color:    `<svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" fill="currentColor" opacity=".6"/><circle cx="6" cy="6" r="2" fill="currentColor"/></svg>`,
-    spacing:  `<svg viewBox="0 0 12 12" fill="none"><path d="M2 6h8M2 3v6M10 3v6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
-    sizing:   `<svg viewBox="0 0 12 12" fill="none"><rect x="2" y="2" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M6 2v8" stroke="currentColor" stroke-width="1.2" stroke-dasharray="1.5 1.5"/></svg>`,
-    radius:   `<svg viewBox="0 0 12 12" fill="none"><path d="M2 9V5a3 3 0 0 1 3-3h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
-    border:   `<svg viewBox="0 0 12 12" fill="none"><rect x="2" y="4" width="8" height="4" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>`,
-    shadow:   `<svg viewBox="0 0 12 12" fill="none"><rect x="2" y="2" width="7" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="5" width="7" height="5" rx="1" fill="currentColor" opacity=".2"/></svg>`,
-    opacity:  `<svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4" fill="currentColor" opacity=".3"/><path d="M6 2a4 4 0 0 1 0 8z" fill="currentColor"/></svg>`,
-    fontSize: `<svg viewBox="0 0 12 12" fill="none"><text x="1" y="9" font-size="9" fill="currentColor" font-weight="bold">Ag</text></svg>`,
-    fontWeight:`<svg viewBox="0 0 12 12" fill="none"><text x="1" y="9" font-size="9" fill="currentColor" font-weight="900">B</text></svg>`,
-    fontFamily:`<svg viewBox="0 0 12 12" fill="none"><text x="1" y="9" font-size="8" fill="currentColor" font-style="italic">f</text><text x="4" y="9" font-size="8" fill="currentColor">f</text></svg>`,
-    lineHeight:`<svg viewBox="0 0 12 12" fill="none"><path d="M2 3h8M2 6h6M2 9h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
-    letterSp: `<svg viewBox="0 0 12 12" fill="none"><text x="0" y="9" font-size="7" fill="currentColor">A B</text></svg>`,
-    other:    `<svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="1.5" fill="currentColor"/><circle cx="2.5" cy="6" r="1.5" fill="currentColor"/><circle cx="9.5" cy="6" r="1.5" fill="currentColor"/></svg>`,
-  };
-
-  function secWrap(titleText, iconKey, count, bodyHtml, extraClass='') {
-    return `<div class="vprev-section collapsed${extraClass}" onclick="this.classList.toggle('collapsed')">
+  function secWrap(titleText, dotClass, count, bodyHtml) {
+    return `<div class="vprev-section" onclick="this.classList.toggle('collapsed')">
       <div class="vprev-sec-head">
-        <span class="vprev-sec-title">
-          <span class="vprev-sec-icon">${icons[iconKey]||icons.other}</span>
-          ${esc(titleText)}
-        </span>
+        <span class="vprev-sec-dot ${dotClass}"></span>
+        <span class="vprev-sec-title">${esc(titleText)}</span>
         <span class="vprev-sec-right">
           <span class="vprev-count">${count}</span>
           <svg class="vprev-chevron" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -3646,13 +4220,22 @@ function renderVisualPreview(payload) {
       <div class="vprev-sec-body">${bodyHtml}</div>
     </div>`;
   }
-  function nameListBody(tokens, limit = 40) {
-    let body = '<div class="other-list">';
-    tokens.slice(0, limit).forEach(t => {
-      body += `<div class="other-row"><span class="other-key">${esc(t.key)}</span></div>`;
-    });
-    body += '</div>';
-    return body;
+
+  function tokenRows(tokens, type) {
+    return tokens.slice(0, 60).map(t => {
+      let swatch = '';
+      if (type === 'color' && t.hex) {
+        const cls = getDynamicColorClass(t.hex);
+        swatch = `<div class="vprev-tok-swatch ${cls}"></div>`;
+      } else if (type === 'color' && t.isAlias) {
+        swatch = `<div class="vprev-tok-swatch" style="background:var(--overlay);border:1px dashed var(--border-hi)"></div>`;
+      } else {
+        swatch = `<div class="vprev-tok-swatch num"></div>`;
+      }
+      const name = t.key || t.step || '';
+      const val  = t.hex || t.val || t.rawVal || '';
+      return `<div class="vprev-tok-row">${swatch}<span class="vprev-tok-name">${esc(name)}</span><span class="vprev-tok-val">${esc(val)}</span></div>`;
+    }).join('');
   }
 
   let html = '';
@@ -3660,53 +4243,57 @@ function renderVisualPreview(payload) {
   // ── Colors ──
   const cgKeys = Object.keys(colorGroups);
   if (cgKeys.length) {
-    const totalColors = cgKeys.reduce((a, k) => a + colorGroups[k].length, 0);
-    let body = '';
+    const allColors = [];
     for (const gName of cgKeys) {
-      body += `<div class="color-palette-group"><div class="color-group-name">${esc(gName)}</div><div class="color-strip">`;
-      for (const s of colorGroups[gName]) {
-        if (s.isAlias && !s.hex) {
-          body += `<div class="color-swatch is-alias" data-tip="${esc(s.rawVal)}"></div>`;
-        } else if (s.hex) {
-          const swatchClass = getDynamicColorClass(s.hex);
-          body += `<div class="color-swatch ${swatchClass}" data-tip="${esc(s.step)} · ${esc(s.hex)}"></div>`;
-        }
-      }
-      body += `</div></div>`;
+      colorGroups[gName].forEach(s => allColors.push({ key: gName === 'base' ? s.step : `${gName}.${s.step}`, hex: s.hex, isAlias: s.isAlias, rawVal: s.rawVal }));
     }
-    html += secWrap('Colors', 'color', totalColors, body);
+    const totalColors = allColors.length;
+    if (cgKeys.length > 1 || cgKeys[0] !== 'base') {
+      html += `<div class="vprev-group-label">${esc(cgKeys[0].split(' ')[0].toUpperCase())}</div>`;
+    }
+    html += secWrap('Colors', 'color', totalColors, tokenRows(allColors, 'color'));
   }
 
-  // Non-color categories: show names only (no visual previews)
-  if (spacingTokens.length) html += secWrap('Spacing', 'spacing', spacingTokens.length, nameListBody(spacingTokens, 40));
-  if (sizingTokens.length) html += secWrap('Sizing', 'sizing', sizingTokens.length, nameListBody(sizingTokens, 40));
-  if (radiusTokens.length) html += secWrap('Border Radius', 'radius', radiusTokens.length, nameListBody(radiusTokens, 40));
-  if (borderWidthTokens.length) html += secWrap('Border Width', 'border', borderWidthTokens.length, nameListBody(borderWidthTokens, 40));
-  if (shadowTokens.length) html += secWrap('Box Shadow', 'shadow', shadowTokens.length, nameListBody(shadowTokens, 40));
-  if (opacityTokens.length) html += secWrap('Opacity', 'opacity', opacityTokens.length, nameListBody(opacityTokens, 40));
-  if (fontSizeTokens.length) html += secWrap('Font Sizes', 'fontSize', fontSizeTokens.length, nameListBody(fontSizeTokens, 40));
-  if (fontWeightTokens.length) html += secWrap('Font Weight', 'fontWeight', fontWeightTokens.length, nameListBody(fontWeightTokens, 40));
-  if (fontFamilyTokens.length) html += secWrap('Font Family', 'fontFamily', fontFamilyTokens.length, nameListBody(fontFamilyTokens, 40));
-  if (lineHeightTokens.length) html += secWrap('Line Height', 'lineHeight', lineHeightTokens.length, nameListBody(lineHeightTokens, 40));
-  if (letterSpacingTokens.length) html += secWrap('Letter Spacing', 'letterSp', letterSpacingTokens.length, nameListBody(letterSpacingTokens, 40));
+  // ── Spacing ──
+  if (spacingTokens.length) {
+    html += `<div class="vprev-group-label">Spacing</div>`;
+    html += secWrap('Numbers', 'spacing', spacingTokens.length, tokenRows(spacingTokens, 'number'));
+  }
 
-  // ── Component tokens (when filtered) ──
+  // ── Sizing ──
+  if (sizingTokens.length) {
+    html += `<div class="vprev-group-label">Sizing</div>`;
+    html += secWrap('Numbers', 'sizing', sizingTokens.length, tokenRows(sizingTokens, 'number'));
+  }
+
+  // ── Typography ──
+  const typoTokens = [...fontSizeTokens, ...fontWeightTokens, ...fontFamilyTokens, ...lineHeightTokens, ...letterSpacingTokens];
+  if (typoTokens.length) {
+    html += `<div class="vprev-group-label">Typography</div>`;
+    if (fontSizeTokens.length) html += secWrap('Font Sizes', 'sizing', fontSizeTokens.length, tokenRows(fontSizeTokens, 'number'));
+    if (fontWeightTokens.length) html += secWrap('Font Weight', 'other', fontWeightTokens.length, tokenRows(fontWeightTokens, 'number'));
+    if (fontFamilyTokens.length) html += secWrap('Font Family', 'other', fontFamilyTokens.length, tokenRows(fontFamilyTokens, 'number'));
+    if (lineHeightTokens.length) html += secWrap('Line Height', 'other', lineHeightTokens.length, tokenRows(lineHeightTokens, 'number'));
+    if (letterSpacingTokens.length) html += secWrap('Letter Spacing', 'other', letterSpacingTokens.length, tokenRows(letterSpacingTokens, 'number'));
+  }
+
+  // ── Other ──
+  if (radiusTokens.length) html += secWrap('Border Radius', 'radius', radiusTokens.length, tokenRows(radiusTokens, 'number'));
+  if (borderWidthTokens.length) html += secWrap('Border Width', 'other', borderWidthTokens.length, tokenRows(borderWidthTokens, 'number'));
+  if (shadowTokens.length) html += secWrap('Shadows', 'other', shadowTokens.length, tokenRows(shadowTokens, 'number'));
+  if (opacityTokens.length) html += secWrap('Opacity', 'other', opacityTokens.length, tokenRows(opacityTokens, 'number'));
+
+  // ── Component tokens ──
   const compKeys = Object.keys(compGroups);
-  if (compKeys.length && (currentVisualFilter !== 'all' || !cgKeys.length)) {
-    const compTotal = compKeys.reduce((a, k) => a + compGroups[k].length, 0);
-    const compNames = [];
-    for (const grp of compKeys.slice(0, 20)) {
-      compGroups[grp].slice(0, 15).forEach(t => compNames.push({ key: t.key }));
-    }
-    html += secWrap('Token Values', 'other', compTotal, nameListBody(compNames, 300));
+  if (compKeys.length) {
+    const allComp = [];
+    compKeys.slice(0, 20).forEach(grp => compGroups[grp].slice(0,15).forEach(t => allComp.push({ key: t.key, val: t.resolvedVal, hex: t.hex, isAlias: t.isAlias })));
+    html += secWrap('Component Tokens', 'other', allComp.length, tokenRows(allComp.map(t => ({ key: t.key, hex: t.hex, val: t.val, isAlias: t.isAlias })), t => t.hex ? 'color' : 'number'));
   }
 
-  // ── Remaining other tokens ──
-  if (otherTokens.length) {
-    html += secWrap('Other', 'other', otherTokens.length, nameListBody(otherTokens, 40));
-  }
+  if (otherTokens.length) html += secWrap('Other', 'other', otherTokens.length, tokenRows(otherTokens, 'number'));
 
-  if (!html) html = '<div class="vprev-empty">No visual tokens detected in this layer.</div>';
+  if (!html) html = `<div class="vprev-empty">${state.previewSearch ? 'No visual tokens match your search.' : 'No visual tokens detected in this layer.'}</div>`;
   container.innerHTML = html;
 }
 
@@ -3760,6 +4347,9 @@ function renderChangeLog(cl) {
   const total = a + ch + r;
   refs.changesBadge.textContent    = String(total);
   refs.homePublishHint.textContent = total ? `${total} change${total === 1 ? '' : 's'} pending since last publish` : 'No changes pending since last publish';
+  document.getElementById('changesPills')?.classList.toggle('is-muted', total === 0);
+  const hintBar = document.getElementById('publishHintBar');
+  if (hintBar) hintBar.classList.toggle('has-changes', total > 0);
   renderChangeTo(refs.changesList,  lines);
   renderChangeTo(refs.modalChanges, lines);
 }
@@ -3780,11 +4370,6 @@ function renderSnapshot(payload) {
   refs.snapshotCollections.textContent = colls.length ? colls.join(', ') : '—';
   refs.snapshotTokenCount.textContent  = String(count);
   refs.snapshotFormat.textContent      = format || '—';
-  refs.snapshotPre.textContent         = state.latestExportText || 'No export yet.';
-}
-function updateSnapToggle() {
-  refs.snapshotRawWrap.classList.toggle('hide', !state.snapshotRawOpen);
-  refs.snapshotToggleBtn.textContent = state.snapshotRawOpen ? 'Hide raw JSON' : 'View raw JSON';
 }
 
 /* ── MODAL ── */
@@ -3804,6 +4389,17 @@ function openModal() {
 function closeModal() { refs.modal.classList.remove('on'); }
 function openProviderModal() { refs.providerModal?.classList.add('on'); }
 function closeProviderModal() { refs.providerModal?.classList.remove('on'); }
+function openDeleteProfileModal(profileId, profileName) {
+  state.pendingDeleteProfileId = profileId || '';
+  state.pendingDeleteProfileName = profileName || 'this saved profile';
+  if (refs.deleteProfileName) refs.deleteProfileName.textContent = state.pendingDeleteProfileName;
+  refs.deleteProfileModal?.classList.add('on');
+}
+function closeDeleteProfileModal() {
+  state.pendingDeleteProfileId = '';
+  state.pendingDeleteProfileName = '';
+  refs.deleteProfileModal?.classList.remove('on');
+}
 
 /* ── SYNC ── */
 function refresh() {
@@ -3811,8 +4407,13 @@ function refresh() {
   post({ type: 'export-tokens' });
   post({ type: 'preview-publish-changes' });
 }
+function setHeaderRefreshLoading(next) {
+  refs.fullRefreshBtn?.classList.toggle('is-spinning', !!next);
+  if (refs.fullRefreshBtn) refs.fullRefreshBtn.disabled = !!next;
+}
 function fullRefresh() {
   refs.syncInfo.textContent = 'Refreshing…';
+  setHeaderRefreshLoading(true);
   post({ type: 'load-relay-settings' });
   post({ type: 'export-tokens' });
   post({ type: 'preview-publish-changes' });
@@ -3856,10 +4457,9 @@ function updateImportFromUrlState() {
 
 /* ── TOKVISTA AI ── */
 const AI_WELCOME_MESSAGE =
-  "Hi! I'm Tokvista AI. Tell me about your project —\n" +
-  "your brand colors, the type of app, and whether\n" +
-  "you need dark mode. I'll generate your complete\n" +
-  "token structure.";
+  "Tell me what you're building, your brand colors, typography tone, and whether you need dark mode.\n" +
+  "I'll generate a foundation + semantic token structure you can import straight into Figma.";
+const AI_MESSAGE_PREVIEW_LIMIT = 200;
 
 function trimAiHistory() {
   state.aiHistory = (Array.isArray(state.aiHistory) ? state.aiHistory : [])
@@ -3870,33 +4470,429 @@ function getAiEndpoint() {
   const base = (refs.relayUrlInput?.value || '').trim() || 'https://tokvista-plugin.vercel.app/api';
   return `${base.replace(/\/+$/g, '')}/ai-guide`;
 }
+function hasAiTokenLeafShape(value) {
+  return isObj(value) && ('value' in value || '$value' in value);
+}
+function normalizeAiExplicitTokenType(rawType) {
+  const value = typeof rawType === 'string' ? rawType.trim() : '';
+  if (!value) return '';
+  const normalized = value.toLowerCase();
+  if (normalized === 'color') return 'color';
+  if (normalized === 'borderradius') return 'borderRadius';
+  if (normalized === 'fontsize') return 'fontSize';
+  if (normalized === 'lineheight') return 'lineHeight';
+  if (normalized === 'letterspacing') return 'letterSpacing';
+  if (
+    normalized === 'number' ||
+    normalized === 'dimension' ||
+    normalized === 'spacing' ||
+    normalized === 'sizing' ||
+    normalized === 'borderwidth' ||
+    normalized === 'opacity' ||
+    normalized === 'fontfamily' ||
+    normalized === 'fontweight' ||
+    normalized === 'typography' ||
+    normalized === 'string'
+  ) {
+    return normalized;
+  }
+  return 'string';
+}
+function aiLooksLikeColor(value) {
+  if (typeof value !== 'string') return false;
+  const text = value.trim();
+  return /^#(?:[0-9a-f]{3,8})$/i.test(text) || /^(rgb|rgba|hsl|hsla)\(/i.test(text);
+}
+function aiLooksLikeNumber(value) {
+  if (typeof value === 'number') return Number.isFinite(value);
+  if (typeof value !== 'string') return false;
+  return /^-?\d+(?:\.\d+)?\s*(px|rem|em|%)?$/i.test(value.trim());
+}
+function aiIsAliasString(value) {
+  return typeof value === 'string' && /^\{[^}]+\}$/.test(value.trim());
+}
+function extractAiAliasWithUnit(value) {
+  if (typeof value !== 'string') return null;
+  const match = value.trim().match(/^(\{[^}]+\})\s*(px|rem|em|%)$/i);
+  if (!match) return null;
+  return { alias: match[1], unit: match[2].toLowerCase() };
+}
+function sanitizeAiTokenKey(key) {
+  return String(key || '')
+    .trim()
+    .replace(/['"`]/g, '')
+    .replace(/&/g, 'and')
+    .replace(/[^\w.-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^[-_.]+|[-_.]+$/g, '') || 'token';
+}
+function sanitizeAiAliasValue(value) {
+  if (!aiIsAliasString(value)) return value;
+  const inner = value.trim().slice(1, -1);
+  const cleaned = inner
+    .split('.')
+    .map(part => sanitizeAiTokenKey(part))
+    .filter(Boolean)
+    .join('.');
+  return cleaned ? `{${cleaned}}` : value.trim();
+}
+function inferAiTypeFromPath(path, value) {
+  const joined = path.join('.').toLowerCase();
+  if (aiLooksLikeColor(value)) return 'color';
+  const aliasWithUnit = extractAiAliasWithUnit(value);
+  if (typeof value === 'number' || aiLooksLikeNumber(value)) {
+    if (joined.includes('radius')) return 'borderRadius';
+    if (joined.includes('font') && joined.includes('size')) return 'fontSize';
+    if (joined.includes('line') && joined.includes('height')) return 'lineHeight';
+    if (joined.includes('letter') && joined.includes('spacing')) return 'letterSpacing';
+    if (joined.includes('spacing') || joined.includes('space') || joined.includes('gap') || joined.includes('padding') || joined.includes('margin')) {
+      return 'spacing';
+    }
+    if (joined.includes('opacity')) return 'opacity';
+    return 'number';
+  }
+  if (aliasWithUnit) {
+    if (joined.includes('radius')) return 'borderRadius';
+    if (joined.includes('font') && joined.includes('size')) return 'fontSize';
+    if (joined.includes('line') && joined.includes('height')) return 'lineHeight';
+    if (joined.includes('letter') && joined.includes('spacing')) return 'letterSpacing';
+    if (joined.includes('spacing') || joined.includes('space') || joined.includes('size')) return 'number';
+    if (joined.includes('opacity') && aliasWithUnit.unit === '%') return 'opacity';
+    return 'number';
+  }
+  if (aiIsAliasString(value)) {
+    if (joined.includes('color') || joined.includes('background') || joined.includes('text') || joined.includes('surface') || joined.includes('border')) {
+      return 'color';
+    }
+    if (joined.includes('radius')) return 'borderRadius';
+    if (joined.includes('spacing') || joined.includes('space') || joined.includes('size')) return 'number';
+    return 'string';
+  }
+  if (typeof value === 'string') return 'string';
+  if (typeof value === 'boolean' || value === null || Array.isArray(value) || isObj(value)) return 'string';
+  return '';
+}
+function normalizeAiLeafValue(type, value) {
+  const aliasWithUnit = extractAiAliasWithUnit(value);
+  if (aliasWithUnit && (
+    type === 'number' ||
+    type === 'spacing' ||
+    type === 'sizing' ||
+    type === 'borderRadius' ||
+    type === 'borderWidth' ||
+    type === 'opacity' ||
+    type === 'fontSize' ||
+    type === 'lineHeight' ||
+    type === 'letterSpacing'
+  )) {
+    return sanitizeAiAliasValue(aliasWithUnit.alias);
+  }
+  if (aiIsAliasString(value)) return sanitizeAiAliasValue(value);
+  if (type === 'color' && typeof value === 'string') return value.trim();
+  if (
+    type === 'number' ||
+    type === 'spacing' ||
+    type === 'sizing' ||
+    type === 'borderRadius' ||
+    type === 'borderWidth' ||
+    type === 'opacity' ||
+    type === 'fontSize' ||
+    type === 'lineHeight' ||
+    type === 'letterSpacing'
+  ) {
+    if (typeof value === 'number' || typeof value === 'string') return value;
+  }
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (value === null) return 'null';
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+function normalizeAiTokenLeaf(rawType, rawValue, path) {
+  const type = normalizeAiExplicitTokenType(rawType) || inferAiTypeFromPath(path, rawValue);
+  if (!type) return null;
+  return {
+    type,
+    value: normalizeAiLeafValue(type, rawValue)
+  };
+}
+function normalizeAiTokenTree(node, path = []) {
+  if (Array.isArray(node)) {
+    return path.length ? normalizeAiTokenLeaf('', node, path) : null;
+  }
+  if (hasAiTokenLeafShape(node)) {
+    const rawValue = Object.prototype.hasOwnProperty.call(node, 'value') ? node.value : node.$value;
+    const rawType = typeof node.type === 'string' ? node.type : typeof node.$type === 'string' ? node.$type : '';
+    return normalizeAiTokenLeaf(rawType, rawValue, path);
+  }
+  if (!isObj(node)) {
+    return path.length ? normalizeAiTokenLeaf('', node, path) : null;
+  }
+  const out = {};
+  for (const [key, value] of Object.entries(node)) {
+    if (
+      !key ||
+      key.startsWith('$') ||
+      key === 'type' ||
+      key === '$type' ||
+      key === 'value' ||
+      key === '$value' ||
+      key === 'description' ||
+      key === 'meta' ||
+      key === 'summary'
+    ) {
+      continue;
+    }
+    const cleanKey = sanitizeAiTokenKey(key);
+    const normalizedChild = normalizeAiTokenTree(value, [...path, cleanKey]);
+    if (normalizedChild) out[cleanKey] = normalizedChild;
+  }
+  return Object.keys(out).length ? out : null;
+}
+function countAiTokenLeaves(node) {
+  if (!isObj(node)) return 0;
+  if ('type' in node && 'value' in node) return 1;
+  return Object.values(node).reduce((total, value) => total + countAiTokenLeaves(value), 0);
+}
+function forEachAiTokenLeaf(node, path, visit) {
+  if (!isObj(node)) return;
+  if ('type' in node && 'value' in node) {
+    visit(node, path);
+    return;
+  }
+  for (const [key, value] of Object.entries(node)) {
+    forEachAiTokenLeaf(value, [...path, key], visit);
+  }
+}
+function aiComparableValue(value) {
+  if (typeof value === 'string') return value.trim();
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+function setAiLeafAtPath(root, path, leaf) {
+  if (!isObj(root) || !path.length || !isObj(leaf)) return;
+  let cursor = root;
+  for (let index = 0; index < path.length - 1; index += 1) {
+    const key = path[index];
+    if (!isObj(cursor[key])) cursor[key] = {};
+    cursor = cursor[key];
+  }
+  cursor[path[path.length - 1]] = { ...leaf };
+}
+function aiPathAfterMarker(path, marker) {
+  const index = path.indexOf(marker);
+  if (index < 0) return null;
+  return path.slice(index + 1);
+}
+function aiIsComponentPath(path) {
+  return path.includes('component') || path.includes('components');
+}
+function aiFoundationPath(path) {
+  const afterFoundation = aiPathAfterMarker(path, 'foundation');
+  if (afterFoundation?.length) return afterFoundation;
+  const afterBase = aiPathAfterMarker(path, 'base');
+  if (afterBase?.length) return afterBase;
+  return null;
+}
+function aiSemanticPath(path) {
+  const afterSemantic = aiPathAfterMarker(path, 'semantic');
+  if (afterSemantic?.length) return afterSemantic;
+  return null;
+}
+function aiComponentPath(path) {
+  const afterComponents = aiPathAfterMarker(path, 'components');
+  if (afterComponents?.length) return afterComponents;
+  const afterComponent = aiPathAfterMarker(path, 'component');
+  if (afterComponent?.length) return afterComponent;
+  return null;
+}
+function buildAiCollectionBundle(tokensRoot) {
+  const foundationTokens = {};
+  const semanticTokens = {};
+  const componentTokens = {};
+  const foundationMap = new Map();
+  const semanticRawMap = new Map();
+
+  forEachAiTokenLeaf(tokensRoot, [], (leaf, path) => {
+    const foundationPath = aiFoundationPath(path);
+    const semanticPath = aiSemanticPath(path);
+    const componentPath = aiComponentPath(path);
+
+    if (foundationPath?.length) {
+      setAiLeafAtPath(foundationTokens, foundationPath, leaf);
+      foundationMap.set(`${leaf.type}|${aiComparableValue(leaf.value)}`, foundationPath);
+      return;
+    }
+    if (semanticPath?.length) {
+      setAiLeafAtPath(semanticTokens, semanticPath, leaf);
+      return;
+    }
+    if (componentPath?.length || aiIsComponentPath(path)) {
+      const targetPath = componentPath?.length ? componentPath : path;
+      setAiLeafAtPath(componentTokens, targetPath, leaf);
+      return;
+    }
+    setAiLeafAtPath(foundationTokens, path, leaf);
+    foundationMap.set(`${leaf.type}|${aiComparableValue(leaf.value)}`, path);
+  });
+
+  forEachAiTokenLeaf(semanticTokens, [], (leaf, path) => {
+    const rawComparable = `${leaf.type}|${aiComparableValue(leaf.value)}`;
+    if (!semanticRawMap.has(rawComparable)) {
+      semanticRawMap.set(rawComparable, path);
+    }
+    if (aiIsAliasString(leaf.value)) return;
+    const foundationPath = foundationMap.get(rawComparable);
+    if (!foundationPath) return;
+    leaf.value = `{Foundation.${foundationPath.join('.')}}`;
+  });
+
+  forEachAiTokenLeaf(componentTokens, [], (leaf) => {
+    if (aiIsAliasString(leaf.value)) return;
+    const comparable = `${leaf.type}|${aiComparableValue(leaf.value)}`;
+    const semanticPath = semanticRawMap.get(comparable);
+    if (semanticPath) {
+      leaf.value = `{Semantic.${semanticPath.join('.')}}`;
+      return;
+    }
+    const foundationPath = foundationMap.get(comparable);
+    if (foundationPath) {
+      leaf.value = `{Foundation.${foundationPath.join('.')}}`;
+    }
+  });
+
+  const collections = [];
+  if (countAiTokenLeaves(foundationTokens) > 0) {
+    collections.push({ collection: 'Foundation', tokens: foundationTokens });
+  }
+  if (countAiTokenLeaves(semanticTokens) > 0) {
+    collections.push({ collection: 'Semantic', tokens: semanticTokens });
+  }
+  if (countAiTokenLeaves(componentTokens) > 0) {
+    collections.push({ collection: 'Components', tokens: componentTokens });
+  }
+  return collections;
+}
+function normalizeAiGeneratedTokens(payload) {
+  if (!isObj(payload)) return null;
+  const root = isObj(payload.tokens) ? payload.tokens : payload;
+  const normalizedTokens = normalizeAiTokenTree(root, []);
+  if (!isObj(normalizedTokens) || countAiTokenLeaves(normalizedTokens) === 0) return null;
+  const collections = buildAiCollectionBundle(normalizedTokens);
+  if (!collections.length) return null;
+  if (collections.length === 1) {
+    return collections[0];
+  }
+  return { collections };
+}
 function countAiTokens(tokensPayload) {
   try {
-    return rows(tokensPayload).length;
+    const normalized = normalizeAiGeneratedTokens(tokensPayload);
+    if (!normalized) return 0;
+    if (Array.isArray(normalized.collections)) {
+      return normalized.collections.reduce((total, entry) => total + rows(entry).length, 0);
+    }
+    return rows(normalized).length;
   } catch {
     return 0;
   }
 }
+function resizeAiInput() {
+  const input = refs.aiInput;
+  if (!input) return;
+  input.style.height = '0px';
+  input.style.height = `${Math.min(input.scrollHeight, 120)}px`;
+}
+function updateAiShellState() {
+  const shouldCompact = state.aiPending || (state.aiMessages || []).some(msg => msg.role === 'user');
+  refs.aiShell?.classList.toggle('is-compact', shouldCompact);
+}
+function stripAiCodeBlocks(input) {
+  return String(input || '')
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+function setAiPrompt(prompt) {
+  if (!refs.aiInput) return;
+  refs.aiInput.value = String(prompt || '').trim();
+  resizeAiInput();
+  refs.aiInput.focus();
+  const length = refs.aiInput.value.length;
+  refs.aiInput.setSelectionRange(length, length);
+}
 function setAiImportButton() {
   const hasTokens = isObj(state.aiGeneratedTokens);
   refs.aiImportWrap?.classList.toggle('hide', !hasTokens);
+  refs.aiImportWrap?.classList.toggle('is-imported', !!state.aiTokensImported && !state.aiImportPending);
   refs.aiImportBtn?.classList.toggle('hide', !hasTokens);
-  if (hasTokens && refs.aiImportBtn) {
+  if (hasTokens) {
     const total = countAiTokens(state.aiGeneratedTokens);
-    refs.aiImportBtn.textContent = total > 0 ? `Import ${total} tokens into Figma` : 'Import into Figma';
+    if (refs.aiImportMeta) {
+      refs.aiImportMeta.textContent = state.aiImportPending
+        ? 'Importing generated tokens into Figma variables…'
+        : state.aiTokensImported
+        ? 'Imported into Figma variables.'
+        : total > 0
+          ? `${total} generated tokens are ready to import as Figma variables.`
+          : 'Generated tokens are ready to import as Figma variables.';
+    }
+    if (refs.aiImportBtn) {
+      refs.aiImportBtn.textContent = state.aiImportPending
+        ? 'Importing…'
+        : state.aiTokensImported
+        ? 'Imported'
+        : total > 0 ? `Import ${total} tokens` : 'Import into Figma';
+      refs.aiImportBtn.disabled = !!state.aiImportPending || !!state.aiTokensImported;
+    }
+  } else if (refs.aiImportMeta) {
+    refs.aiImportMeta.textContent = 'Generated tokens will appear here when Tokvista AI returns a valid token set.';
+    if (refs.aiImportBtn) refs.aiImportBtn.disabled = true;
   }
 }
 function renderAiMessages() {
   if (!refs.aiMessages) return;
   refs.aiMessages.innerHTML = '';
-  (state.aiMessages || []).forEach(msg => {
+  (state.aiMessages || []).forEach((msg, index) => {
     const row = document.createElement('div');
     row.className = `ai-msg ai-${msg.role === 'user' ? 'user' : 'assistant'}`;
 
+    const stack = document.createElement('div');
+    stack.className = 'ai-msg-stack';
+
+    const label = document.createElement('div');
+    label.className = 'ai-msg-label';
+    label.textContent = msg.role === 'user' ? 'You' : 'Tokvista AI';
+
     const bubble = document.createElement('div');
     bubble.className = 'ai-bubble';
-    bubble.textContent = String(msg.content || '');
-    row.appendChild(bubble);
+    const fullText = String(msg.content || '');
+    const isCollapsible = !!msg.collapsible && fullText.length > AI_MESSAGE_PREVIEW_LIMIT;
+    const isExpanded = !!msg.expanded;
+    bubble.textContent = isCollapsible && !isExpanded
+      ? `${fullText.slice(0, AI_MESSAGE_PREVIEW_LIMIT).trimEnd()}…`
+      : fullText;
+    stack.appendChild(label);
+    stack.appendChild(bubble);
+
+    if (isCollapsible) {
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'ai-expand-btn';
+      toggle.textContent = isExpanded ? 'Show less' : 'Show more';
+      toggle.addEventListener('click', () => {
+        state.aiMessages[index].expanded = !state.aiMessages[index].expanded;
+        renderAiMessages();
+      });
+      stack.appendChild(toggle);
+    }
+    row.appendChild(stack);
 
     if (msg.role === 'assistant' && isObj(msg.tokens)) {
       const meta = document.createElement('div');
@@ -3915,6 +4911,7 @@ function renderAiMessages() {
     refs.aiMessages.appendChild(loadingRow);
   }
   refs.aiMessages.scrollTop = refs.aiMessages.scrollHeight;
+  updateAiShellState();
 }
 function pushAiHistory(role, content) {
   if (role !== 'user' && role !== 'assistant') return;
@@ -3927,15 +4924,22 @@ function addAiMessage(role, content, options = {}) {
   const text = String(content || '').trim();
   if (!text) return;
   const next = { role: role === 'user' ? 'user' : 'assistant', content: text };
-  if (isObj(options.tokens)) next.tokens = options.tokens;
+  const normalizedTokens = normalizeAiGeneratedTokens(options.tokens);
+  if (normalizedTokens) next.tokens = normalizedTokens;
+  if (next.role === 'assistant' && text.length > AI_MESSAGE_PREVIEW_LIMIT) {
+    next.collapsible = true;
+    next.expanded = false;
+  }
   state.aiMessages.push(next);
   if (state.aiMessages.length > 50) {
     state.aiMessages = state.aiMessages.slice(-50);
   }
   pushAiHistory(next.role, text);
 
-  if (next.role === 'assistant' && isObj(options.tokens)) {
-    state.aiGeneratedTokens = options.tokens;
+  if (next.role === 'assistant' && normalizedTokens) {
+    state.aiGeneratedTokens = normalizedTokens;
+    state.aiImportPending = false;
+    state.aiTokensImported = false;
     setAiImportButton();
   }
   renderAiMessages();
@@ -3944,6 +4948,7 @@ function setAiPending(next) {
   state.aiPending = !!next;
   if (refs.aiSendBtn) refs.aiSendBtn.disabled = state.aiPending;
   if (refs.aiInput) refs.aiInput.disabled = state.aiPending;
+  updateAiShellState();
   renderAiMessages();
 }
 async function sendAiMessage() {
@@ -3952,7 +4957,12 @@ async function sendAiMessage() {
   const message = input.value.trim();
   if (!message) return;
 
+  state.aiGeneratedTokens = null;
+  state.aiImportPending = false;
+  state.aiTokensImported = false;
+  setAiImportButton();
   input.value = '';
+  resizeAiInput();
   addAiMessage('user', message);
   setAiPending(true);
 
@@ -3979,10 +4989,15 @@ async function sendAiMessage() {
     const answer = typeof payload.answer === 'string' && payload.answer.trim()
       ? payload.answer.trim()
       : 'I need a bit more detail. Tell me your brand color and whether you want dark mode.';
-    const tokens = isObj(payload.tokens) ? payload.tokens : null;
-    addAiMessage('assistant', answer, { tokens });
+    const tokens = normalizeAiGeneratedTokens(payload.tokens);
+    const displayAnswer = tokens
+      ? (stripAiCodeBlocks(answer) || 'I generated a complete token structure for your project. Review it and import when ready.')
+      : answer;
+    addAiMessage('assistant', displayAnswer, { tokens });
     if (tokens) {
       setStatus('Tokvista AI generated import-ready tokens.', false);
+    } else {
+      setStatus('Tokvista AI replied, but it did not return import-ready tokens this time.', true);
     }
   } catch (error) {
     const messageText = error instanceof Error ? error.message : String(error);
@@ -4002,18 +5017,29 @@ function initAiAssistant() {
     renderAiMessages();
   }
   setAiImportButton();
+  resizeAiInput();
 
   refs.aiSendBtn.addEventListener('click', sendAiMessage);
+  refs.aiInput.addEventListener('input', resizeAiInput);
   refs.aiInput.addEventListener('keydown', event => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       sendAiMessage();
     }
   });
+  document.querySelectorAll('[data-ai-prompt]').forEach(btn => {
+    btn.addEventListener('click', () => setAiPrompt(btn.dataset.aiPrompt || ''));
+  });
   refs.aiImportBtn.addEventListener('click', () => {
     if (!isObj(state.aiGeneratedTokens)) return;
+    if (state.aiImportPending) return;
+    if (state.aiTokensImported) {
+      setStatus('AI tokens already imported.', false);
+      return;
+    }
+    state.aiImportPending = true;
+    setAiImportButton();
     post({ type: 'import-tokens', payload: state.aiGeneratedTokens });
-    addAiMessage('assistant', '✓ Done! Your tokens have been created in Figma.');
     setStatus('AI token import sent to Figma.', false);
   });
 }
@@ -4030,21 +5056,16 @@ function updateDlUi() {
   refs.downloadMenu.querySelectorAll('.dl-option').forEach(b => b.classList.toggle('on', b.dataset.value === state.downloadFormat));
 }
 
-/* ── FULLSCREEN ── */
-const FS_IN  = `<svg viewBox="0 0 48 48" fill="none"><path d="M6 6L16 16M6 42L16 32M42 42L32 32M42 6L32 16" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M33 6H42V15M42 33V42H33M15 42H6V33M6 15V6H15" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-const FS_OUT = `<svg viewBox="0 0 24 24" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.29 3.29a1 1 0 0 1 1.41 0L8 6.59V5a1 1 0 1 1 2 0v4a1 1 0 0 1-1 1H5a1 1 0 1 1 0-2h1.59L3.29 4.7a1 1 0 0 1 0-1.41ZM19.29 3.29a1 1 0 0 1 1.41 1.41L17.41 8H19a1 1 0 1 1 0 2h-4a1 1 0 0 1-1-1V5a1 1 0 1 1 2 0v1.59l3.29-3.3ZM4 15a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0v-1.59l-3.29 3.3a1 1 0 0 1-1.42-1.42L6.59 16H5a1 1 0 0 1-1-1Zm10 0a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1 1 1 0 0 1-1 1h-1.59l3.3 3.29a1 1 0 0 1-1.42 1.41L16 17.41V19a1 1 0 1 1-2 0v-4Z" fill="currentColor"/></svg>`;
-function updateFsBtn() {
-  refs.fullscreenToggleBtn.innerHTML = state.fullscreen ? FS_OUT : FS_IN;
-  const tip = state.fullscreen ? 'Exit fullscreen' : 'Enter fullscreen';
-  refs.fullscreenToggleBtn.setAttribute('data-tip', tip);
-  refs.fullscreenToggleBtn.setAttribute('aria-label', tip);
-}
-
 /* ── EVENTS ── */
 $('syncBtn').addEventListener('click', refresh);
 $('fullRefreshBtn').addEventListener('click', fullRefresh);
 $('devPreviewBtn').addEventListener('click', openDeveloperPreview);
 $('snapshotPreviewBtn').addEventListener('click', openSnapshotPreview);
+refs.previewSearchInput?.addEventListener('input', () => {
+  state.previewSearch = refs.previewSearchInput.value || '';
+  renderPreview(state.latestExportPayload);
+  renderVisualPreview(state.latestExportPayload);
+});
 $('saveRelayBtn').addEventListener('click', () => {
   state.pendingDraftSave = !!state.draftNewProfile;
   post({ type: 'save-relay-settings', payload: readSyncPayload() });
@@ -4064,12 +5085,9 @@ refs.syncProfilesList?.addEventListener('click', e => {
   if (action === 'delete') {
     const profile = (state.syncProfiles || []).find(item => item.id === profileId);
     const profileName = profile?.name || profile?.label || 'this sync profile';
-    if (!window.confirm(`Delete "${profileName}"?`)) return;
-    post({ type: 'delete-sync-profile', payload: { profileId } });
-    setStatus('Deleting sync profile…', false);
+    openDeleteProfileModal(profileId, profileName);
   }
 });
-$('refreshChangesBtn').addEventListener('click', () => post({ type: 'preview-publish-changes' }));
 $('previewPublishBtn').addEventListener('click', () => { setTab('changes'); post({ type: 'preview-publish-changes' }); });
 $('openPublishBtn').addEventListener('click', openModal);
 $('cancelPublishBtn').addEventListener('click', closeModal);
@@ -4079,6 +5097,19 @@ refs.openProviderModalBtn?.addEventListener('click', openProviderModal);
 refs.closeProviderModalBtn?.addEventListener('click', closeProviderModal);
 refs.providerDoneBtn?.addEventListener('click', closeProviderModal);
 refs.providerModal?.addEventListener('click', e => { if (e.target === refs.providerModal) closeProviderModal(); });
+refs.closeDeleteProfileModalBtn?.addEventListener('click', closeDeleteProfileModal);
+refs.cancelDeleteProfileBtn?.addEventListener('click', closeDeleteProfileModal);
+refs.confirmDeleteProfileBtn?.addEventListener('click', () => {
+  if (!state.pendingDeleteProfileId) {
+    closeDeleteProfileModal();
+    return;
+  }
+  const profileId = state.pendingDeleteProfileId;
+  closeDeleteProfileModal();
+  post({ type: 'delete-sync-profile', payload: { profileId } });
+  setStatus('Deleting sync profile…', false);
+});
+refs.deleteProfileModal?.addEventListener('click', e => { if (e.target === refs.deleteProfileModal) closeDeleteProfileModal(); });
 refs.relayAdvancedToggleBtn?.addEventListener('click', () => setRelayAdvancedOpen(!state.relayAdvancedOpen));
 document.querySelectorAll('[data-provider-choice]').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -4089,8 +5120,6 @@ document.querySelectorAll('[data-provider-choice]').forEach(btn => {
   });
 });
 refs.closeHistoryModalBtn.addEventListener('click', closeHistoryModal);
-refs.historyCloseBtn.addEventListener('click', closeHistoryModal);
-refs.historyRefreshBtn.addEventListener('click', () => post({ type: 'load-publish-history' }));
 refs.historyModal.addEventListener('click', e => { if (e.target === refs.historyModal) closeHistoryModal(); });
 $('confirmPublishBtn').addEventListener('click', () => {
   closeModal();
@@ -4113,7 +5142,6 @@ refs.downloadMenu.querySelectorAll('.dl-option').forEach(b => {
 });
 document.addEventListener('click', e => { if (!e.target.closest('.dl-pop')) refs.downloadMenu.classList.add('hide'); });
 refs.clearLoadedBtn.addEventListener('click', clearLoadedData);
-refs.fullscreenToggleBtn.addEventListener('click', () => post({ type: 'toggle-fullscreen' }));
 [
   refs.publishKeyInput,
   refs.githubTokenInput
@@ -4206,12 +5234,6 @@ refs.importFromUrlBtn.addEventListener('click', () => {
   setStatus('Fetching tokens from URL…', false);
 });
 
-/* ── SNAPSHOT TOGGLE ── */
-refs.snapshotToggleBtn.addEventListener('click', () => {
-  state.snapshotRawOpen = !state.snapshotRawOpen;
-  updateSnapToggle();
-});
-
 /* ── MESSAGES ── */
 window.onmessage = event => {
   const msg = event.data.pluginMessage; if (!msg) return;
@@ -4268,8 +5290,8 @@ window.onmessage = event => {
     if (p.changeLog && typeof p.changeLog === 'object') { state.changeLog = p.changeLog; renderChangeLog(state.changeLog); }
     if (typeof p.error === 'string' && p.error.trim()) { setStatus(p.error, true); }
   }
-  if (msg.type === 'fullscreen-state') { state.fullscreen = Boolean((msg.payload || {}).enabled); updateFsBtn(); }
   if (msg.type === 'export-result') {
+    setHeaderRefreshLoading(false);
     state.latestExportPayload = msg.payload || null;
     state.latestExportText    = JSON.stringify(msg.payload, null, 2);
     updatePreviewLinkUi();
@@ -4283,10 +5305,27 @@ window.onmessage = event => {
   }
   if (msg.type === 'import-result') {
     const p = msg.payload || {};
-    setStatus(`Import complete: ${p.imported||0} applied (${p.created||0} created, ${p.updated||0} updated, ${p.replaced||0} replaced), ${p.skipped||0} skipped.`, false);
+    if (state.aiImportPending) {
+      state.aiImportPending = false;
+      state.aiTokensImported = Number(p.imported || 0) > 0;
+      setAiImportButton();
+    }
+    if (state.aiGeneratedTokens && Number(p.imported || 0) === 0 && Number(p.skipped || 0) === 0) {
+      setStatus('AI import returned no variables. Generate again and Tokvista will normalize the token format.', true);
+    } else {
+      setStatus(`Import complete: ${p.imported||0} applied (${p.created||0} created, ${p.updated||0} updated, ${p.replaced||0} replaced), ${p.skipped||0} skipped.`, false);
+    }
     refresh();
   }
-  if (msg.type === 'error') { setStatus(msg.payload || 'Unknown error', true); }
+  if (msg.type === 'error') {
+    setHeaderRefreshLoading(false);
+    if (state.aiImportPending) {
+      state.aiImportPending = false;
+      state.aiTokensImported = false;
+      setAiImportButton();
+    }
+    setStatus(msg.payload || 'Unknown error', true);
+  }
 };
 
 /* ── VIEW MODE ── */
@@ -4360,9 +5399,7 @@ function renderJsonView(payload) {
 
 /* ── INIT ── */
 updateDlUi();
-updateFsBtn();
 updatePreviewLinkUi();
-updateSnapToggle();
 updateImportFromUrlState();
 applyProviderUi(state.syncProvider);
 updateSettingsSummary();
@@ -4408,5 +5445,3 @@ function updateFilterBar(payload) {
 </script>
 </body>
 </html>
-
-

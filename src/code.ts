@@ -1,7 +1,5 @@
-const DEFAULT_UI_WIDTH = 460;
-const DEFAULT_UI_HEIGHT = 740;
-const FULLSCREEN_UI_WIDTH = 960;
-const FULLSCREEN_UI_HEIGHT = 860;
+const DEFAULT_UI_WIDTH = 420;
+const DEFAULT_UI_HEIGHT = 680;
 
 figma.showUI(__html__, {
   width: DEFAULT_UI_WIDTH,
@@ -38,7 +36,6 @@ type UiMessage =
   | { type: "load-publish-history" }
   | { type: "preview-publish-changes" }
   | { type: "resolve-preview-link" }
-  | { type: "toggle-fullscreen" }
   | { type: "save-relay-settings"; payload: unknown }
   | { type: "set-active-sync-profile"; payload: unknown }
   | { type: "delete-sync-profile"; payload: unknown }
@@ -70,6 +67,11 @@ type ImportResult = {
   replaced: number;
   skipped: number;
   warnings: string[];
+};
+
+type CollectionImportPayload = {
+  collection: string;
+  tokens: ObjectLike;
 };
 
 type RelaySettings = {
@@ -148,7 +150,6 @@ type ExportTokensOptions = {
 const MAX_CHANGE_LOG_LINES = 40;
 const MAX_PUBLISH_HISTORY_ITEMS = 80;
 const DEFAULT_STORAGE_SCOPE_ID = "default";
-let isFullscreen = false;
 
 function buildScopedStorageKey(baseKey: string, scopeId: string): string {
   const normalizedScopeId = scopeId.trim();
@@ -179,6 +180,24 @@ function extractLeafValue(value: ObjectLike): { rawType?: string; value: unknown
   return { rawType, value: leafValue };
 }
 
+function sanitizeVariablePathSegment(segment: string): string {
+  return segment
+    .trim()
+    .replace(/['"`]/g, "")
+    .replace(/&/g, "and")
+    .replace(/[^\w.\- ]+/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[-./\s]+|[-./\s]+$/g, "") || "token";
+}
+
+function sanitizeVariablePath(path: string[]): string[] {
+  const cleaned = path
+    .map((segment) => sanitizeVariablePathSegment(String(segment || "")))
+    .filter((segment) => segment.length > 0);
+  return cleaned.length ? cleaned : ["token"];
+}
+
 function collectTokens(node: unknown, path: string[] = [], out: ParsedToken[] = []): ParsedToken[] {
   if (!isObjectLike(node)) {
     return out;
@@ -186,9 +205,10 @@ function collectTokens(node: unknown, path: string[] = [], out: ParsedToken[] = 
 
   if (isTokenLeaf(node) && path.length > 0) {
     const { rawType, value } = extractLeafValue(node);
+    const sanitizedPath = sanitizeVariablePath(path);
     out.push({
-      path,
-      name: path.join("/"),
+      path: sanitizedPath,
+      name: sanitizedPath.join("/"),
       rawType,
       value
     });
@@ -1912,6 +1932,25 @@ async function ensureCollectionForPayload(payload: unknown): Promise<VariableCol
   return await getOrCreateCollection(DEFAULT_COLLECTION_NAME);
 }
 
+function readCollectionImportPayloads(payload: unknown): CollectionImportPayload[] {
+  if (!isObjectLike(payload) || !Array.isArray(payload.collections)) {
+    return [];
+  }
+  const entries = payload.collections
+    .map((entry) => {
+      if (!isObjectLike(entry)) {
+        return null;
+      }
+      const collection = typeof entry.collection === "string" ? entry.collection.trim() : "";
+      const tokens = entry.tokens;
+      if (!collection || !isObjectLike(tokens)) {
+        return null;
+      }
+      return { collection, tokens };
+    });
+  return entries.filter((entry): entry is CollectionImportPayload => entry !== null);
+}
+
 function parseAliasReference(
   value: unknown
 ): { path: string[]; rawReference: string; innerReference: string } | null {
@@ -1938,7 +1977,11 @@ function parseAliasReference(
     return null;
   }
 
-  return { path, rawReference: trimmed, innerReference: inner };
+  return {
+    path: sanitizeVariablePath(path),
+    rawReference: trimmed,
+    innerReference: sanitizeVariablePath(path).join("/")
+  };
 }
 
 function toScopedVariableKey(collectionName: string, variableName: string): string {
@@ -2063,7 +2106,7 @@ function variableTypeToTokenValueType(resolvedType: VariableResolvedDataType): T
   return null;
 }
 
-async function importTokens(payload: unknown): Promise<ImportResult> {
+async function importSingleCollectionTokens(payload: unknown): Promise<ImportResult> {
   const collection = await ensureCollectionForPayload(payload);
   const modeId = collection.defaultModeId;
   const tokens = parseTokens(payload);
@@ -2332,6 +2375,42 @@ async function importTokens(payload: unknown): Promise<ImportResult> {
   };
 }
 
+async function importTokens(payload: unknown): Promise<ImportResult> {
+  const collectionPayloads = readCollectionImportPayloads(payload);
+  if (!collectionPayloads.length) {
+    return await importSingleCollectionTokens(payload);
+  }
+
+  let imported = 0;
+  let created = 0;
+  let updated = 0;
+  let replaced = 0;
+  let skipped = 0;
+  const warnings: string[] = [];
+  const importedCollections: string[] = [];
+
+  for (const entry of collectionPayloads) {
+    const result = await importSingleCollectionTokens(entry);
+    imported += result.imported;
+    created += result.created;
+    updated += result.updated;
+    replaced += result.replaced;
+    skipped += result.skipped;
+    warnings.push(...result.warnings);
+    importedCollections.push(result.collection);
+  }
+
+  return {
+    collection: importedCollections.join(", "),
+    imported,
+    created,
+    updated,
+    replaced,
+    skipped,
+    warnings
+  };
+}
+
 function toHexColor(color: RGBA): string {
   const toHex = (value: number): string => {
     const scaled = Math.round(Math.max(0, Math.min(1, value)) * 255);
@@ -2583,21 +2662,11 @@ async function loadAndPostRelaySettings(): Promise<void> {
   postRelaySettingsToUi(store);
 }
 
-function postFullscreenState(): void {
-  figma.ui.postMessage({
-    type: "fullscreen-state",
-    payload: {
-      enabled: isFullscreen
-    }
-  });
-}
-
 async function initializeUiState(): Promise<void> {
   await loadAndPostRelaySettings();
   await loadAndPostPublishedLinks();
   await loadAndPostPublishHistory();
   await postPublishChangePreview();
-  postFullscreenState();
 }
 
 void initializeUiState();
@@ -2753,16 +2822,6 @@ figma.ui.onmessage = async (msg: UiMessage) => {
     } catch (error) {
       figma.ui.postMessage({ type: "error", payload: toErrorMessage(error) });
     }
-    return;
-  }
-
-  if (msg.type === "toggle-fullscreen") {
-    isFullscreen = !isFullscreen;
-    figma.ui.resize(
-      isFullscreen ? FULLSCREEN_UI_WIDTH : DEFAULT_UI_WIDTH,
-      isFullscreen ? FULLSCREEN_UI_HEIGHT : DEFAULT_UI_HEIGHT
-    );
-    postFullscreenState();
     return;
   }
 

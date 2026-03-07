@@ -90,6 +90,425 @@ function extractBalancedJsonObject(input) {
   return null;
 }
 
+function hasTokenLeafShape(value) {
+  return isObjectLike(value) && ("value" in value || "$value" in value);
+}
+
+function normalizeExplicitTokenType(rawType) {
+  const value = typeof rawType === "string" ? rawType.trim() : "";
+  if (!value) {
+    return "";
+  }
+  const normalized = value.toLowerCase();
+  if (normalized === "color") return "color";
+  if (normalized === "borderradius") return "borderRadius";
+  if (normalized === "fontsize") return "fontSize";
+  if (normalized === "lineheight") return "lineHeight";
+  if (normalized === "letterspacing") return "letterSpacing";
+  if (
+    normalized === "number" ||
+    normalized === "dimension" ||
+    normalized === "spacing" ||
+    normalized === "sizing" ||
+    normalized === "borderwidth" ||
+    normalized === "opacity" ||
+    normalized === "fontfamily" ||
+    normalized === "fontweight" ||
+    normalized === "typography" ||
+    normalized === "string"
+  ) {
+    return normalized;
+  }
+  return "string";
+}
+
+function looksLikeColor(value) {
+  if (typeof value !== "string") {
+    return false;
+  }
+  const text = value.trim();
+  return /^#(?:[0-9a-f]{3,8})$/i.test(text) || /^(rgb|rgba|hsl|hsla)\(/i.test(text);
+}
+
+function looksLikeNumber(value) {
+  if (typeof value === "number") {
+    return Number.isFinite(value);
+  }
+  if (typeof value !== "string") {
+    return false;
+  }
+  return /^-?\d+(?:\.\d+)?\s*(px|rem|em|%)?$/i.test(value.trim());
+}
+
+function isAliasString(value) {
+  return typeof value === "string" && /^\{[^}]+\}$/.test(value.trim());
+}
+
+function extractAliasWithUnit(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const match = value.trim().match(/^(\{[^}]+\})\s*(px|rem|em|%)$/i);
+  if (!match) {
+    return null;
+  }
+  return { alias: match[1], unit: match[2].toLowerCase() };
+}
+
+function sanitizeTokenKey(key) {
+  return String(key || "")
+    .trim()
+    .replace(/['"`]/g, "")
+    .replace(/&/g, "and")
+    .replace(/[^\w.-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[-_.]+|[-_.]+$/g, "") || "token";
+}
+
+function sanitizeAliasValue(value) {
+  if (!isAliasString(value)) {
+    return value;
+  }
+  const inner = value.trim().slice(1, -1);
+  const cleaned = inner
+    .split(".")
+    .map((part) => sanitizeTokenKey(part))
+    .filter(Boolean)
+    .join(".");
+  return cleaned ? `{${cleaned}}` : value.trim();
+}
+
+function inferTypeFromPath(path, value) {
+  const joined = path.join(".").toLowerCase();
+  if (looksLikeColor(value)) return "color";
+  const aliasWithUnit = extractAliasWithUnit(value);
+  if (typeof value === "number" || looksLikeNumber(value)) {
+    if (joined.includes("radius")) return "borderRadius";
+    if (joined.includes("font") && joined.includes("size")) return "fontSize";
+    if (joined.includes("line") && joined.includes("height")) return "lineHeight";
+    if (joined.includes("letter") && joined.includes("spacing")) return "letterSpacing";
+    if (
+      joined.includes("spacing") ||
+      joined.includes("space") ||
+      joined.includes("gap") ||
+      joined.includes("padding") ||
+      joined.includes("margin")
+    ) {
+      return "spacing";
+    }
+    if (joined.includes("opacity")) return "opacity";
+    return "number";
+  }
+  if (aliasWithUnit) {
+    if (joined.includes("radius")) return "borderRadius";
+    if (joined.includes("font") && joined.includes("size")) return "fontSize";
+    if (joined.includes("line") && joined.includes("height")) return "lineHeight";
+    if (joined.includes("letter") && joined.includes("spacing")) return "letterSpacing";
+    if (joined.includes("spacing") || joined.includes("space") || joined.includes("size")) return "number";
+    if (joined.includes("opacity") && aliasWithUnit.unit === "%") return "opacity";
+    return "number";
+  }
+  if (isAliasString(value)) {
+    if (
+      joined.includes("color") ||
+      joined.includes("background") ||
+      joined.includes("text") ||
+      joined.includes("surface") ||
+      joined.includes("border")
+    ) {
+      return "color";
+    }
+    if (joined.includes("radius")) return "borderRadius";
+    if (joined.includes("spacing") || joined.includes("space") || joined.includes("size")) return "number";
+    return "string";
+  }
+  if (typeof value === "string") return "string";
+  if (typeof value === "boolean" || value === null || Array.isArray(value) || isObjectLike(value)) return "string";
+  return "";
+}
+
+function normalizeLeafValue(type, value) {
+  const aliasWithUnit = extractAliasWithUnit(value);
+  if (
+    aliasWithUnit &&
+    (
+      type === "number" ||
+      type === "spacing" ||
+      type === "sizing" ||
+      type === "borderRadius" ||
+      type === "borderWidth" ||
+      type === "opacity" ||
+      type === "fontSize" ||
+      type === "lineHeight" ||
+      type === "letterSpacing"
+    )
+  ) {
+    return sanitizeAliasValue(aliasWithUnit.alias);
+  }
+  if (isAliasString(value)) {
+    return sanitizeAliasValue(value);
+  }
+  if (type === "color" && typeof value === "string") {
+    return value.trim();
+  }
+  if (
+    type === "number" ||
+    type === "spacing" ||
+    type === "sizing" ||
+    type === "borderRadius" ||
+    type === "borderWidth" ||
+    type === "opacity" ||
+    type === "fontSize" ||
+    type === "lineHeight" ||
+    type === "letterSpacing"
+  ) {
+    if (typeof value === "number" || typeof value === "string") {
+      return value;
+    }
+  }
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (value === null) return "null";
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function normalizeTokenLeaf(rawType, rawValue, path) {
+  const type = normalizeExplicitTokenType(rawType) || inferTypeFromPath(path, rawValue);
+  if (!type) {
+    return null;
+  }
+  return {
+    type,
+    value: normalizeLeafValue(type, rawValue)
+  };
+}
+
+function normalizeTokenTree(node, path = []) {
+  if (Array.isArray(node)) {
+    return path.length ? normalizeTokenLeaf("", node, path) : null;
+  }
+  if (hasTokenLeafShape(node)) {
+    const rawValue = Object.prototype.hasOwnProperty.call(node, "value") ? node.value : node.$value;
+    const rawType = typeof node.type === "string" ? node.type : typeof node.$type === "string" ? node.$type : "";
+    return normalizeTokenLeaf(rawType, rawValue, path);
+  }
+  if (!isObjectLike(node)) {
+    return path.length ? normalizeTokenLeaf("", node, path) : null;
+  }
+
+  const out = {};
+  for (const [key, value] of Object.entries(node)) {
+    if (
+      !key ||
+      key.startsWith("$") ||
+      key === "type" ||
+      key === "$type" ||
+      key === "value" ||
+      key === "$value" ||
+      key === "description" ||
+      key === "meta" ||
+      key === "summary"
+    ) {
+      continue;
+    }
+    const cleanKey = sanitizeTokenKey(key);
+    const normalizedChild = normalizeTokenTree(value, [...path, cleanKey]);
+    if (normalizedChild) {
+      out[cleanKey] = normalizedChild;
+    }
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+function countTokenLeaves(node) {
+  if (!isObjectLike(node)) {
+    return 0;
+  }
+  if ("type" in node && "value" in node) {
+    return 1;
+  }
+  return Object.values(node).reduce((total, value) => total + countTokenLeaves(value), 0);
+}
+
+function forEachTokenLeaf(node, path, visit) {
+  if (!isObjectLike(node)) {
+    return;
+  }
+  if ("type" in node && "value" in node) {
+    visit(node, path);
+    return;
+  }
+  for (const [key, value] of Object.entries(node)) {
+    forEachTokenLeaf(value, [...path, key], visit);
+  }
+}
+
+function comparableValue(value) {
+  if (typeof value === "string") {
+    return value.trim();
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function setLeafAtPath(root, path, leaf) {
+  if (!isObjectLike(root) || !path.length || !isObjectLike(leaf)) {
+    return;
+  }
+  let cursor = root;
+  for (let index = 0; index < path.length - 1; index += 1) {
+    const key = path[index];
+    if (!isObjectLike(cursor[key])) {
+      cursor[key] = {};
+    }
+    cursor = cursor[key];
+  }
+  cursor[path[path.length - 1]] = { ...leaf };
+}
+
+function pathAfterMarker(path, marker) {
+  const index = path.indexOf(marker);
+  if (index < 0) {
+    return null;
+  }
+  return path.slice(index + 1);
+}
+
+function isComponentPath(path) {
+  return path.includes("component") || path.includes("components");
+}
+
+function foundationPathForLeaf(path) {
+  const afterFoundation = pathAfterMarker(path, "foundation");
+  if (afterFoundation && afterFoundation.length) {
+    return afterFoundation;
+  }
+  const afterBase = pathAfterMarker(path, "base");
+  if (afterBase && afterBase.length) {
+    return afterBase;
+  }
+  return null;
+}
+
+function semanticPathForLeaf(path) {
+  const afterSemantic = pathAfterMarker(path, "semantic");
+  if (afterSemantic && afterSemantic.length) {
+    return afterSemantic;
+  }
+  return null;
+}
+
+function componentPathForLeaf(path) {
+  const afterComponents = pathAfterMarker(path, "components");
+  if (afterComponents && afterComponents.length) {
+    return afterComponents;
+  }
+  const afterComponent = pathAfterMarker(path, "component");
+  if (afterComponent && afterComponent.length) {
+    return afterComponent;
+  }
+  return null;
+}
+
+function buildCollectionBundle(tokensRoot) {
+  const foundationTokens = {};
+  const semanticTokens = {};
+  const componentTokens = {};
+  const foundationMap = new Map();
+  const semanticRawMap = new Map();
+
+  forEachTokenLeaf(tokensRoot, [], (leaf, path) => {
+    const foundationPath = foundationPathForLeaf(path);
+    const semanticPath = semanticPathForLeaf(path);
+    const componentPath = componentPathForLeaf(path);
+
+    if (foundationPath && foundationPath.length) {
+      setLeafAtPath(foundationTokens, foundationPath, leaf);
+      foundationMap.set(`${leaf.type}|${comparableValue(leaf.value)}`, foundationPath);
+      return;
+    }
+    if (semanticPath && semanticPath.length) {
+      setLeafAtPath(semanticTokens, semanticPath, leaf);
+      return;
+    }
+    if ((componentPath && componentPath.length) || isComponentPath(path)) {
+      setLeafAtPath(componentTokens, componentPath && componentPath.length ? componentPath : path, leaf);
+      return;
+    }
+    setLeafAtPath(foundationTokens, path, leaf);
+    foundationMap.set(`${leaf.type}|${comparableValue(leaf.value)}`, path);
+  });
+
+  forEachTokenLeaf(semanticTokens, [], (leaf, path) => {
+    const comparableKey = `${leaf.type}|${comparableValue(leaf.value)}`;
+    if (!semanticRawMap.has(comparableKey)) {
+      semanticRawMap.set(comparableKey, path);
+    }
+    if (isAliasString(leaf.value)) {
+      return;
+    }
+    const foundationPath = foundationMap.get(comparableKey);
+    if (!foundationPath) {
+      return;
+    }
+    leaf.value = `{Foundation.${foundationPath.join(".")}}`;
+  });
+
+  forEachTokenLeaf(componentTokens, [], (leaf) => {
+    if (isAliasString(leaf.value)) {
+      return;
+    }
+    const comparableKey = `${leaf.type}|${comparableValue(leaf.value)}`;
+    const semanticPath = semanticRawMap.get(comparableKey);
+    if (semanticPath) {
+      leaf.value = `{Semantic.${semanticPath.join(".")}}`;
+      return;
+    }
+    const foundationPath = foundationMap.get(comparableKey);
+    if (foundationPath) {
+      leaf.value = `{Foundation.${foundationPath.join(".")}}`;
+    }
+  });
+
+  const collections = [];
+  if (countTokenLeaves(foundationTokens) > 0) {
+    collections.push({ collection: "Foundation", tokens: foundationTokens });
+  }
+  if (countTokenLeaves(semanticTokens) > 0) {
+    collections.push({ collection: "Semantic", tokens: semanticTokens });
+  }
+  if (countTokenLeaves(componentTokens) > 0) {
+    collections.push({ collection: "Components", tokens: componentTokens });
+  }
+  return collections;
+}
+
+function normalizeGeneratedTokens(payload) {
+  if (!isObjectLike(payload)) {
+    return null;
+  }
+  const root = isObjectLike(payload.tokens) ? payload.tokens : payload;
+  const normalizedTokens = normalizeTokenTree(root, []);
+  if (!isObjectLike(normalizedTokens) || countTokenLeaves(normalizedTokens) === 0) {
+    return null;
+  }
+  const collections = buildCollectionBundle(normalizedTokens);
+  if (!collections.length) {
+    return null;
+  }
+  if (collections.length === 1) {
+    return collections[0];
+  }
+  return { collections };
+}
+
 function extractTokensFromAnswer(answer) {
   const text = String(answer || "");
   if (!text.trim()) {
@@ -100,7 +519,7 @@ function extractTokensFromAnswer(answer) {
   if (jsonBlockMatch && jsonBlockMatch[1]) {
     const parsed = parseJsonCandidate(jsonBlockMatch[1].trim());
     if (parsed) {
-      return parsed;
+      return normalizeGeneratedTokens(parsed);
     }
   }
 
@@ -108,11 +527,11 @@ function extractTokensFromAnswer(answer) {
   if (genericBlockMatch && genericBlockMatch[1]) {
     const parsed = parseJsonCandidate(genericBlockMatch[1].trim());
     if (parsed) {
-      return parsed;
+      return normalizeGeneratedTokens(parsed);
     }
   }
 
-  return extractBalancedJsonObject(text);
+  return normalizeGeneratedTokens(extractBalancedJsonObject(text));
 }
 
 function normalizeHistory(input) {
