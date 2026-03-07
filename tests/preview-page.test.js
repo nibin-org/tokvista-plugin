@@ -64,6 +64,19 @@ describe("preview-page security", () => {
     });
   });
 
+  it("does not mark structured GitHub preview mode as raw source history mode", () => {
+    const runtimeConfig = previewPage.__test.buildRuntimeConfig({
+      projectId: "",
+      environment: "",
+      sourceUrl: "",
+      historyApiUrl: "/api/version-history?owner=nibin-build-01&repo=tok-new&ref=main&path=tokens.json",
+      version: "1.2.3"
+    });
+
+    expect(runtimeConfig.snapshotHistory.sourceUrl).toBe("");
+    expect(runtimeConfig.snapshotHistory.historyEndpoint).toContain("owner=nibin-build-01");
+  });
+
   it("normalizes relay API URLs without trailing slashes", () => {
     process.env.TOKVISTA_ALLOWED_PREVIEW_SOURCE_ORIGINS = "https://tokvista-plugin.vercel.app";
     expect(previewPage.__test.normalizeRelayApiUrl("https://tokvista-plugin.vercel.app/api/")).toBe(

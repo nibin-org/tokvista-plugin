@@ -399,7 +399,6 @@ async function handler(req, res) {
       return;
     }
   } else if (githubTarget) {
-    snapshotSourceUrl = buildRawGitHubSource(githubTarget);
     historyApiUrl =
       `/api/version-history?owner=${encodeURIComponent(githubTarget.owner)}&repo=${encodeURIComponent(
         githubTarget.repo
