@@ -145,6 +145,33 @@ function normalizeTokensForPreview(payload) {
   if (hasExpectedTopLevelSets) {
     return root;
   }
+  const foundationTokens = isObjectLike(root.Foundation) ? root.Foundation : null;
+  const semanticTokens = isObjectLike(root.Semantic) ? root.Semantic : null;
+  const componentTokens = isObjectLike(root.Components) ? root.Components : null;
+  if (foundationTokens || semanticTokens || componentTokens) {
+    const normalized = {};
+    if (foundationTokens) {
+      normalized["Foundation/Value"] = foundationTokens;
+    }
+    if (semanticTokens) {
+      normalized["Semantic/Value"] = semanticTokens;
+    }
+    if (componentTokens) {
+      const componentEntries = Object.entries(componentTokens);
+      if (componentEntries.length === 0) {
+        normalized["Components/Value"] = {};
+      } else {
+        for (const [key, value] of componentEntries) {
+          if (isObjectLike(value)) {
+            normalized[`Components/${key}`] = value;
+          }
+        }
+      }
+    }
+    if (Object.keys(normalized).length > 0) {
+      return normalized;
+    }
+  }
   return {
     "Foundation/Value": root
   };
