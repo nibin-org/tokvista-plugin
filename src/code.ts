@@ -773,7 +773,37 @@ function normalizeUrlField(value: unknown): string | undefined {
   if (!trimmed) {
     return undefined;
   }
-  return trimmed;
+  return upgradeLegacyPreviewUrl(trimmed);
+}
+
+function upgradeLegacyPreviewUrl(urlValue: string): string {
+  try {
+    const parsed = new URL(urlValue);
+    const previewPath = `${parsed.origin}${parsed.pathname}`;
+    if (previewPath !== DEFAULT_TOKVISTA_PREVIEW_BASE_URL) {
+      return urlValue;
+    }
+    const source = parsed.searchParams.get("source");
+    if (!source) {
+      return urlValue;
+    }
+    const rawParsed = new URL(source);
+    if (rawParsed.origin !== "https://raw.githubusercontent.com") {
+      return urlValue;
+    }
+    const parts = rawParsed.pathname.split("/").filter(Boolean);
+    if (parts.length < 4) {
+      return urlValue;
+    }
+    return buildGitHubPreviewUrl(
+      decodeURIComponent(parts[0]),
+      decodeURIComponent(parts[1]),
+      decodeURIComponent(parts[2]),
+      parts.slice(3).map((part) => decodeURIComponent(part)).join("/")
+    );
+  } catch {
+    return urlValue;
+  }
 }
 
 function encodePathForRawUrl(path: string): string {
@@ -809,31 +839,38 @@ function buildPreviewUrl(projectId: string, environment: string): string {
   return `${base}?projectId=${encodeURIComponent(projectId)}&environment=${encodeURIComponent(environment)}`;
 }
 
+function buildQueryString(params: Record<string, string>): string {
+  return Object.entries(params)
+    .filter(([, value]) => typeof value === "string" && value.length > 0)
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .join("&");
+}
+
 function buildRelayPreviewUrl(relayUrl: string, projectId: string, environment: string, versionId = ""): string {
   const base = DEFAULT_TOKVISTA_PREVIEW_BASE_URL;
-  const params = new URLSearchParams({
+  const params: Record<string, string> = {
     projectId,
     environment
-  });
+  };
   if (versionId) {
-    params.set("versionId", versionId);
+    params.versionId = versionId;
   }
   const normalizedRelayUrl = normalizeRelayUrl(relayUrl);
   if (normalizedRelayUrl && normalizedRelayUrl !== DEFAULT_RELAY_URL) {
-    params.set("relay", normalizedRelayUrl);
+    params.relay = normalizedRelayUrl;
   }
-  return `${base}?${params.toString()}`;
+  return `${base}?${buildQueryString(params)}`;
 }
 
 function buildGitHubPreviewUrl(owner: string, repo: string, ref: string, tokenPath: string): string {
   const base = DEFAULT_TOKVISTA_PREVIEW_BASE_URL;
-  const params = new URLSearchParams({
+  const params = buildQueryString({
     owner,
     repo,
     ref,
     path: tokenPath
   });
-  return `${base}?${params.toString()}`;
+  return `${base}?${params}`;
 }
 
 function parseGitHubCommitReferenceUrl(referenceUrl: string): { owner: string; repo: string; sha: string } | null {
@@ -1309,17 +1346,26 @@ function postPublishedLinksToUi(links: PublishedLinks | null): void {
 async function loadAndPostPublishedLinks(): Promise<void> {
   const settings = await getStoredRelaySettings();
   let links = await getStoredPublishedLinks();
+  if (links) {
+    const normalizedLinks = normalizePublishedLinks(links);
+    if (normalizedLinks) {
+      links = normalizedLinks;
+      await setStoredPublishedLinks(normalizedLinks);
+    }
+  }
   
   if (links && !links.previewUrl && links.referenceUrl) {
     const resolved = await resolvePreviewLinksFromReference(links.referenceUrl);
     if (resolved.previewUrl || resolved.rawUrl) {
-      links = {
+      links = normalizePublishedLinks({
         ...links,
         rawUrl: links.rawUrl || resolved.rawUrl,
         previewUrl: links.previewUrl || resolved.previewUrl,
         snapshotPreviewUrl: links.snapshotPreviewUrl || resolved.previewUrl
-      };
-      await setStoredPublishedLinks(links);
+      });
+      if (links) {
+        await setStoredPublishedLinks(links);
+      }
     }
   }
   
